@@ -1,0 +1,203 @@
+<template>
+    <lightning-card title="Cleaning House">
+        <div class="slds-p-horizontal_small">
+            <div class="header-body">
+                <div><b>Total:</b> {total}</div>
+                <lightning-button variant="base" label={showButtonLabel} onclick={showFullTable}
+                    class="slds-m-left_x-small"></lightning-button>
+            </div>
+            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                <thead>
+                    <tr class="slds-line-height_reset">
+                        <th scope="col">
+                            App
+                        </th>
+                        <th scope="col">
+                            Fname
+                        </th>
+                        <th scope="col">
+                            Lname
+                        </th>
+                        <th scope="col">
+                            Maiden Name
+                        </th>
+                        <th scope="col">
+                            Marital?
+                        </th>
+                        <th scope="col">
+                            Age
+                        </th>
+                        <th scope="col">
+                            NINO
+                        </th>
+                        <th scope="col">
+                            Doc
+                        </th>
+                        <th scope="col">
+                            UK Yrs
+                        </th>
+                        <th scope="col">
+                            UK Empl <br />Type
+                        </th>
+                        <th scope="col">
+                            Last UK <br />Emp Addr
+                        </th>
+                        <th scope="col">
+                            Work AFTER <br />2006
+                        </th>
+                        <th scope="col">
+                            2006+ GAP Yrs
+                        </th>
+                        <th scope="col">
+                            Abr Empl Countries
+                        </th>
+                        <th scope="col">
+                            Agent
+                        </th>
+                        <th scope="col">
+                            Status
+                        </th>
+                        <th scope="col">
+                            Purchased
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template for:each={appsUp} for:item="application">
+                        <tr class="slds-hint-parent" key={application.Id} id={application.Id}
+                            style={application.rowStyle}>
+                            <td data-label="Spec File">
+                                <a onclick={navigateToRecord} value={application.app.Id}>
+                                    <u>{application.app.Name}</u>
+                                </a>
+                                <!-- <div class="slds-cell-wrap">{application.app.Name}</div> -->
+                            </td>
+                            <td data-label="Spec File">
+                                <div class="slds-cell-wrap">{application.app.First_Name__c}</div>
+                            </td>
+                            <td data-label="Spec File">
+                                <div class="slds-cell-wrap">{application.app.Second_Name__c}</div>
+                            </td>
+                            <td data-label="Spec File" style={application.fullMaidenNameStyle}>
+                                <div class="slds-cell-wrap">
+                                    {application.app.Full_Maiden_Previous_Name__c}
+                                </div>
+                            </td>
+                            <td data-label="Spec File">
+                                <div class="slds-cell-wrap">{application.app.Marital_status__c}</div>
+                            </td>
+                            <td data-label="Spec File">
+                                <div class="slds-cell-wrap">{application.app.Age__c}</div>
+                            </td>
+                            <td data-label="Spec File" style={application.noNINO_Style}>
+                                <div data-label="Spec File">
+                                    {application.app.National_Insurance_Number__c}&nbsp;
+                                </div>
+                            </td>
+                            <td data-label="Spec File" style={application.docStyle}>
+                                <div class="slds-cell-wrap">{application.doc}</div>
+                            </td>
+                            <td data-label="Spec File">
+                                <div class="slds-cell-wrap">{application.app.Years_Of_Work_In_The_UK__c}</div>
+                            </td>
+                            <td data-label="Spec File">
+                                <div class="slds-cell-wrap">{application.lastUKEmplType}</div>
+                            </td>
+                            <td data-label="Spec File" style={application.lastUKEmplAddressStyle}>
+                                <div class="slds-cell-wrap">{application.lastUKEmplAddress}</div>
+                            </td>
+                            <td data-label="Spec File" style={application.workAfter2006Style}>
+                                <div class="slds-cell-wrap">{application.workAfter2006}</div>
+                            </td>
+                            <td data-label="Spec File" style={application.gapStyle}>
+                                <div class="slds-cell-wrap">{application.gapYrsAfter2006}</div>
+                            </td>
+                            <td data-label="Spec File" style={application.gapStyle}>
+                                <div class="slds-cell-wrap">{application.abroadEmplCountries}</div>
+                            </td>
+                            <td data-label="Spec File">
+                                <div class="slds-cell-wrap">{application.app.Agent_Making_Sale__c}</div>
+                            </td>
+                            <td data-label="Spec File">
+                                <div class="slds-cell-wrap">{application.app.Status__c}</div>
+                            </td>
+                            <td data-label="Spec File">
+                                <div class="slds-cell-wrap">{application.app.Purchased__c}</div>
+                            </td>
+                        </tr>
+                    </template>
+                    <template lwc:if={isOpenFullTable}>
+                        <template for:each={appsDown} for:item="application">
+                            <tr class="slds-hint-parent" key={application.Id} id={application.Id}
+                                style={application.rowStyle}>
+                                <td data-label="Spec File">
+                                    <a onclick={navigateToRecord} value={application.app.Id}>
+                                        <u>{application.app.Name}</u>
+                                    </a>
+                                    <!-- <div class="slds-cell-wrap">{application.app.Name}</div> -->
+                                </td>
+                                <td data-label="Spec File">
+                                    <div class="slds-cell-wrap">{application.app.First_Name__c}</div>
+                                </td>
+                                <td data-label="Spec File">
+                                    <div class="slds-cell-wrap">{application.app.Second_Name__c}</div>
+                                </td>
+                                <td data-label="Spec File" style={application.fullMaidenNameStyle}>
+                                    <div class="slds-cell-wrap">
+                                        {application.app.Full_Maiden_Previous_Name__c}
+                                    </div>
+                                </td>
+                                <td data-label="Spec File">
+                                    <div class="slds-cell-wrap">{application.app.Marital_status__c}</div>
+                                </td>
+                                <td data-label="Spec File">
+                                    <div class="slds-cell-wrap">{application.app.Age__c}</div>
+                                </td>
+                                <td data-label="Spec File" style={application.noNINO_Style}>
+                                    <div data-label="Spec File">
+                                        {application.app.National_Insurance_Number__c}&nbsp;
+                                    </div>
+                                </td>
+                                <td data-label="Spec File" style={application.docStyle}>
+                                    <div class="slds-cell-wrap">{application.doc}</div>
+                                </td>
+                                <td data-label="Spec File">
+                                    <div class="slds-cell-wrap">{application.app.Years_Of_Work_In_The_UK__c}</div>
+                                </td>
+                                <td data-label="Spec File">
+                                    <div class="slds-cell-wrap">{application.lastUKEmplType}</div>
+                                </td>
+                                <td data-label="Spec File" style={application.lastUKEmplAddressStyle}>
+                                    <div class="slds-cell-wrap">{application.lastUKEmplAddress}</div>
+                                </td>
+                                <td data-label="Spec File" style={application.workAfter2006Style}>
+                                    <div class="slds-cell-wrap">{application.workAfter2006}</div>
+                                </td>
+                                <td data-label="Spec File" style={application.gapStyle}>
+                                    <div class="slds-cell-wrap">{application.gapYrsAfter2006}</div>
+                                </td>
+                                <td data-label="Spec File" style={application.gapStyle}>
+                                    <div class="slds-cell-wrap">{application.abroadEmplCountries}</div>
+                                </td>
+                                <td data-label="Spec File">
+                                    <div class="slds-cell-wrap">{application.app.Agent_Making_Sale__c}</div>
+                                </td>
+                                <td data-label="Spec File">
+                                    <div class="slds-cell-wrap">{application.app.Status__c}</div>
+                                </td>
+                                <td data-label="Spec File">
+                                    <div class="slds-cell-wrap">{application.app.Purchased__c}</div>
+                                </td>
+                            </tr>
+                        </template>
+                    </template>
+                </tbody>
+            </table>
+            <div style="text-align: right">
+                <lightning-button variant="base" label={showButtonLabel} onclick={showFullTable}
+                    class="slds-m-left_x-small"></lightning-button>
+            </div>
+            <!-- <c-clearing-house-table table-info={totalResult}></c-clearing-house-table> -->
+        </div>
+    </lightning-card>
+</template>

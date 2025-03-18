@@ -1,0 +1,129 @@
+<template>
+    <lightning-card title="Get NINO for Client">
+        <div class="slds-p-horizontal_small">
+            <template if:true={isMainPage}>
+                <table border="2" ondblclick={handleClick}>
+                    <tr>
+                        <td colspan="2" width="16%"><b>JR Posted 2 Env's</b></td>
+                        <td>{posted2Envs}</td>
+                        <td colspan="3">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="20%"><b>Env A</b></td>
+                        <td width="16%">{envA}</td>
+                        <td width="16%"><b>Posted</b></td>
+                        <td width="10%">{postedEnvA}</td>
+                        <td width="12%"><b>Date</b></td>
+                        <td width="22%">{dateEnvA}</td>
+                    </tr>
+                    <tr>
+                        <td><b>Env B</b></td>
+                        <td>{envB}</td>
+                        <td><b>Posted</b></td>
+                        <td>{postedEnvB}</td>
+                        <td><b>Date</b></td>
+                        <td>{dateEnvB}</td>
+                    </tr>
+                </table>
+                <div class="slds-m-top_small button-group">
+                    <div>
+                        <button onclick={handleGenerate} class="button-style">Generate File</button>
+                    </div>
+                    <div>
+                        <button onclick={handleGetNINO} class="button-style">Google Review Message</button>
+                    </div>
+                    <div>
+                        <button onclick={handleFollowUpAgentCall} class="button-style">Follow Up Agent Call</button>
+                    </div>
+                    <div>
+                        <button onclick={handleUrgentDocApproval} class="button-style">Urgent Doc Approval</button>
+                    </div>
+                    <div class="copy-button">
+                        <lightning-button-icon icon-name="utility:copy" alternative-text="Copy" title="Copy"
+                            onclick={handleCopy} class="slds-text-align_right" variant="bare" size="large">
+                        </lightning-button-icon>
+                    </div>
+                </div>
+                <template lwc:if={showSpinner}>
+                    <div>
+                        <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                    </div>
+                </template>
+            </template>
+            <template if:false={isMainPage}>
+                <table border="2">
+                    <tr>
+                        <td colspan="2" width="26%"><b>JR Posted 2 Env's</b></td>
+                        <td>
+                            <select onchange={handleChangePosted2Env}>
+                                <template for:each={options1} for:item="option">
+                                    <option key={option.value} value={option.value} selected={option.isSelected}>
+                                        {option.label}</option>
+                                </template>
+                            </select>
+                        </td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><b>Env A</b></td>
+                        <td>
+                            <select onchange={handleChangeEnvA}>
+                                <template for:each={options4} for:item="option">
+                                    <option key={option.value} value={option.value} selected={option.isSelected}>
+                                        {option.label}</option>
+                                </template>
+                            </select>
+                        </td>
+                        <td><b>Posted</b></td>
+                        <td>
+                            <select onchange={handleChangePostedEnvA}>
+                                <template for:each={options2} for:item="option">
+                                    <option key={option.value} value={option.value} selected={option.isSelected}>
+                                        {option.label}</option>
+                                </template>
+                            </select>
+                        </td>
+                        <td><b>Date</b></td>
+                        <td><input type="date" value={dateEnvA} onchange={handleChangeDateEnvA}></input></td>
+                    </tr>
+                    <tr>
+                        <td><b>Env B</b></td>
+                        <td>
+                            <select onchange={handleChangeEnvB}>
+                                <template for:each={options5} for:item="option">
+                                    <option key={option.value} value={option.value} selected={option.isSelected}>
+                                        {option.label}</option>
+                                </template>
+                            </select>
+                        </td>
+                        <td><b>Posted</b></td>
+                        <td>
+                            <select onchange={handleChangePostedEnvB}>
+                                <template for:each={options3} for:item="option">
+                                    <option key={option.value} value={option.value} selected={option.isSelected}>
+                                        {option.label}</option>
+                                </template>
+                            </select>
+                        </td>
+                        <td><b>Date</b></td>
+                        <td><input type="date" value={dateEnvB} onchange={handleChangeDateEnvB}></input></td>
+                    </tr>
+                </table>
+                <div class="buttons">
+                    <lightning-button-group>
+                        <lightning-button label="Cancel" onclick={handleClick}></lightning-button>
+                        <lightning-button label="Save" onclick={handleSave}></lightning-button>
+                    </lightning-button-group>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+    <template if:true={showSpinner}>
+        <div>
+            <lightning-spinner alternative-text="Loading" size="x-small"></lightning-spinner>
+        </div>
+    </template>
+</template>

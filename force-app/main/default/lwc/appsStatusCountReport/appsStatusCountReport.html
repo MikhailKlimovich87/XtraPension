@@ -1,0 +1,30 @@
+<template>
+    <lightning-card title="Application Status">
+        <div class="slds-p-horizontal_small">
+            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                <thead>
+                    <tr class="slds-line-height_reset">
+                        <th class="" scope="col">
+                            <div class="slds-truncate" title="Current App Status">Current App Status</div>
+                        </th>
+                        <th class="" scope="col">
+                            <div class="slds-truncate" title="Record Count">Record Count</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template for:each={appStatuses} for:item="status">
+                        <tr key={status.statusName} class="slds-hint-parent">
+                            <td data-label="Current App Status">
+                                <div class="slds-truncate">{status.statusName}</div>
+                            </td>
+                            <td data-label="Record Count">
+                                <div class="slds-truncate">{status.count}</div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </lightning-card>
+</template>

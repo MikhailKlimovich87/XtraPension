@@ -1,0 +1,5 @@
+<design:component>
+
+    <design:attribute name="flowName" label="flowName" />
+
+</design:component>

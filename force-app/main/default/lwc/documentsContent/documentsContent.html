@@ -1,0 +1,105 @@
+<template>
+    <lightning-card title="Docs">
+        <div style="margin-bottom: 0.5rem;">
+            <template if:true={showLatest}>
+                <template for:each={latestDocs} for:item="doc">
+                    <div class="slds-box slds-theme_default" style="display:block;border:0;font-size:0.875rem;"
+                        key={doc.documentId}>
+                        <div
+                            style="margin-bottom:0.5rem;display: flex;align-items: center;justify-content: space-between">
+                            <a onclick={navigateToFiles} value={doc.title}>
+                                <u>{doc.title}</u>
+                            </a>
+                            <template if:true={doc.isCustomLetter}>
+                                <div>
+                                    <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                        onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                                    </lightning-button-icon>
+                                </div>
+                            </template>
+                            <template if:true={doc.isHMRCReply}>
+                                <div style={colorValue}><b>{doc.hmrcReplyStatus}</b></div>
+                            </template>
+                            <template if:true={doc.isApplicationForm}>
+                                <template if:true={doc.isCompleteDocusignStatus}>
+                                    <div class="slds-box slds-text-heading_xxx-small icon">
+                                        <lightning-icon icon-name="action:approval" alternative-text="Approved"
+                                            title="Approved" size="xx-small" class="slds-text-align_right">
+                                        </lightning-icon>
+                                    </div>
+                                </template>
+                                <template if:false={doc.isCompleteDocusignStatus}>
+                                    <div class="slds-box slds-text-heading_xxx-small icon">
+                                        <lightning-icon icon-name="action:close" alternative-text="Closed"
+                                            title="Closed" size="xx-small" class="slds-text-align_right">
+                                        </lightning-icon>
+                                    </div>
+                                </template>
+                            </template>
+                            <template if:true={doc.isAgentAuthorisation}>
+                                <template if:true={doc.isCompleteDocusignStatus}>
+                                    <div class="slds-box slds-text-heading_xxx-small icon">
+                                        <lightning-icon icon-name="action:approval" alternative-text="Approved"
+                                            title="Approved" size="xx-small" class="slds-text-align_right">
+                                        </lightning-icon>
+                                    </div>
+                                </template>
+                                <template if:false={doc.isCompleteDocusignStatus}>
+                                    <div class="slds-box slds-text-heading_xxx-small icon">
+                                        <lightning-icon icon-name="action:close" alternative-text="Closed"
+                                            title="Closed" size="xx-small" class="slds-text-align_right">
+                                        </lightning-icon>
+                                    </div>
+                                </template>
+                            </template>
+                        </div>
+                        <div>{doc.createdDate}</div>
+                    </div>
+                </template>
+                <template if:true={isExistReplyDocs}>
+                    <div class="slds-border_top" style="border-width:2px"></div>
+                    <template for:each={replyDocs} for:item="doc">
+                        <div key={doc.title} style="display:block;border:0;font-size:0.875rem;">
+                            <div class="slds-box slds-theme_default" style="display:block;border:0;font-size:0.875rem;"
+                                key={doc.documentId}>
+                                <div
+                                    style="margin-bottom:0.5rem;display: flex;align-items: center;justify-content: space-between">
+                                    <a onclick={navigateToReplyFiles} value={doc.title}>
+                                        <u>{doc.title}</u>
+                                    </a>
+                                    <template if:true={isSendToClientAppStatus}>
+                                        <div>
+                                            <lightning-input type="checkbox" data-id={doc.title} onchange={handleCheck}
+                                                checked={doc.isCheck}></lightning-input>
+                                        </div>
+                                    </template>
+                                </div>
+                                <div>{doc.createdDate}</div>
+                            </div>
+                        </div>
+                    </template>
+                    <template if:true={isSendToClientAppStatus}>
+                        <lightning-button variant="brand" label="Send Result Email" onclick={handleSendEmail}
+                            class="slds-m-left_x-small"></lightning-button>
+                    </template>
+                </template>
+            </template>
+        </div>
+        <div slot="footer">
+            <a class="slds-card__footer-action" onclick={handleDisplayAll}>
+                View All
+            </a>
+        </div>
+    </lightning-card>
+    <template if:true={isOpenModal}>
+        <c-edit-document-modal app={application} previous-addresses={previuosAddresses}
+            last-uk-employer={lastUKEmployer} abroad-employers={abroadEmployers} latest-address={lastUKAddresses}
+            show-spinner={isShowSpinner} onhidepopup={closePopup} onchangecustomletter={regenerateCustomLetter}>
+        </c-edit-document-modal>
+    </template>
+    <template if:true={isOpenResultModal}>
+        <c-edit-result-message-modal onhideresultpopup={closeResultPopup} template-body={currentTemplate}
+            record-id={recordId} subject={emailSubject}
+            onsendresultemail={handleEventSend}></c-edit-result-message-modal>
+    </template>
+</template>

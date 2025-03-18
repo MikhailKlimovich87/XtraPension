@@ -1,0 +1,352 @@
+<apex:page readOnly="true" standardController="Application__c" extensions="CustomSummerPdf" id="ClientSummary" renderAs="advanced_pdf" standardStylesheets="false" showHeader="false" applyHtmlTag="false">
+    <html>
+        <head>
+            <style>
+                @page {
+                    size: 210mm 297mm;
+                    margin-top: 30px;
+					margin-bottom: 20px;
+                }
+				body, html {
+					font-family: "Roboto", sans-serif;
+                    height: 100%;
+					/* font-size: 11px; */
+                    position: relative;
+                    margin: 0px !important
+				}
+				table {
+					border-collapse: collapse;
+					width:100%;
+                    -fs-table-paginate: paginate;
+                    border: 1px solid black;
+				}
+                table tr {
+                    border-width: 1px;
+                    border-style: solid;
+                    border-color: ⌗000000;
+                }
+                table td {
+                    border-width: 1px;
+                    border-style: solid;
+                    border-color: ⌗000000;
+                }
+				td, th {
+					border-width: 1px;
+					border-style: solid;
+				}
+
+				th {
+					text-align:center;
+				}
+                h3 {
+					text-align: center;
+                    margin-top: 0px !important;
+                }
+				.date-col {
+					text-align: center;
+				}
+                .footer-block {
+                    margin-top: 15px;
+                    width:100%;
+                    page-break-inside: avoid;
+                }
+                .footer-table {
+                    width:40%;
+                    font-size: 12px;
+                    margin-left:auto;
+                    margin-right:auto;
+                }
+            </style>
+        </head>
+        <body>
+            <h3>{!appObj.Name}, {!appObj.First_Name__c} {!appObj.Second_Name__c}, {!appObj.Age__c}, {!appObj.Current_Address_Abroad_Country__c},
+                {!appObj.Years_Of_Work_In_The_UK__c} years - {!appObj.Package_Name__c}
+            </h3>
+            <table border="1" cellspacing="0">
+                <tr>
+	                <td width="25%">
+			            <b>Paid Reg Fee</b>
+		            </td>
+		            <td width="25%">
+            	        <apex:outputtext value="{0,date,dd MMM yyyy}">
+						    <apex:param value="{!appObj.CreatedDate}"></apex:param>
+						</apex:outputtext>
+					</td>
+					<td width="25%">
+					    <b>Form Completed</b>
+					</td>
+                    <td width="25%">
+                        <apex:outputtext value="{0,date,dd MMM yyyy}">
+					        <apex:param value="{!appObj.Form_Complete_Date__c}"></apex:param>
+					    </apex:outputtext>
+                    </td>
+				</tr>
+                <tr>
+                    <td colspan="4" style="background-color:#454444;">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td>
+				        <b>Fname</b>
+				    </td>
+                    <td>
+                        {!appObj.First_Name__c}
+                    </td>
+                    <td>
+					    <b>Occupation</b>
+					</td>
+                    <td>
+                        {!appObj.Current_Occupation__c}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+				        <b>Lname</b>
+				    </td>
+                    <td>
+                        {!appObj.Second_Name__c}
+                    </td>
+                    <td>
+				        <b>Date of Birth</b>
+				    </td>
+                    <td>
+                        <apex:outputtext value="{0,date,dd MMM yyyy}">
+				            <apex:param value="{!appObj.Date_Of_Birth__c}"></apex:param>
+				        </apex:outputtext>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+				        <b>Maiden / Prev</b>
+				    </td>
+                    <td>
+                        {!appObj.Full_Maiden_Previous_Name__c}
+                    </td>
+                    <td>
+				        <b>Nat Ins No</b>
+				    </td>
+                    <td>
+                        {!appObj.National_Insurance_Number__c}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="background-color:#454444;">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td>
+				        <b>Date of Marriage / CP</b>
+				    </td>
+                    <td>
+                        <apex:outputtext value="{0,date,dd MMM yyyy}">
+				            <apex:param value="{!appObj.Date_Of_Marriage_Or_Civil_Partnership__c}"></apex:param>
+			            </apex:outputtext>
+                    </td>
+                    <td>
+			            <b>Divorced / Widow</b>
+			        </td>
+                    <td>
+                        <apex:outputtext value="{0,date,dd MMM yyyy}">
+			                <apex:param value="{!appObj.Divorce_Date__c}"></apex:param>
+		                </apex:outputtext>
+                    </td>
+                </tr>
+                <tr>
+                     <td colspan="4" style="background-color:#454444;">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td>
+				        <b>Current Address</b>
+				    </td>
+                    <td>
+                        {!appObj.Current_Address_Abroad__Street__s}<br/>
+				        {!appObj.Current_Address_Abroad__City__s} {!appObj.Current_Address_Abroad_State__c}<br/>
+    			        {!appObj.Current_Address_Abroad__PostalCode__s}<br/>
+				        {!appObj.Current_Address_Abroad_Country__c}
+                    </td>
+                    <td>
+					    <b>Tel</b>
+					</td>
+                    <td>
+					    {!appObj.Related_Contact_Phone__c}
+                    </td>
+                </tr>
+                <tr>
+                    <td><b>PRSI Statement?</b></td>
+                    <td>
+                        <span style="{!IF(ISBLANK(appObj.Form_Complete_Date__c), 'display:none', null)};">Yes - check It</span>
+                        <span style="{!IF(ISBLANK(appObj.Form_Complete_Date__c), null, 'display:none')};">No</span>
+                    </td>
+                    <td>
+                        <b>Email</b>
+                    </td>
+                    <td>
+                        {!appObj.Email__c}
+                    </td>
+                </tr>
+            </table>
+            <div style="background-color:#454444;margin-left:0.1px">&nbsp;</div>
+            <table border="1" cellspacing="0" style="margin-top:0.1px; margin-bottom:0.1px">
+                <tr>
+                    <td>
+                        <b>UK Home Address</b>
+                    </td>
+                    <td width="18%" style="text-align:center">
+                        <b>PostCode</b>
+                    </td>
+                    <td width="18%" style="text-align:center">
+                        <b>From</b>
+                    </td>
+                    <td width="18%" style="text-align:center">
+                        <b>To</b>
+                    </td>
+                </tr>
+                <apex:repeat value="{!previousUKAdresses}" var="addr" >
+        	        <tr>
+                        <td>
+                            {!addr.addressData}
+                        </td>
+                        <td class="date-col">
+                            {!addr.postcode}
+                        </td>
+				        <td class="date-col">
+		    		        <apex:outputtext value="{0,date,dd MMM yyyy}">
+					            <apex:param value="{!addr.startDate}"></apex:param>
+							</apex:outputtext>
+						</td>
+						<td class="date-col">
+						    <apex:outputtext value="{0,date,dd MMM yyyy}">
+						        <apex:param value="{!addr.endDate}"></apex:param>
+					        </apex:outputtext>
+					    </td>
+                    </tr>
+                </apex:repeat>
+                <tr>
+                    <td>&nbsp;</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </table>
+            <div style="background-color:#454444;margin-left:0.1px">&nbsp;</div>
+            <div style="{!IF(ISBLANK(empUKObj), 'display:none', null)};">
+                <table border="1" cellspacing="0" style="margin-top:0.1px; margin-bottom:0.1px">
+                    <tr>
+                        <td colspan="3">
+                            <b><u>Last UK Work</u></b>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <b>Last UK Employer Name</b>
+                        </td>
+                        <td colspan="2">
+                            <div style="{!IF(empUKObj.Type_Of_UK_Employment__c = 'Employed', null, 'display:none')};">{!empUKObj.Employer_Name__c}</div>
+                            <div style="{!IF(empUKObj.Type_Of_UK_Employment__c != 'Employed', null, 'display:none')};">{!empUKObj.Type_Of_UK_Employment__c}</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="64%">
+                            <b>Last UK Employer Address</b>
+                        </td>
+                        <td class="date-col">
+                            <b>Start Date</b>
+                        </td>
+                        <td class="date-col">
+                            <b>End Date</b>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span style="margin-right:0px">{!empUKObj.Employers_Address__Street__s}</span><span style="{!IF(ISBLANK(empUKObj.Employers_Address__City__s), 'display:none', null)};">&#44; {!empUKObj.Employers_Address__City__s}</span><span style="{!IF(ISBLANK(empUKObj.Employers_Address__PostalCode__s), 'display:none', null)};">&#44; {!empUKObj.Employers_Address__PostalCode__s}</span>
+                        </td>
+                        <td class="date-col">
+                            <apex:outputtext value="{0,date,dd MMM yyyy}">
+                                <apex:param value="{!empUKObj.Start_Date__c}"></apex:param>
+                            </apex:outputtext>
+                        </td>
+                        <td class="date-col">
+                            <apex:outputtext value="{0,date,dd MMM yyyy}">
+                                <apex:param value="{!empUKObj.End_Date__c}"></apex:param>
+                            </apex:outputtext>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div style="background-color:#454444;margin-left:0.1px">&nbsp;</div>
+            <table border="1" cellspacing="0">
+                <tr style="{!IF(ISBLANK(empUKObj), 'display:none', null)};">
+                    <td colspan="4">
+                        <b><u>Work After UK</u></b>
+                    </td>
+                </tr>
+                <tr>
+				  	<th>
+				        Start Date
+				    </th>
+			        <th>
+			            End Date
+			        </th>
+			        <th colspan="2">
+				        Work
+			        </th>
+			    </tr>
+			    <apex:repeat value="{!empAfterUKObjList}" var="empl" >
+        	        <tr>
+				        <td class="date-col" style="width:18%">
+		    		        <apex:outputtext value="{0,date,dd MMM yyyy}">
+					            <apex:param value="{!empl.Start_Date__c}"></apex:param>
+							</apex:outputtext>
+						</td>
+						<td class="date-col" style="width:18%">
+						    <apex:outputtext value="{0,date,dd MMM yyyy}">
+						        <apex:param value="{!empl.End_Date__c}"></apex:param>
+					        </apex:outputtext>
+					    </td>
+    				    <td colspan="2" style="{!IF(OR(empl.Type_Of_After_UK_Employment__c=='Career Break',
+                                                    empl.Type_Of_After_UK_Employment__c=='Self-Employed',
+                                                    empl.Type_Of_After_UK_Employment__c=='Unemployed',
+                                                    empl.Type_Of_After_UK_Employment__c=='Family Carer',
+                                                    empl.Type_Of_After_UK_Employment__c=='Homemaker',
+                                                    empl.Type_Of_After_UK_Employment__c=='Disabled',
+                                                    empl.Type_Of_After_UK_Employment__c=='Retired'), '','display:none')};">
+						    {!empl.Type_Of_After_UK_Employment__c}
+				        </td>
+				        <td colspan="2" style="{!IF(empl.Type_Of_After_UK_Employment__c=='Employed','','display:none')};">
+						    {!empl.Employer_Name__c}<br/>
+			    		    <span>{!empl.Employers_Address__Street__s}</span><span style="{!IF(ISBLANK(empl.Employers_Address__City__s), 'display:none', null)};">, {!empl.Employers_Address__City__s}</span><span style="{!IF(ISBLANK(empl.Employers_Address__PostalCode__s), 'display:none', null)};">, {!empl.Employers_Address__PostalCode__s}</span><span style="{!IF(ISBLANK(empl.Employers_Address_Country__c), 'display:none', null)};">, {!empl.Employers_Address_Country__c}</span>
+				        </td>
+			        </tr>
+                </apex:repeat>
+            </table>
+            <div class="footer-block" id="footer">
+                <table class="footer-table" border="1" cellspacing="0">
+                    <tr style="text-align:center">
+                        <td>
+                            <b>Contact Client?</b>
+                        </td>
+                        <td>
+                            <b>Pending Client Info</b>
+                        </td>
+                        <td>
+                            <b>Sent for Docusign</b>
+                        </td>
+                        <td>
+                            <b>Sent to Printer</b>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Yes / No</td>
+                        <td rowspan="3"></td>
+                        <td rowspan="3"></td>
+                        <td rowspan="3"></td>
+                    </tr>
+                    <tr>
+                        <td>Yes / No</td>
+                    </tr>
+                    <tr>
+                        <td>Yes / No</td>
+                    </tr>
+                </table>
+            </div>
+        </body>
+    </html>
+</apex:page>

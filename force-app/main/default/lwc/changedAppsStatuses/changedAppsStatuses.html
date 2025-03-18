@@ -1,0 +1,48 @@
+<template>
+    <lightning-card title="Stage Changes">
+        <div class="slds-p-horizontal_small">
+            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                <thead>
+                    <tr class="slds-line-height_reset">
+                        <th class="" scope="col">
+                            <div class="slds-truncate" title="Changes">Changes</div>
+                        </th>
+                        <th class="" scope="col">
+                            <div class="slds-truncate" title="This Week">This Week</div>
+                        </th>
+                        <th class="" scope="col">
+                            <div class="slds-truncate" title="Last Week">Last Week</div>
+                        </th>
+                        <th class="" scope="col">
+                            <div class="slds-truncate" title="Current Mth">Current Mth</div>
+                        </th>
+                        <th class="" scope="col">
+                            <div class="slds-truncate" title="Last Mth">Last Mth</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template for:each={appStatuses} for:item="status">
+                        <tr key={status.name} class="slds-hint-parent">
+                            <td data-label="Changes">
+                                <div class="slds-truncate">{status.name}</div>
+                            </td>
+                            <td data-label="This Week">
+                                <div class="slds-truncate">{status.quantityPerThisWeek}</div>
+                            </td>
+                            <td data-label="Last Week">
+                                <div class="slds-truncate">{status.quantityPerLastWeek}</div>
+                            </td>
+                            <td data-label="Current Mth">
+                                <div class="slds-truncate">{status.quantityPerCurrentMonth}</div>
+                            </td>
+                            <td data-label="Last Mth">
+                                <div class="slds-truncate">{status.quantityPerLastMonth}</div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </lightning-card>
+</template>

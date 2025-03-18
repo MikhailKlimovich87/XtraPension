@@ -1,0 +1,13 @@
+<template>
+    <lightning-modal-header label="Edit Address"></lightning-modal-header>
+    <lightning-modal-body>
+        <lightning-input-address address-label="Address" street-label="Street" city-label="City" country-label="Country"
+            province-label="State" postal-code-label="PostalCode" street={address.street} city={address.city}
+            country={address.country} province={address.state} postal-code={address.postalCode}
+            country-options={currentCountries} field-level-help="Help Text for inputAddress field">
+        </lightning-input-address>
+    </lightning-modal-body>
+    <lightning-modal-footer>
+        <lightning-button label="OK"></lightning-button>
+    </lightning-modal-footer>
+</template>

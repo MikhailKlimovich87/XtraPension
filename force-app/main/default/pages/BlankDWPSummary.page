@@ -1,0 +1,282 @@
+<apex:page readOnly="true" standardController="Application__c" id="BlankDWPInfo" renderAs="advanced_pdf" standardStylesheets="false" showHeader="false" applyHtmlTag="false">
+    <html>
+        <head>
+            <style>
+                @page {
+                    size: 210mm 297mm;
+                    margin-top: 20px;
+					margin-bottom: 20px;
+                    margin-left: 60px;
+                    margin-right: 20px;
+                }
+				body, html {
+					font-family: "Roboto", sans-serif;
+                    height: 100%;
+					font-size: 13px;
+                    position: relative;
+                    margin: 0px !important
+				}
+				table {
+					border-collapse: separate;
+                    border-spacing:0;
+					width:98%;
+                    -fs-table-paginate: paginate;
+                    margin-left: 30px;
+                    margin-left: 10px;
+				}
+                table tr {
+                    border-color: ⌗000000;
+                    
+                }
+                table td {
+                    border-color: ⌗000000;
+                    position: relative; 
+                    padding: 7px;
+                }
+                .blank-line {
+                    padding: 2px !important;
+                    background-color:#d0d3d4;
+                }
+                .agent-detail {
+                    padding-top: 20px!important;
+                    padding-bottom: 20px!important;
+                }
+				td, th {
+					border-style: solid;
+				}
+
+				th {
+					text-align:center;
+				}
+                h4 {
+					text-align: center;
+                    margin-top: 0px !important;
+                }
+				.date-col {
+					text-align: center;
+				}
+                .footer-block {
+                    margin-top: 15px;
+                    width:98%;
+                    page-break-inside: avoid;
+                    
+                }
+                .footer-table {
+                    width:40%;
+                    font-size: 8px;
+                    margin-left:auto;
+                    margin-right:auto;
+                }
+                .footer-data {
+                    padding-left:30px
+                }
+            </style>
+        </head>
+        <body>
+            <h3 style="text-align:center"><u>Summary of Information Needed for TELECLAIM by Phone to Dept of Work &amp; Pensions</u></h3>
+            <table border="1" cellspacing="0">
+                <tr>
+	                <td width="25%" style="padding-right: 10px;">
+			            &nbsp;<b>Your Tel:</b>
+		            </td>
+		            <td width="25%">
+					</td>
+					<td width="25%">
+					    <b>Your Email:</b>
+					</td>
+                    <td width="25%">
+                    </td>
+				</tr>
+                <tr>
+                    <td colspan="4" class="blank-line">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td width="25%">
+			            <b>Full Name:</b>
+		            </td>
+		            <td width="25%">
+					</td>
+					<td width="25%">
+					    <b>National Insurance No:</b>
+					</td>
+                    <td width="25%">
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="blank-line">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td width="25%">
+			            <b>Maiden Name:</b>
+		            </td>
+		            <td width="25%">
+					</td>
+					<td width="25%">
+					    <b>Date of Birth:</b>
+					</td>
+                    <td width="25%"></td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="blank-line">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td width="25%">
+			            <b>Marital Status:</b>
+		            </td>
+		            <td width="25%">
+					</td>
+					<td width="25%">
+					    <b>Date of this Event:</b>
+					</td>
+                    <td width="25%">
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="blank-line">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td width="25%">
+			            <b>Last UK Employer Name:</b>
+		            </td>
+		            <td width="25%">
+					</td>
+					<td width="25%" class="agent-detail">
+					    <b>Last UK Employer Address:</b>
+					</td>
+                    <td width="25%">
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="blank-line">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td>
+                        <b>Last UK Work:</b>
+                    </td>
+                    <td>
+                    </td>
+                    <td>&nbsp; </td>
+                    <td>&nbsp; </td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="blank-line">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td>
+                        <b>Left The UK:</b>
+                    </td>
+                    <td>
+                    </td>
+                    <td>&nbsp; </td>
+                    <td>&nbsp; </td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="blank-line">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td class="agent-detail">
+                        <b>Last UK Home Address:</b>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                        <b>Current Address Abroad:</b>
+                    </td>
+                    <td>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="blank-line">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td colspan="4" >
+                        <b>Write down your FOREIGN PRSI / Social Security / Social Insurance Number(s):</b><br/><br/>
+                        <div>DWP will contact their equivalent agency (eg Social Security, Dept of Social Protection etc) to confirm your work
+                            record outside the UK to ensure you receive everything you are entitled to in your UK State pension.</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <b>PPSN (Ireland)</b>
+                    </td>
+                    <td></td>
+                    <td>
+                        <b>TFN (Australia)</b>
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>
+                        <b>SSN (USA)</b>
+                    </td>
+                    <td></td>
+                    <td>
+                        <b>Other:</b>
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="blank-line">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="agent-detail">
+                        <b>Give the DWP Agent Your Bank Details - in any country - to Receive UK State Pension Income:</b>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <b>Account Name:</b>
+                    </td>
+                    <td></td>
+                    <td>
+                        <b>IBAN:</b>
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>
+                        <b>Bank Name:</b>
+                    </td>
+                    <td></td>
+                    <td>
+                        <b>Sort Code:</b>
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>
+                        <b>Bank Address:</b>
+                    </td>
+                    <td rowspan="2"></td>
+                    <td>
+                        <b>Account:</b>
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td>
+                        <b>SWIFT / BIC:</b>
+                    </td>
+                    <td></td>
+                </tr>
+            </table>
+            <div class="footer-block">
+                <div>
+                    <b><ins>IMPORTANT!</ins></b>
+                </div>
+                <br/>
+                <div>
+                    1) Tell the DWP agent that you want to <b>pay Voluntary National Insurance Contributions</b> &amp; to <b>EMAIL</b> you a <b>‘SHORTFALL TABLE’</b><br/>
+                    <br/>    
+                    2) <b>Ask the DWP agent</b> that when the International Pension Centre Team (IPC) email you regarding paying Voluntary
+                    Contributions in a few months, <b>that your representative be copied by email</b> on <b>NICS@JGBAGLASGOW.CO.UK</b>                
+                </div>
+                <br/>
+                <div class="footer-data"><i>Note: We ask to be copied as the International Pension Centre frequently offer only the more expensive Class 3 rate in
+                    ERROR so a fast appeal may be needed in order to save you thousands.</i>
+                </div>
+            </div>
+        </body>
+    </html>
+</apex:page>

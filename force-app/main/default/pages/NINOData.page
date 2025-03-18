@@ -1,0 +1,88 @@
+<apex:page readOnly="true" standardController="Application__c" id="NINOPageData" extensions="GetNINOPdf" sidebar="false" renderAs="advanced_pdf" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+                @page {
+                    size: A4;
+                    margin-top: 260px;
+                    margin-bottom: 40px;
+                    @top-center {
+                        content: element(header);
+                    }
+                    @bottom-left {
+                        content: element(footer);
+                    }
+                }
+                div.header {
+                    display: block;
+                    padding-left: 15px;
+                    padding-top: 35px;
+                    padding-bottom: 120px;
+                    position: running(header);
+                }
+                div.footer {
+                    position: running(footer);
+                    width: 100%;
+                    margin: 1px;
+                    text-align: center;
+                    font-size:12pt;
+                    /* height:100%; */
+                }
+                body {
+                    font-family: "Helvetica", sans-serif;
+                    font-size: 12pt;
+                }
+                table{
+                    width:100%;
+                    border-bottom-width: 2px;
+                    border-bottom-style: solid;
+                }
+                .header-text{
+                    font-size: 18pt;
+                    text-align:right;
+                }
+                .main-container{
+                    padding-left:10px;
+                    /* padding-top: 120px;
+                    padding-bottom: 100px; */
+                }
+                .title{
+                    font-size: 18pt;
+                }
+                .personal-data{
+                    padding-left:40px;
+                }
+                .info-block{
+                    font-size: 12pt;
+                    padding-left:40px;
+                }
+                .previous-address{
+                    padding-left:40px;
+                }
+                .pagenumber:before {
+                    content: counter(page);
+                }
+                .pagecount:before {
+                    content: counter(pages);
+                }
+                #rectangle{
+                    width:9.7cm;
+                    height:1.6cm;
+                    border:2px solid black;
+                }
+                .rectangle-date{
+                    float:left;
+                    width:1.12cm;
+                    height:1.19cm;
+                    border:2px solid black;
+                    margin-left:5px
+                }
+            </style>
+        </head>
+        <body>
+            <apex:include pageName="NINOPageInstructions"/>
+            <div style="page-break-after: always"/>
+            <apex:include pageName="NINOPageData"/>
+        </body>
+    </html>
+</apex:page>

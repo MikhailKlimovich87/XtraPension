@@ -1,0 +1,35 @@
+table tr td, th {
+    font-size: 12px;
+}
+
+table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+thead {
+    z-index: 1;
+}
+
+.checkbox-col {
+    width: 3%
+}
+
+.date-col {
+    width: 6%
+}
+
+.fixed-header thead {
+    position: sticky;
+    top: 0;
+    z-index: 1 !important;
+}
+
+.table-block {
+    height: 360px;
+    overflow: auto;
+}
+/* 
+lightning-button-icon {
+    z-index: 100 !important;
+} */

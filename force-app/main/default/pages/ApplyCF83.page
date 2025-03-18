@@ -1,0 +1,1275 @@
+<apex:page readOnly="true" standardController="Application__c" extensions="ApplicationPdf" id="ApplyCF83" renderAs="advanced_pdf" standardStylesheets="false" showHeader="false" applyHtmlTag="false" >
+    <html>
+        <head>
+            <style>
+                @page {
+                    size: 210mm 381mm;
+					margin-top: 6px;
+					margin-bottom: 20px;
+                    @bottom-center {
+                        content: element(footer);
+                    }
+                }
+
+                h1 {
+                    color: #3B8A7F;
+                    font-size: 22px;
+                    font-family: "Roboto", sans-serif;
+					float: right;
+					text-align: right;
+                }
+
+                h2 {
+                    color: #3B8A7F;
+                    font-size: 20px;
+                    font-family: "Roboto", sans-serif;
+					margin-top: 5px;
+					margin-bottom: 0px;
+                }
+
+                h3 {
+                    color: #3B8A7F;
+                    font-size: 16px;
+                    font-family: "Roboto", sans-serif;
+					margin-top: 2px;
+					margin-bottom: 10px;
+                }
+
+                p {
+                    font-size: 12px;
+                    font-family: "Roboto", sans-serif;
+					margin-bottom: 5px;
+					margin-top: 5px;
+
+                }
+
+                span {
+                    font-size: 11px;
+                    font-family: "Roboto", sans-serif;
+                }
+
+                .header {
+                    /* text-align: right; */
+                }
+
+                .divider {
+                    width: 100%;
+                    height: 5px;
+                    background-color: #3B8A7F;
+					margin-top: 10px;
+                }
+
+                div.footer {
+                    position: running(footer);
+                }
+
+                .pagenumber:before {
+                    content: counter(page);
+                }
+
+                .section {
+                    display: inline-block;
+                    width: 49%;
+
+                    padding: 5px 0 7px 0;
+                    margin: 5px 0px 0px 0px;
+
+
+                    background-color: #eff6f5;
+                    border: solid 1px #A7CBC5;
+                }
+
+                .section1 {
+                    display: inline-block;
+                    width: 49%;
+
+                    padding: 10px 0 5px 0;
+                    margin: 0;
+                }
+
+                .big-section {
+                    float: left;
+                    display: inline-block;
+                    width: 100%;
+
+                    padding: 0;
+                    margin: 0;
+
+                    background-color: #eff6f5;
+                    border: solid 1px #A7CBC5;
+                }
+
+                .section-header {
+                    margin-left: 20px;
+                }
+
+                .insection {
+                    padding-bottom: 10px;
+                }
+
+                .insection-number {
+                    padding-left: 8px;
+                    background-color: white;
+                    border: solid 1px #A7CBC5;
+                }
+
+                .insection-body {
+                    padding: 2px 20px;
+                }
+
+                .insection-body1 {
+                    padding: 6px 5px;
+                }
+
+                .line-input {
+                    border: solid 1px #A7CBC5;
+                    background-color: white;
+                    padding: 2px;
+					min-height: 17px;
+                }
+
+                .line-input-next {
+                    border-left: solid 1px #A7CBC5;
+                    border-right: solid 1px #A7CBC5;
+                    border-bottom: solid 1px #A7CBC5;
+                    background-color: white;
+                    padding: 2px;
+					min-height: 17px;
+
+                }
+
+                .part-input {
+                    display: inline-block;
+                    border: solid 1px #A7CBC5;
+                    background-color: white;
+                    padding: 0px 4px 0px 4px;
+					min-height: 17px;
+					min-width: 7px;
+                }
+
+				.margin-left-large {
+					margin-left: 10px;
+				}
+
+				.margin-left-small {
+					margin-left: 1px;
+
+				}
+
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div>
+                    <apex:image value="{!$Resource.HMRCLogo}" width="15%"/>
+                    <h1>Application to pay <br/> National Insurance contributions abroad</h1>
+                </div>
+                <div class="divider"></div>
+            </div>
+
+            <div>
+                <h2>How to complete this form</h2>
+                <p>Read the leaflet NI38 Social Security abroad and the notes on pages 31 before you complete this form.<br></br>
+                Use capital letters, enter dates as DD MM YYYY, tick the right boxes and use black ballpoint pen.<br></br>
+                Read, then sign and date the declaration at Part 8 before you send the completed form to us, or we’ll have to return it to you.</p>
+            </div>
+
+            <div style="width: 100%;">
+                <!--First section - 1 About you-->
+                <div class="section" style="float: left; height: 715px">
+                    <h3 class="section-header">1 About you</h3>
+                    <div class="insection">
+                        <div>
+                            <span class="insection-number">1</span>
+                            <span>Your full name (including your title, Mr, Mrs, Miss, Ms)</span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="line-input">
+                                <span>{!appObj.Salutation__c} {!appObj.First_Name__c}</span>
+                            </div>
+							<div class="line-input-next">
+                                <span>{!appObj.Second_Name__c}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span class="insection-number">2</span>
+                            <span>Date of birth DD MM YYYY</span>
+                        </div>
+                        <div class="insection-body">
+							<div class="part-input">
+								<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Birth__c), 2), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(TEXT(appObj.Date_Of_Birth__c), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-large">
+								<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Birth__c), 5), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Birth__c), 4), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-large">
+								<span>{!LEFT(TEXT(appObj.Date_Of_Birth__c), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Birth__c), 2), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Birth__c), 3), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Birth__c), 4), 1)}</span>
+							</div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span class="insection-number">3</span>
+                            <span>Your UK address</span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="line-input">
+                           		<span>{!appObj.Last_UK_Home_Address__Street__s}</span>
+							</div>
+                            <div class="line-input-next">
+                            	<span>{!appObj.Last_UK_Home_Address__City__s}</span>
+							</div>
+                            <div class="line-input-next">
+                            	<span>{!appObj.Last_UK_Home_Address__CountryCode__s} {!appObj.Last_UK_Home_Address__StateCode__s}</span>
+							</div>
+                            <div class="line-input-next">
+                            	<span style="color:#3B8A7F"> Postcode </span>
+                            	<span>{!appObj.Last_UK_Home_Address__PostalCode__s}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span class="insection-number">4</span>
+                            <span>Do you have a husband, wife or civil partner?</span>
+                        </div>
+                        <div class="insection-body">
+                            <span>Yes</span>
+                            <span><apex:image value="/img/checkbox_checked.gif" rendered="{!appObj.Are_You_Single__c==true}" style="background:#eff6f5; width:30px; height:30px;" /></span>
+                            <span><apex:image value="/img/checkbox_unchecked.gif" rendered="{!appObj.Are_You_Single__c==false}" style="background:#eff6f5; width:30px; height:30px;" /></span>
+                            <span>No</span>
+                            <span><apex:image value="/img/checkbox_unchecked.gif" rendered="{!appObj.Are_You_Single__c==true}" style="background:#eff6f5; width:30px; height:30px;" /></span>
+                            <span><apex:image value="/img/checkbox_checked.gif" rendered="{!appObj.Are_You_Single__c==false}" style="background:#eff6f5; width:30px; height:30px;" /></span>
+                        </div>
+                        <div class="insection-body">
+                            <span>If Yes, when did you get married or form a
+                                civil partnership?<br/></span>
+							<div class="part-input">
+								<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Marriage_Or_Civil_Partnership__c), 2), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(TEXT(appObj.Date_Of_Marriage_Or_Civil_Partnership__c), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-large">
+								<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Marriage_Or_Civil_Partnership__c), 5), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Marriage_Or_Civil_Partnership__c), 4), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-large">
+								<span>{!LEFT(TEXT(appObj.Date_Of_Marriage_Or_Civil_Partnership__c), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Marriage_Or_Civil_Partnership__c), 2), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Marriage_Or_Civil_Partnership__c), 3), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Marriage_Or_Civil_Partnership__c), 4), 1)}</span>
+							</div>
+                        </div>
+                        <div class="insection-body margin-left-small">
+                            <span>Did you change your name when you married or formed a civil partnership?<br/></span>
+                            <div>
+                            <span>Yes</span>
+                            <span><apex:image value="/img/checkbox_checked.gif" rendered="{!appObj.Did_You_Change_Name__c==true}" style="background:#eff6f5; width:30px; height:30px;" /></span>
+                            <span><apex:image value="/img/checkbox_unchecked.gif" rendered="{!appObj.Did_You_Change_Name__c==false}" style="background:#eff6f5; width:30px; height:30px;" /></span>
+                            <span>No</span>
+                            <span><apex:image value="/img/checkbox_unchecked.gif" rendered="{!appObj.Did_You_Change_Name__c==true}" style="background:#eff6f5; width:30px; height:30px;" /></span>
+                            <span><apex:image value="/img/checkbox_checked.gif" rendered="{!appObj.Did_You_Change_Name__c==false}" style="background:#eff6f5; width:30px; height:30px;" /></span>
+                            </div>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                                <span>If Yes, what was your former name?<br/></span>
+                                <div class="line-input">
+                                    <span>{!appObj.Full_Maiden_Previous_Name__c}</span>
+                                </div>
+								<div class="line-input-next" style="height:17px ">
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span class="insection-number">5</span>
+                            <span>Are you divorced, widowed, has your civil partnership been dissolved or are you a surviving civil partner?</span>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                            <span>Yes</span>
+                            <span><apex:image value="/img/checkbox_checked.gif" rendered="{!appObj.Are_You_Divorced__c==true}" style="background:#eff6f5; width:30px; height:30px;" /></span>
+                            <span><apex:image value="/img/checkbox_unchecked.gif" rendered="{!appObj.Are_You_Divorced__c==false}" style="background:#eff6f5; width:30px; height:30px;" /></span>
+                            <span>No</span>
+                            <span><apex:image value="/img/checkbox_unchecked.gif" rendered="{!appObj.Are_You_Divorced__c==true}" style="background:#eff6f5; width:30px; height:30px;" /></span>
+                            <span><apex:image value="/img/checkbox_checked.gif" rendered="{!appObj.Are_You_Divorced__c==false}" style="background:#eff6f5; width:30px; height:30px;" /></span>
+
+
+
+                            </div>
+                        </div>
+                        <div class="insection-body">
+                            <span>If Yes, on what date? DD MM YYYY<br/></span>
+							<div class="part-input">
+								<span>{!LEFT(RIGHT(TEXT(appObj.Divorce_Date__c), 2), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(TEXT(appObj.Divorce_Date__c), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-large">
+								<span>{!LEFT(RIGHT(TEXT(appObj.Divorce_Date__c), 5), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!LEFT(RIGHT(TEXT(appObj.Divorce_Date__c), 4), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-large">
+								<span>{!LEFT(TEXT(appObj.Divorce_Date__c), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(LEFT(TEXT(appObj.Divorce_Date__c), 2), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(LEFT(TEXT(appObj.Divorce_Date__c), 3), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(LEFT(TEXT(appObj.Divorce_Date__c), 4), 1)}</span>
+							</div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span class="insection-number">6</span>
+                            <span>Your National Insurance number</span>
+                        </div>
+                        <div class="insection-body">
+							<div class="part-input margin-left-small">
+								<span>{!LEFT(appObj.National_Insurance_Number__c, 1)}</span>
+							</div><!--
+							--><div class="part-input">
+								<span>{!LEFT(RIGHT(appObj.National_Insurance_Number__c, 12), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-large">
+								<span>{!LEFT(RIGHT(appObj.National_Insurance_Number__c, 10), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!LEFT(RIGHT(appObj.National_Insurance_Number__c, 9), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!LEFT(RIGHT(appObj.National_Insurance_Number__c, 7), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!LEFT(RIGHT(appObj.National_Insurance_Number__c, 6), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-large">
+								<span>{!LEFT(RIGHT(appObj.National_Insurance_Number__c, 4), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!LEFT(RIGHT(appObj.National_Insurance_Number__c, 3), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-large">
+								<span>{!RIGHT(appObj.National_Insurance_Number__c, 1)}</span>
+							</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!--Second section - 2 About your absence abroad-->
+				<!-- <div style="display:block"> -->
+                <div class="section" style="height: 490px; margin-left:10px">
+                    <h3 class="section-header">2 About your absence abroad</h3>
+                    <div class="insection">
+                        <div>
+                            <span class="insection-number">7</span>
+                            <span>Name of the country you’re going to</span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="line-input">
+                                <span>{!appObj.Current_Address_Abroad__CountryCode__s}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span class="insection-number">8</span>
+                            <span>Your address abroad</span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="line-input">
+                           		<span>{!appObj.Current_Address_Abroad__Street__s}</span>
+							</div>
+                            <div class="line-input-next">
+                            	<span>{!appObj.Current_Address_Abroad__City__s}</span>
+							</div>
+                            <div class="line-input-next">
+                            	<span>{!appObj.Current_Address_Abroad__CountryCode__s} {!appObj.Current_Address_Abroad__StateCode__s}</span>
+							</div>
+                            <div class="line-input-next">
+                            	<span>{!appObj.Current_Address_Abroad__PostalCode__s}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span class="insection-number">9</span>
+                            <span>While you’re abroad, which address would you prefer us to use to contact you?</span>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+
+
+
+                                <span>UK</span>
+                                <span><apex:image value="/img/checkbox_unchecked.gif" rendered="true" /></span>
+                                <span>Abroad</span>
+                                <span><apex:image value="/img/checkbox_checked.gif" rendered="true" /></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span class="insection-number">10</span>
+                            <span>On what date did or will you leave the UK? DD MM YYYY</span>
+                        </div>
+                        <div class="insection-body">
+							<div class="part-input">
+								<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 2), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-large">
+								<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 5), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 4), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-large">
+								<span>{!LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 2), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 3), 1)}</span>
+							</div><!--
+							--><div class="part-input margin-left-small">
+								<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 4), 1)}</span>
+							</div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span class="insection-number">11</span>
+                            <span>How long do you intend to stay abroad?</span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="line-input">
+                                <span><apex:outputtext value="INDEFINITELY">
+                                </apex:outputtext></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span class="insection-number">12</span>
+                            <span>Are you ordinarily resident in the UK? Make sure you read the section on ordinary residence on pages 6 and 7 in leaflet NI38 before you answer this question</span>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                                <span>Yes</span>
+                                <span><apex:image value="/img/checkbox_unchecked.gif" rendered="true" /></span>
+                                <span>No</span>
+                                <span><apex:image value="/img/checkbox_checked.gif" rendered="true" /></span>
+                            </div>
+                        </div>
+                    </div>
+				</div>
+				<div class="section" style="height:205px; margin-left:10px">
+					<h3 class="section-header">3 Employment</h3>
+					<div class="insection">
+						<div>
+							<span class="insection-number">13</span>
+							<span>Before leaving the UK were you</span>
+						</div>
+						<div class="insection-body">
+							<table style="width:100%">
+								<tr>
+									<td>
+										<span>a) employed? </span>
+									</td>
+									<td>
+										<span><apex:image value="/img/checkbox_unchecked.gif" rendered="true" /></span>
+									</td>
+									<td>
+										<span>Go to questions 14 and 15</span>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<span>b) self-employed? </span>
+									</td>
+									<td>
+										<span><apex:image value="/img/checkbox_unchecked.gif" rendered="true" /></span>
+									</td>
+									<td>
+										<span>Go to questions 16</span>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<span>c) unemployed? </span>
+									</td>
+									<td>
+										<span><apex:image value="/img/checkbox_unchecked.gif" rendered="true" /></span>
+									</td>
+									<td>
+										<span>Go to questions 17</span>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<span>d) not employed? </span>
+									</td>
+									<td>
+										<span><apex:image value="/img/checkbox_unchecked.gif" rendered="true" /></span>
+									</td>
+									<td>
+										<span>Go to questions 18</span>
+									</td>
+								</tr>
+							</table>
+							<br />
+							<div style="float:right">
+								<span>Please turn over</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- </div> -->
+            </div>
+
+
+			<div style="width:100%; clear:both; padding-top: 12px; padding-bottom: 15px">
+
+				Do not detach _________________________________________________________________________
+			</div>
+            <div class="big-section"  style=" height: 450px; margin-bottom: 15px">
+				<div style="padding-left: 10px; padding-right:10px; padding-top:5px">
+					<apex:image value="{!$Resource.HMRCLogo}" width="15%"/>
+					<h2 style="float:right; font-size:17.5px">Instruction to your bank or building society to pay by Direct Debit</h2>
+				</div>
+				<div>
+					<span style="padding-left: 10px;">Fill in the form and send to: PT Operations North East England, HM Revenue and Customs, BX9 1AN, United Kingdom.</span>
+				</div>
+                <div class="section1" style="float: left;">
+                        <div class="insection-body">
+                            <div>
+                            	<span>Name(s) of account holder(s)</span>
+                        	</div>
+                            <div class="line-input">
+                                <span>{!appObj.First_Name__c} {!appObj.Second_Name__c}</span>
+                            </div>
+                        </div>
+                    <div class="insection-body">
+                            <div>
+                            	<span>Bank/building society account number</span>
+                       	 	</div>
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                            <div class="part-input">
+                                  7
+                            </div>
+                            <div class="part-input">
+                                8
+                            </div>
+                        </div>
+
+                        <div class="insection-body">
+                            <div>
+                                <span>Branch sort code</span>
+                        	</div>
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <span> - </span>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                             <span> - </span>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                        </div>
+                    <div class="insection-body">
+                            <div>
+                                <span>Name and full postal address of your bank or building society<br/></span>
+                                <div class="line-input">
+                                    <span>To: The Manager</span><span style="float:right; margin-top: 4px">Bank/building society</span>
+                                </div>
+                                <div class="line-input-next">
+                                    <span>Address</span>
+                                </div>
+								<div class="line-input-next">
+                                </div>
+								<div class="line-input-next">
+                                </div>
+                                <div class="line-input-next">
+                                    <span style="color:#3B8A7F">Postcode</span>
+                                </div>
+                            </div>
+                        </div>
+                </div>
+                <div class="section1" style="float: right">
+                        <div class="insection-body">
+                            <div>
+                            	<span>Service user number</span>
+                        	</div>
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                        </div>
+                    <div class="insection-body">
+                            <div>
+                            	<span>Bank/building society account number</span>
+                       	 	</div>
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                            <div class="part-input">
+                                  7
+                            </div>
+                            <div class="part-input">
+                                8
+                            </div>
+                        </div>
+
+                        <div class="insection-body">
+                            <div>
+                                <span>Reference</span>
+                        	</div>
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <span> - </span>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                             <span> - </span>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                            <div class="part-input">
+                                7
+                            </div>
+                            <div class="part-input">
+                                8
+                            </div>
+                            <div class="part-input">
+                                9
+                            </div>
+                        </div>
+                    <div class="insection-body">
+						<div>
+							<span>Instruction to your bank or building society<br/>
+								Please pay HM Revenue and Customs Direct Debits from the
+								account detailed in this instruction, subject to the safeguards
+								assured by The Direct Debit Guarantee. I understand that this
+								instruction may remain with HM Revenue and Customs and, if so,
+								details will be passed electronically to my bank/building society<br/>
+							</span>
+							<div class="line-input">
+								<span style="color:#A7CBC5 ">Signature</span> <span style="color: white; display: block; text-align:center; font-size: 22px">\s1\ </span>
+								<span style="color:#A7CBC5">Date</span> <span style="color: white; display: block; text-align:center; font-size: 22px"> \d1\ </span>
+							</div>
+						</div>
+                    </div>
+                </div>
+				<!-- <div style="clear:both; font-size:10px; padding-bottom:5px; padding-left: 10px;">
+					<span>Banks and building societies may not accept Direct Debit instructions for some types of account.</span>
+				</div> -->
+            </div>
+			<div style="padding-top: 50px">
+
+				<table style="width:100%;">
+					<tr>
+						<td>
+							<div class="section" style="height: 425px; width:99%">
+								<h3 class="section-header">3 Employment continued</h3>
+								<div class="insection">
+									<div>
+										<span class="insection-number">14</span>
+										<span>What date did you last pay National Insurance
+											contributions? DD MM YYYY</span>
+									</div>
+									<div class="insection-body">
+										<div class="part-input">
+											<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 2), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-large">
+											<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 5), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 4), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-large">
+											<span>{!LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 2), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 3), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 4), 1)}</span>
+										</div>
+									</div>
+								</div>
+								<div class="insection">
+									<div>
+										<span class="insection-number">15</span>
+										<span>Your employer’s address</span>
+									</div>
+									<div class="insection-body">
+										<div class="line-input">
+											<span>{!empUKObj.Employers_Address__Street__s}</span>
+										</div>
+										<div class="line-input-next">
+											<span>{!empUKObj.Employers_Address__City__s}</span>
+										</div>
+										<div class="line-input-next">
+											<span>{!empUKObj.Employers_Address__CountryCode__s} {!empUKObj.Employers_Address__StateCode__s}</span>
+										</div>
+										<div class="line-input-next">
+											<span style="color:#3B8A7F"> Postcode </span>
+											<span>{!empUKObj.Employers_Address__PostalCode__s}</span>
+										</div>
+									</div>
+								</div>
+								<div class="insection">
+									<div>
+										<span class="insection-number">16</span>
+										<span>What date did your self-employment end? DD MM YYYY</span>
+									</div>
+									<div class="insection-body">
+										<div class="part-input">
+											<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 2), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-large">
+											<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 5), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 4), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-large">
+											<span>{!LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 2), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 3), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 4), 1)}</span>
+										</div>
+									</div>
+								<div class="insection">
+									<div>
+										<span class="insection-number">17</span>
+										<span>When did you last claim Jobseeker’s Allowance?
+											DD MM YYYY</span>
+									</div>
+									<div class="insection-body">
+										<div class="part-input">
+											<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 2), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-large">
+											<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 5), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 4), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-large">
+											<span>{!LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 2), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 3), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c), 4), 1)}</span>
+										</div>
+									</div>
+								</div>
+								</div>
+							</div>
+							<div class="section" style="height: 660px; width:99%">
+								<h3 class="section-header">4 Self-employment/employment abroad</h3>
+								<div class="insection">
+									<div>
+										<span class="insection-number">18</span>
+										<span>Are you or will you be working abroad for an employer?</span>
+									</div>
+									<div class="insection-body">
+										<div>
+											<span>Yes</span>
+											<span><apex:image value="/img/checkbox_checked.gif" rendered="true" style="background:#eff6f5; width:30px; height:30px;" /></span>
+											<span>No</span>
+											<span><apex:image value="/img/checkbox_unchecked.gif" rendered="true" style="background:#eff6f5; width:30px; height:30px;" /></span>
+
+										</div>
+										<div>
+											<span>If Yes, what is their UK address?</span>
+										</div>
+											<div class="line-input" style="height:17px">
+												<span>N/A</span>
+											</div>
+											<div class="line-input-next" style="height:17px"></div>
+											<div class="line-input-next" style="height:17px"></div>
+											<div class="line-input-next" style="height:17px">
+												<span style="color:#3B8A7F"> Postcode </span>
+												<span></span>
+											</div>
+										<div>
+											<span>What is their address abroad?</span>
+										</div>
+											<div class="line-input">
+												<span>{!empAfterUKObj.Employers_Address__Street__s}</span>
+											</div>
+											<div class="line-input-next">
+												<span>{!empAfterUKObj.Employers_Address__City__s}</span>
+											</div>
+											<div class="line-input-next">
+												<span>{!empAfterUKObj.Employers_Address__CountryCode__s} {!empAfterUKObj.Employers_Address__StateCode__s}</span>
+											</div>
+											<div class="line-input-next">
+												<span style="color:#3B8A7F"> Postcode </span>
+												<span>{!empAfterUKObj.Employers_Address__PostalCode__s}</span>
+											</div>
+										<div>
+											<span>Who do you have your contract with?</span>
+										</div>
+										<div class="line-input">
+											<span>{!empAfterUKObj.Employer_Name__c}</span>
+										</div>
+
+										<div>
+											<span>What date did your employment abroad start?
+												DD MM YYYY</span>
+										</div>
+										<div class="part-input">
+											<span>{!LEFT(RIGHT(TEXT(empAfterUKObj.Start_Date__c), 2), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(TEXT(empAfterUKObj.Start_Date__c), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-large">
+											<span>{!LEFT(RIGHT(TEXT(empAfterUKObj.Start_Date__c), 5), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!LEFT(RIGHT(TEXT(empAfterUKObj.Start_Date__c), 4), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-large">
+											<span>{!LEFT(TEXT(empAfterUKObj.Start_Date__c), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(LEFT(TEXT(empAfterUKObj.Start_Date__c), 2), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(LEFT(TEXT(empAfterUKObj.Start_Date__c), 3), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(LEFT(TEXT(empAfterUKObj.Start_Date__c), 4), 1)}</span>
+										</div>
+									</div>
+								</div>
+								<div class="insection">
+									<div>
+										<span class="insection-number">19</span>
+										<span>Are you or will you be self-employed abroad?</span>
+									</div>
+									<div class="insection-body">
+
+											<div>
+												<span>Yes</span>
+												<span><apex:image value="/img/checkbox_checked.gif" rendered="false" style="background:#eff6f5; width:30px; height:30px;" /></span>
+												<span><apex:image value="/img/checkbox_unchecked.gif" rendered="true" style="background:#eff6f5; width:30px; height:30px;" /></span>
+												<span>No</span>
+												<span><apex:image value="/img/checkbox_unchecked.gif" rendered="false" style="background:#eff6f5; width:30px; height:30px;" /></span>
+												<span><apex:image value="/img/checkbox_checked.gif" rendered="true" style="background:#eff6f5; width:30px; height:30px;" /></span>
+											</div>
+											<div>
+												<span>If Yes, what date did/will your self-employment
+													abroad start? DD MM YYYY</span>
+											</div>
+										<div class="part-input">
+											<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c + 2), 2), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c + 2), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-large">
+											<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c + 2), 5), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!LEFT(RIGHT(TEXT(appObj.Date_Of_Leaving_Last_UK__c + 2), 4), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-large">
+											<span>{!LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c + 2), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c + 2), 2), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c + 2), 3), 1)}</span>
+										</div><!--
+										--><div class="part-input margin-left-small">
+											<span>{!RIGHT(LEFT(TEXT(appObj.Date_Of_Leaving_Last_UK__c + 2), 4), 1)}</span>
+										</div>
+									</div>
+								</div>
+								<div class="insection">
+									<div>
+										<span class="insection-number">20</span>
+										<span>Are you or will you be employed directly by an overseas
+											government or international organisation?</span>
+									</div>
+									<div class="insection-body">
+
+											<div>
+												<span>Yes</span>
+												<div class="part-input" style="margin-left:5px"> </div>
+												<span style="margin-left:20px">No</span>
+												<div class="part-input" style="margin-left:5px"> </div>
+												<span style="margin-left:20px">Not known</span>
+												<div class="part-input" style="margin-left:5px"> </div>
+											</div>
+											<div>
+												<span>If Yes, who has right of dismissal? For example Ministry
+													of Education, Health Service, Armed Forces</span>
+											</div>
+											<div class="line-input">
+												<span> </span>
+											</div>
+
+									</div>
+								</div>
+							</div>
+							<div class="section" style="width:99%">
+								<h3 class="section-header">5 Volunteer Development workers</h3>
+								<div class="insection">
+									<div>
+										<span class="insection-number">21</span>
+										<span>What is your salary or wage?<br/></span>
+										<div style="padding-left:10px">
+											<span>
+												We need to know about your earnings for National<br/>
+												Insurance contribution purposes. Include all cash<br/>
+												allowances paid by your employer, but do not include<br/>
+												benefits in kind or any cash allowances not paid by<br/>
+												your employer.
+											</span>
+										</div>
+
+									</div>
+									<div class="insection-body" style="width: 52%; padding: 2px; display:inline-block; vertical-align:top">
+											<div class="part-input" style="background-color:#d2e0de; color:#3B8A7F">
+											£
+											</div>
+											<div class="part-input">
+											2
+											</div>
+											<div class="part-input">
+											3
+											</div>
+											<div class="part-input">
+												4
+											</div>
+											<div class="part-input">
+											5
+											</div>
+											<div style="display:inline-block">
+											-
+											</div>
+											<div class="part-input">
+											7
+											</div>
+											<div class="part-input">
+											8
+											</div>
+										</div>
+										<div style="text-align:right; padding-right:30px; width:20%; display:inline-block; ">
+											<span>Weekly</span>
+											<div class="part-input"> </div><br/>
+											<span>Monthly</span>
+											<div class="part-input"> </div>
+										</div>
+								</div>
+							</div>
+						</td>
+						<td>
+							<div class="section" style="width:99%">
+								<h3 class="section-header">6 Application to pay voluntary contributions</h3>
+								<div class="insection">
+									<div>
+										<span class="insection-number">22</span>
+										<span>I wish to apply to pay voluntary contributions at</span>
+									</div>
+									<div class="insection-body">
+
+											<div>
+												<span>Class 2</span>
+												<span><apex:image value="/img/checkbox_checked.gif" rendered="true" style="background:#eff6f5; width:30px; height:30px;" /></span>
+												<span>Class 3</span>
+												<span><apex:image value="/img/checkbox_unchecked.gif" rendered="true" style="background:#eff6f5; width:30px; height:30px;" /></span><br/>
+												<span>Voluntary Development Worker Class 2</span>
+												<span><apex:image value="/img/checkbox_unchecked.gif" rendered="true" style="background:#eff6f5; width:30px; height:30px;" /></span>
+											</div>
+									</div>
+								</div>
+								<div class="insection">
+									<div>
+										<span class="insection-number">23</span>
+										<span>I wish to pay by</span>
+									</div>
+									<div class="insection-body">
+										<table>
+											<tr>
+												<td style="width:23%"><span>Direct Debit</span></td>
+												<td><apex:image value="/img/checkbox_unchecked.gif" rendered="true"  /></td>
+												<td><span>Fill in the Direct Debit form on page 1, inserting your National Insurance number under Reference.</span></td>
+											</tr>
+											<tr>
+												<td><span>Six monthly Direct Debit</span></td>
+												<td><apex:image value="/img/checkbox_unchecked.gif" rendered="true"  /></td>
+												<td><span>Not available for Class 3 National Insurance contributions</span></td>
+											</tr>
+											<tr>
+												<td style=""><span>Annual payment</span></td>
+												<td><apex:image value="/img/checkbox_checked.gif" rendered="true"  /></td>
+											</tr>
+											<tr>
+												<td><span>Agent</span></td>
+												<td><apex:image value="/img/checkbox_unchecked.gif" rendered="true"  /></td>
+											</tr>
+										</table>
+
+											<div>
+												<span>If you’ve chosen to use an agent, give their full name
+													and address.</span>
+											</div>
+											<div class="line-input">
+											</div>
+											<div class="line-input-next">
+											</div>
+											<div class="line-input-next">
+											</div>
+											<div class="line-input-next">
+											</div>
+											<div class="line-input-next">
+												<span>Postcode</span>
+											</div>
+
+									</div>
+
+
+								</div>
+
+								<div class="insection">
+									<div>
+										<span class="insection-number">24</span>
+										<span>If you’ve chosen to pay by Direct Debit, how do you wish to
+											pay current tax year arrears, if any?</span>
+									</div>
+									<div class="insection-body">
+
+											<div>
+												<span>Direct Debit</span>
+												<div class="part-input"> </div>
+												<span>Sterling cheque</span>
+												<div class="part-input"> </div><br/>
+											</div>
+									</div>
+
+
+								</div>
+							</div>
+							<div class="section" style="height: 120px; width:99%">
+								<h3 class="section-header">7 Shortfall of National Insurance
+									contributions</h3>
+								<div class="insection">
+									<div>
+										<span class="insection-number">25</span>
+										<span>Do you want to know about any shortfall of
+											National Insurance contributions that you can pay?</span>
+									</div>
+									<div class="insection-body">
+											<div>
+												<span>Yes</span>
+												<span><apex:image value="/img/checkbox_checked.gif" rendered="true" style="background:#eff6f5; width:30px; height:30px;" /></span>
+												<span><apex:image value="/img/checkbox_unchecked.gif" rendered="false" style="background:#eff6f5; width:30px; height:30px;" /></span>
+												<span>No</span>
+												<span><apex:image value="/img/checkbox_unchecked.gif" rendered="true" style="background:#eff6f5; width:30px; height:30px;" /></span>
+												<span><apex:image value="/img/checkbox_checked.gif" rendered="false" style="background:#eff6f5; width:30px; height:30px;" /></span>
+											</div>
+									</div>
+
+
+								</div>
+							</div>
+							<div class="section" style="height: 230px; width:99%">
+								<h3 class="section-header">8 Declaration</h3>
+								<div class="insection">
+									<div class="insection-body">
+										<div>
+											<span>I declare that I have read leaflet NI38 and that the
+												information I have given applies to me and is true to the
+												best of my knowledge and belief.</span>
+											<div class="line-input">
+                               					 <span style="color:#A7CBC5 ">Signature</span> <span style="color: white; display: block; text-align:center; font-size: 22px">\s1\ </span>
+                              					 <span style="color:#A7CBC5 ">Date</span> <span style="color: white; display: block; text-align:center; font-size: 22px"> \d1\ </span>
+											</div>
+										</div>
+										<div>
+											<span>Daytime phone number</span>
+										</div>
+										<div class="line-input">
+											<span> </span>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div style="width:99%">
+								<span>
+									Return the completed form to:<br/>
+									PT Operations North East England<br/>
+									HM Revenue and Customs<br/>
+									BX9 1AN<br/>
+									United Kingdom<br/>
+									<br/>
+									If you’re a Volunteer Development worker send the completed<br/>
+									form to your recruiting organisation, see leaflet NI38 page 15.
+								</span>
+							</div>
+						</td>
+					</tr>
+				</table>
+			</div>
+
+            <div class="footer">
+				<table style="width:100%; padding: 0px 5px 0px 5px">
+					<tr>
+						<td style="width:33%;" >
+							<div style="text-align:left">
+								<span>CF83</span>
+							</div>
+						</td>
+						<td style="width:33%">
+							<div style="text-align:center">Page <span class="pagenumber"/></div>
+						</td>
+						<td style="width:33%">
+							<div style="text-align:right">
+								<span >HMRC 09/19</span>
+							</div>
+						</td>
+					</tr>
+				</table>
+            </div>
+        </body>
+    </html>
+</apex:page>

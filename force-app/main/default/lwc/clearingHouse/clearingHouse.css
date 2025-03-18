@@ -1,0 +1,14 @@
+table {
+    width:100%;
+    table-layout: fixed;
+}
+table tr td, th {
+    font-size: 12px;
+}
+
+.header-body {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    align-items: center;
+}

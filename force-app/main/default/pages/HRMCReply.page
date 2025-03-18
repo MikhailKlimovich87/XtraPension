@@ -1,0 +1,108 @@
+<apex:page readOnly="true" standardController="Application__c" extensions="HRMCReplyPdf" id="CustomLetter" sidebar="false" renderAs="advanced_pdf" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+
+                @page {
+                    size: 210mm 297mm;
+					margin-top: 50px;
+					margin-bottom: 20px;
+					@bottom-left {
+                        content: element(footer);
+                    }
+                }
+
+				div.footer {
+            		position: running(footer);
+                    width: 100%;
+                    margin-right: 1px;
+                    text-align: center;
+				}
+
+				body {
+					font-family: "Roboto", sans-serif;
+					font-size: 14px;
+				}
+
+				table {
+					border-collapse: collapse;
+					width:100%;
+				}
+
+				td, th {
+					/*border-width: 15px;*/
+					/*border-style: solid;*/
+				}
+
+				th {
+					text-align:center;
+				}
+
+                h3 {
+					text-align: center;
+                }
+
+				.date-col {
+					text-align: center;
+				}
+				.breakPageAfter{
+      				page-break-after:always;
+   				}
+				p {
+					margin-bottom: 0px;
+					margin-top: 0px;
+				}
+				.output-data {
+					table {border:0px;}
+				}
+				.team-address {
+					font-size: 16px;
+				}
+            </style>
+        </head>
+        <body>
+            <div class="footer" style="widht:100%; color:#808080; font-size:8pt; height:20%">
+				<div>JGBA Ltd, Suite 2/11, Pure Offices, 1 Ainslie Road, Hillington, Glasgow, G52 4RU. Company No: SC349713</div>
+    		</div>
+			<table border="0">
+				<tr>
+					<td width="20%"></td>
+					<td width="20%"></td>
+					<td width="20%"></td>
+					<td width="20%"></td>
+					<td>JGBA Ltd<br/>
+						Suite 2/11,<br/>
+						Pure Offices<br/>
+						1 Ainslie Road<br/>
+						Glasgow<br/>
+						G52 4RU
+					</td>
+				</tr>
+			</table>
+			<div class="team-address">
+				International Case Worker Team<br/>
+				PT Operations North East England<br/>
+				HM Revenue &#38; Customs<br/>
+				BX9 1AN<br/>
+				United Kingdom<br/>
+			</div>
+			<br/>
+			<apex:outputText value="{0, date, d'/'M'/'yy}">
+				<b>Date:</b><apex:param value="{!NOW()}"/>
+			</apex:outputText>
+			<br/><br/>
+			<div><b>HMRC Ref:</b> {!appObj.HMRC_Ref__c}</div>
+			<div><b>Our Ref:</b> {!appObj.Name}</div>
+			<br/>
+			<div><b>NI Number:</b> {!appObj.National_Insurance_Number__c}</div>
+			<div><b>Client Name:</b> {!appObj.First_Name__c} {!appObj.Second_Name__c}</div>
+			<br/>
+			<apex:outputText styleClass="output-data" escape="false" value="{!bodyData}" style="margin-top:0px;text-align: justify; bottom-border-width: 0px"></apex:outputText>
+			<br/>
+			<div>Yours sincerely</div>
+			<br/>
+			<div>JGBA Ltd</div>
+			<div>0141 301 1480</div>
+		</body>
+    </html>
+</apex:page>

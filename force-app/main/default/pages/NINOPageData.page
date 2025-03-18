@@ -1,0 +1,372 @@
+<apex:page readOnly="true" standardController="Application__c" id="NINOPageData" extensions="GetNINOPdf" sidebar="false" renderAs="advanced_pdf" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+                @page {
+                    size: A4;
+                    margin-top: 260px;
+                    margin-bottom: 40px;
+                    @top-center {
+                        content: element(header);
+                    }
+                    @bottom-left {
+                        content: element(footer);
+                    }
+                }
+                div.header {
+                    display: block;
+                    padding-left: 15px;
+                    padding-top: 35px;
+                    padding-bottom: 120px;
+                    position: running(header);
+                }
+                div.footer {
+                    position: running(footer);
+                    width: 100%;
+                    margin: 1px;
+                    text-align: center;
+                    font-size:12pt;
+                    /* height:100%; */
+                }
+                body {
+                    font-family: "Helvetica", sans-serif;
+                    font-size: 12pt;
+                }
+                table{
+                    width:100%;
+                    border-bottom-width: 2px;
+                    border-bottom-style: solid;
+                }
+                .header-text{
+                    font-size: 18pt;
+                    text-align:right;
+                }
+                .main-container{
+                    padding-left:10px;
+                    /* padding-top: 120px;
+                    padding-bottom: 100px; */
+                }
+                .title{
+                    font-size: 18pt;
+                }
+                .personal-data{
+                    padding-left:40px;
+                }
+                .info-block{
+                    font-size: 12pt;
+                    padding-left:40px;
+                }
+                .previous-address{
+                    padding-left:40px;
+                }
+                .pagenumber:before {
+                    content: counter(page);
+                }
+                .pagecount:before {
+                    content: counter(pages);
+                }
+                #rectangle{
+                    width:9.7cm;
+                    height:1.6cm;
+                    border:2px solid black;
+                }
+                .rectangle-date{
+                    float:left;
+                    width:1.12cm;
+                    height:1.19cm;
+                    border:2px solid black;
+                    margin-left:5px
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <table class="header-table">
+                    <tr>
+                        <td>
+                            <apex:image id="header-image" value="{!$Resource.HMRC_Sign}" width="137" height="85"/>
+                        </td>
+                        <td class="header-text" align="right">
+                            <b>
+                                <div>Get your National Insurance Number </div>
+                                <div>by post (CA5403)</div>
+                            </b>
+                        </td>
+                    </tr>
+                </table>
+                <table class="header-client-data">
+                    <tr>
+                        <td><b>National Insurance Number:</b>
+                            <span style="{!IF(ISBLANK(appObj.National_Insurance_Number__c),'display:none',null)};">{!appObj.National_Insurance_Number__c}</span>
+                            <span style="{!IF(ISBLANK(appObj.National_Insurance_Number__c), null, 'display:none')};">Not known</span>
+                        </td>
+                        <td><b>Date of birth:</b>
+                            <apex:outputText value="{0, date, d MMMM yyyy}">
+                                <apex:param value="{!appObj.Date_Of_Birth__c}"/>
+                            </apex:outputText>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><b>Title:</b> {!appObj.Salutation__c}</td>
+                    </tr>
+                    <tr>
+                        <td><b>First name:</b> {!appObj.First_Name__c}</td>
+                    </tr>
+                    <tr>
+                        <td><b>Middle names:</b></td>
+                    </tr>
+                    <tr>
+                        <td><b>Last name:</b> {!appObj.Second_Name__c}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="footer">
+                <div>CA5403 - Page <span class="pagenumber"/> of <span class="pagecount"/></div>
+            </div>
+            <!-- <apex:include pageName="NINOPageInstructions"/> -->
+            <div class="main-container">
+                <div class="title"><b>Personal details</b></div>
+                <div class="personal-data">
+                    <p><b>Other names:</b></p>
+                    <div class="info-block">
+                        <p><b>First name:</b> {!appObj.First_Name__c}</p>
+                        <p><b>Last name:</b>
+                            <span style="{!IF(ISBLANK(appObj.Full_Maiden_Previous_Name__c),'display:none',null)};"> {!appObj.Full_Maiden_Previous_Name__c}</span>
+                            <span style="{!IF(NOT(ISBLANK(appObj.Full_Maiden_Previous_Name__c)),'display:none',null)};"> Not known</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="personal-data">
+                    <p><b>Current address:</b></p>
+                    <div class="info-block">
+                        {!appObj.Current_Address_Abroad__Street__s}
+                        <span style="{!IF(ISBLANK(appObj.Current_Address_Abroad__City__s),'display:none',null)};">
+                            <br/>{!appObj.Current_Address_Abroad__City__s}
+                        </span>
+                        <span style="{!IF(ISBLANK(appObj.Current_Address_Abroad_State__c),'display:none',null)};">
+                            <br/>{!appObj.Current_Address_Abroad_State__c}
+                        </span>
+                        <span style="{!IF(ISBLANK(appObj.Current_Address_Abroad__PostalCode__s),'display:none',null)};">
+                            <br/>{!appObj.Current_Address_Abroad__PostalCode__s}
+                        </span>
+                        <span style="{!IF(ISBLANK(appObj.Current_Address_Abroad_Country__c),'display:none',null)};">
+                            <br/>{!appObj.Current_Address_Abroad_Country__c}
+                        </span>
+                    </div>
+                </div>
+                <div class="personal-data">
+                    <p><b>Previous addresses:</b></p>
+                    <div class="info-block">
+                        <div style="{!IF(ISBLANK(appObj.Previous_UK_Address_1__Street__s),'display:none',null)};">
+                            <p>From 
+                                <apex:outputText value="{0, date, MMMM yyyy}">
+                                    <apex:param value="{!appObj.Previous_UK_Address_Start_Date_1__c}"/>
+                                </apex:outputText>
+                                to 
+                                <apex:outputText value="{0, date, MMMM yyyy}">
+                                    <apex:param value="{!appObj.Previous_UK_Address_End_Date_1__c}"/>
+                                </apex:outputText>:
+                            </p>
+                            <p class="previous-address">
+                                {!appObj.Previous_UK_Address_1__Street__s}
+                                <span style="{!IF(ISBLANK(appObj.Previous_UK_Address_1__City__s),'display:none',null)};">
+                                    <br/>{!appObj.Previous_UK_Address_1__City__s}
+                                </span>
+                                <span style="{!IF(ISBLANK(appObj.Previous_UK_Address1_State__c),'display:none',null)};">
+                                    <br/>{!appObj.Previous_UK_Address1_State__c}
+                                </span>
+                                <span style="{!IF(ISBLANK(appObj.Previous_UK_Address_1__PostalCode__s),'display:none',null)};">
+                                    <br/>{!appObj.Previous_UK_Address_1__PostalCode__s}
+                                </span>
+                                <span style="{!IF(ISBLANK(appObj.Previous_UK_Address_1_Country__c),'display:none',null)};">
+                                    <br/>{!appObj.Previous_UK_Address_1_Country__c}
+                                </span>
+                            </p>
+                        </div>
+                        <div style="{!IF(ISBLANK(appObj.Previous_UK_Address_2__Street__s),'display:none',null)};">
+                            <p>From 
+                                <apex:outputText value="{0, date, MMMM yyyy}">
+                                    <apex:param value="{!appObj.Previous_UK_Address_Start_Date_2__c}"/>
+                                </apex:outputText>
+                                to 
+                                <apex:outputText value="{0, date, MMMM yyyy}">
+                                    <apex:param value="{!appObj.Previous_UK_Address_End_Date_2__c}"/>
+                                </apex:outputText>:
+                            </p>
+                            <p class="previous-address">
+                                {!appObj.Previous_UK_Address_2__Street__s}
+                                <span style="{!IF(ISBLANK(appObj.Previous_UK_Address_2__City__s),'display:none',null)};">
+                                    <br/>{!appObj.Previous_UK_Address_2__City__s}
+                                </span>
+                                <span style="{!IF(ISBLANK(appObj.Previous_UK_Address2_State__c),'display:none',null)};">
+                                    <br/>{!appObj.Previous_UK_Address2_State__c}
+                                </span>
+                                <span style="{!IF(ISBLANK(appObj.Previous_UK_Address_2__PostalCode__s),'display:none',null)};">
+                                    <br/>{!appObj.Previous_UK_Address_2__PostalCode__s}
+                                </span>
+                                <span style="{!IF(ISBLANK(appObj.Previous_UK_Address_2_Country__c),'display:none',null)};">
+                                    <br/>{!appObj.Previous_UK_Address_2_Country__c}
+                                </span>
+                            </p>
+                        </div>
+                        <div style="{!IF(ISBLANK(appObj.Previous_UK_Address_3__Street__s),'display:none',null)};">
+                            <p>From 
+                                <apex:outputText value="{0, date, MMMM yyyy}">
+                                    <apex:param value="{!appObj.Previous_UK_Address_Start_Date_3__c}"/>
+                                </apex:outputText>
+                                to 
+                                <apex:outputText value="{0, date, MMMM yyyy}">
+                                    <apex:param value="{!appObj.Previous_UK_Address_End_Date_3__c}"/>
+                                </apex:outputText>:
+                            </p>
+                            <p class="previous-address">
+                                {!appObj.Previous_UK_Address_3__Street__s}
+                                <span style="{!IF(ISBLANK(appObj.Previous_UK_Address_3__City__s),'display:none',null)};">
+                                    <br/>{!appObj.Previous_UK_Address_3__City__s}
+                                </span>
+                                <span style="{!IF(ISBLANK(appObj.Previous_UK_Address3_State__c),'display:none',null)};">
+                                    <br/>{!appObj.Previous_UK_Address3_State__c}
+                                </span>
+                                <span style="{!IF(ISBLANK(appObj.Previous_UK_Address_3__PostalCode__s),'display:none',null)};">
+                                    <br/>{!appObj.Previous_UK_Address_3__PostalCode__s}
+                                </span>
+                                <span style="{!IF(ISBLANK(appObj.Previous_UK_Address_3_Country__c),'display:none',null)};">
+                                    <br/>{!appObj.Previous_UK_Address_3_Country__c}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="personal-data">
+                    <p><b>Returning from living abroad:</b> No</p>
+                </div>
+                <div class="personal-data">
+                    <p><b>Telephone number:</b> {!appObj.Related_Contact_Phone__c}</p>
+                </div>
+                <div class="personal-data">
+                    <p><b>Gender:</b> 
+                        <span style="{!IF(OR(appObj.Salutation__c='Mr',appObj.Salutation__c='Fr'),null,'display:none')};">Male</span>
+                        <span style="{!IF(OR(appObj.Salutation__c='Mrs',appObj.Salutation__c='Ms',appObj.Salutation__c='Miss'), null, 'display:none')};">Female</span>
+                        <span style="{!IF(OR(appObj.Salutation__c='Dr',appObj.Salutation__c='Prof',ISBLANK(appObj.Salutation__c)), null, 'display:none')};">Not known</span>
+                    </p>
+                </div>
+                <div class="personal-data">
+                    <p><b>Marital or partnership status:</b>
+                        <span style="{!IF(appObj.Are_You_Single__c=true,null,'display:none')};">
+                            Single <span style="{!IF(ISBLANK(appObj.Divorce_Date__c),'display:none', null)};">(since 
+                                <span> <apex:outputText value="{0, date,d MMMM yyyy}">
+                                    <apex:param value="{!appObj.Divorce_Date__c}"/>
+                                </apex:outputText>)</span>
+                            </span>
+                        </span>
+                        <span style="{!IF(AND(appObj.Are_You_Single__c=false,NOT(ISBLANK(appObj.Date_Of_Marriage_Or_Civil_Partnership__c))), null,'display:none')};">
+                            Currently married (since
+                            <span> <apex:outputText value="{0, date,d MMMM yyyy}">
+                                <apex:param value="{!appObj.Date_Of_Marriage_Or_Civil_Partnership__c}"/>
+                            </apex:outputText>)</span>
+                        </span>
+                        <span style="{!IF(AND(appObj.Are_You_Single__c=false,ISBLANK(appObj.Date_Of_Marriage_Or_Civil_Partnership__c)), null,'display:none')};">
+                            Not known
+                        </span>
+                    </p>
+                </div>
+                <div class="title"><b>Your UK benefits</b>
+                    <div class="info-block">
+                        <p><b>Child benefit claimed: </b>No</p>
+                        <p><b>Child benefit number: </b>No</p>
+                        <p><b>Other benefits: </b>No</p>
+                    </div>
+                </div>
+                <div class="title"><b>Employment</b>
+                    <div class="personal-data">
+                        <p style="font-size:12pt"><b>Previous employers:</b></p>
+                        <div class="info-block">
+                            <apex:repeat value="{!employers}" var="employer">
+                                <div style="padding-bottom:5px">
+                                <div style="{!IF(AND(NOT(ISBLANK(employer)),employer.Type_Of_UK_Employment__c='Employed'),null,'display:none')};">
+                                    <p><b>Name:</b> {!employer.Employer_Name__c}</p>
+                                    <span>
+                                        <b>Address:</b>
+                                    </span>
+                                    <div class="previous-address">
+                                        {!employer.Employers_Address__Street__s}
+                                        <span style="{!IF(ISBLANK(employer.Employers_Address__City__s),'display:none',null)};">
+                                            <br/>{!employer.Employers_Address__City__s}
+                                        </span>
+                                        <span style="{!IF(ISBLANK(employer.Employers_Address_State__c),'display:none',null)};">
+                                            <br/>{!employer.Employers_Address_State__c}
+                                        </span>
+                                        <span style="{!IF(ISBLANK(employer.Employers_Address__PostalCode__s),'display:none',null)};">
+                                            <br/>{!employer.Employers_Address__PostalCode__s}
+                                        </span>
+                                        <span style="{!IF(ISBLANK(employer.Employers_Address_Country__c),'display:none',null)};">
+                                            <br/>{!employer.Employers_Address_Country__c}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style="{!IF(AND(NOT(ISBLANK(employer)),NOT(employer.Type_Of_UK_Employment__c='Employed')),null,'display:none')};">
+                                    <p>{!employer.Type_Of_UK_Employment__c}</p>
+                                </div>
+                                <div style="{!IF(AND(NOT(ISBLANK(employer)),employer.Type_Of_UK_Employment__c='Employed'),null,'display:none')};">
+                                    <p>
+                                        <b>Dates:</b> 
+                                        <span>
+                                            <apex:outputText value="{0, date,d MMMM yyyy}">
+                                                <apex:param value="{!employer.Start_Date__c}"/>
+                                            </apex:outputText>
+                                            to&nbsp;
+                                            <apex:outputText value="{0, date,d MMMM yyyy}">
+                                                <apex:param value="{!employer.End_Date__c}"/>
+                                            </apex:outputText>
+                                        </span>
+                                    </p>
+                                </div>
+                                <p style="{!IF(ISBLANK(employer),null,'display:none')};">
+                                    Not known
+                                </p>
+                            </div>
+                            </apex:repeat>
+                        </div>
+                    </div>
+                </div>
+                <div class="title"><b>Identity documents to photocopy</b>
+                    <div class="info-block">
+                        <p><b>Document: </b>Passport</p>
+                    </div>
+                </div>
+                <div style="page-break-after: always"/>
+                <div class="title"><b>Declaration</b>
+                    <p style="font-size:12pt">I declare that the information on this form is correct and complete to the best of my knowledge.</p>
+                    <div class="info-block">
+                        <p><b>Signature</b></p>
+                        <div id="rectangle"></div>
+                        <p><b>Date</b></p>
+                        <table style="border-bottom: none !important;">
+                            <tr>
+                                <td width="20%">Day</td>
+                                <td width="20%">Month</td>
+                                <td>Year</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="rectangle-date"></div>
+                                    <div class="rectangle-date"></div>
+                                </td>
+                                <td>
+                                    <div class="rectangle-date"></div>
+                                    <div class="rectangle-date"></div>
+                                </td>
+                                <td>
+                                    <div class="rectangle-date"></div>
+                                    <div class="rectangle-date"></div>
+                                    <div class="rectangle-date"></div>
+                                    <div class="rectangle-date"></div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </body>
+    </html>
+</apex:page>

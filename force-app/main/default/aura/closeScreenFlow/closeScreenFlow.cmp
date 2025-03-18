@@ -1,0 +1,7 @@
+<aura:component implements="lightning:availableForFlowActions">
+
+    <aura:attribute name="flowName" type="String" />
+
+    <lightning:workspaceAPI aura:id="closeFlow" />
+
+</aura:component>

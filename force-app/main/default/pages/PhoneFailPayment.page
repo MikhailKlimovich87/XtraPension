@@ -1,0 +1,2 @@
+<apex:page standardController="Payment__c" extensions="FailPaymentPageredirector" action="{!doRedirectAction}">
+</apex:page>

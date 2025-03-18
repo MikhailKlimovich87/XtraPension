@@ -1,0 +1,233 @@
+<template>
+    <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01"
+        class="slds-modal slds-fade-in-open slds-modal_medium">
+        <div class="slds-modal__container main-space">
+            <div class="slds-modal__header">
+                <h1 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Edit Custom Letter</h1>
+            </div>
+            <div class="slds-modal__content slds-p-around_xx-large" id="modal-content-id-1">
+                <div>International Case Worker</div>
+                <div>PT Operations North East England</div>
+                <div>HM Revenue &amp; Customs</div>
+                <div>BX9 1AN, United Kingdom</div>
+                <br />
+                <div style="date-container">
+                    <div class="date-label">
+                        <b>Date: </b>
+                    </div>
+                    <lightning-input type="date" class="date-input" date-style="short" value={currDate}
+                        onchange={saveCurrDate}>
+                    </lightning-input>
+                </div>
+                <div><b>Our Ref: </b>{app.Name}</div>
+                <br />
+                <div style="clear:both">
+                    <b>Reference:</b> {app.First_Name__c} {app.Second_Name__c}
+                    <template lwc:if={app.Is_Know_National_Insurance_Number__c}>
+                        &nbsp;
+                        <b>National Ins No:</b> {app.National_Insurance_Number__c}
+                    </template>
+                </div>
+                <br>
+                <div>
+                    <p>Dear Sir / Madam</p>
+                    <br />
+                    <p>Please find enclosed completed CF83, 64-8 and our client's post-UK work abroad.<br />
+                        Where available, we also enclose social insurance/social security etc records.<br />
+                    </p>
+                </div>
+                <br />
+                <div>Please use OUR REFERENCE of ‘{app.Name}’ in all correspondence.</div>
+                <!-- <br />
+                <div>We would appreciate it if you could ensure your assessment of their eligibility to pay Class 2
+                    contributions, a statement of their National Insurance Contributions to date and the
+                    Class 2 Table of Voluntary
+                    National Insurance Shortfall is sent directly to us at "Suite 1/31, Pure Offices, 1 Ainslie Road,
+                    Hillington, Glasgow, G52 4RU" as the enclosed 64-8 authorises us to act as their agent. Our client's
+                    work history is below.
+                </div>
+                <br />-->
+                <lightning-textarea class="start-letter" onchange={saveStartLetter} value={app.Freeform_Text_Line1__c}>
+                </lightning-textarea>
+                <template if:false={app.Is_Know_National_Insurance_Number__c}>
+                    <br />
+                    <div>
+                        They do not know their National Insurance Number. but as best they can recall, they lived at /
+                        near:
+                    </div>
+                    <br />
+                    <table>
+                        <tr>
+                            <th>
+                                From
+                            </th>
+                            <th>
+                                To
+                            </th>
+                            <th>
+                                UK Address
+                            </th>
+                        </tr>
+                        <tr>
+                            <td>
+                                <lightning-formatted-date-time value={lastUKAddressStartDate1} weekday="short"
+                                    day="2-digit" month="short" year="numeric">
+                                </lightning-formatted-date-time>
+                            </td>
+                            <td>
+                                <lightning-formatted-date-time value={lastUKAddressEndDate1} weekday="short"
+                                    day="2-digit" month="short" year="numeric">
+                                </lightning-formatted-date-time>
+                            </td>
+                            <td>
+                                {app.Previous_UK_Address_1__Street__s}, {app.Previous_UK_Address_1__City__s},
+                                {app.Previous_UK_Address_1__PostalCode__s}
+                            </td>
+                        </tr>
+                        <template lwc:if={isExistSecondLastUKAddress}>
+                            <tr>
+                                <td>
+                                    <lightning-formatted-date-time value={lastUKAddressStartDate2} weekday="short"
+                                        day="2-digit" month="short" year="numeric">
+                                    </lightning-formatted-date-time>
+                                </td>
+                                <td>
+                                    <lightning-formatted-date-time value={lastUKAddressEndDate2} weekday="short"
+                                        day="2-digit" month="short" year="numeric">
+                                    </lightning-formatted-date-time>
+                                </td>
+                                <td>
+                                    {app.Previous_UK_Address_2__Street__s}, {app.Previous_UK_Address_2__City__s},
+                                    {app.Previous_UK_Address_2__PostalCode__s}
+                                </td>
+                            </tr>
+                        </template>
+                        <template lwc:if={isExistThirdLastUKAddress}>
+                            <tr>
+                                <td>
+                                    <lightning-formatted-date-time value={lastUKAddressStartDate3} weekday="short"
+                                        day="2-digit" month="short" year="numeric">
+                                    </lightning-formatted-date-time>
+                                </td>
+                                <td>
+                                    <lightning-formatted-date-time value={lastUKAddressEndDate3} weekday="short"
+                                        day="2-digit" month="short" year="numeric">
+                                    </lightning-formatted-date-time>
+                                </td>
+                                <td>
+                                    {app.Previous_UK_Address_3__Street__s}, {app.Previous_UK_Address_3__City__s},
+                                    {app.Previous_UK_Address_3__PostalCode__s}
+                                </td>
+                            </tr>
+                        </template>
+                    </table>
+                </template>
+                <template lwc:if={isExistUKEmployers}>
+                    <br>
+                    <h3><b>Last UK Work</b></h3>
+                    <lightning-textarea class="section-B" onchange={saveSectionAData}
+                        value={app.Freeform_Text_Line2__c}>
+                    </lightning-textarea>
+                    <br>
+                    <table>
+                        <tr>
+                            <th>
+                                Start Date
+                            </th>
+                            <th>
+                                End Date
+                            </th>
+                            <th>
+                                Work
+                            </th>
+                        </tr>
+                        <tr>
+                            <td>{lastUkEmployer.startDate}</td>
+                            <td>{lastUkEmployer.endDate}</td>
+                            <td>
+                                {lastUkEmployer.employerName}<br>
+                                {lastUkEmployer.addressData}
+                            </td>
+                        </tr>
+                    </table>
+                </template>
+                <template lwc:if={isExistAfterUKEmployers}>
+                    <br>
+                    <h3><b>After Leaving the UK</b></h3>
+                    <lightning-textarea class="section-C" onchange={saveSectionBData}
+                        value={app.Freeform_Text_Line3__c}>
+                    </lightning-textarea>
+                    <br>
+                    <table>
+                        <tr>
+                            <th></th>
+                            <th>
+                                Start Date
+                            </th>
+                            <th>
+                                End Date
+                            </th>
+                            <th>
+                                Work
+                            </th>
+                        </tr>
+                        <template for:each={abroadEmployers} for:item="employer">
+                            <tr key={employer.numberOfEmployer}>
+                                <td>
+                                    <lightning-input class="slds-text-align_center" type="checkbox" data-id="checkbox"
+                                        checked={employer.includeEmployer} field-name={employer.checkboxFieldName}
+                                        employer-id={employer.employerId} onchange={handleNewCheckboxValue}>
+                                    </lightning-input>
+                                </td>
+                                <td>{employer.startDate}</td>
+                                <template if:true={employer.currentWork}>
+                                    <td>Current</td>
+                                </template>
+                                <template if:false={employer.currentWork}>
+                                    <td>{employer.endDate}</td>
+                                </template>
+
+                                <template if:true={employer.isEmployedType}>
+                                    <td>
+                                        {employer.employerName}<br>
+                                        {employer.addressData}
+                                    </td>
+                                </template>
+                                <template if:false={employer.isEmployedType}>
+                                    <td>
+                                        {employer.employerType}
+                                    </td>
+                                </template>
+                            </tr>
+                        </template>
+                    </table>
+
+                    <br>
+                    <lightning-textarea class="end-letter" onchange={saveEndLetter} value={app.Freeform_Text_Line4__c}>
+                    </lightning-textarea>
+                    <br />
+                </template>
+                <div>=========================</div>
+                <br />
+                <lightning-input-rich-text onchange={saveExtraInfo}
+                    value={app.Freeform_Text_Line5__c}></lightning-input-rich-text>
+                <br />
+                Yours sincerely<br />
+                JGBA Ltd
+                <br />
+                <br />
+            </div>
+            <div class="slds-modal__footer">
+                <button class="slds-button slds-button_neutral" aria-label="Cancel and close"
+                    onclick={closeAction}>Cancel</button>
+                <button class="slds-button slds-button_brand" onclick={handleChangeCustomLetter}>Save</button>
+            </div>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    <template if:true={showSpinner}>
+        <div>
+            <lightning-spinner alternative-text="Loading" size="x-small"></lightning-spinner>
+        </div>
+    </template>
+</template>

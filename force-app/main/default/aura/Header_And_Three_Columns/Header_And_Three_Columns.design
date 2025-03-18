@@ -1,0 +1,18 @@
+<design:component label="Header and Three Regions Custom Record Page Template">
+	<flexipage:template>
+    	<flexipage:region name="header" label="Right Region" defaultWidth="Large"/>
+        <flexipage:region name="left" label="Right Region" defaultWidth="Large">
+            <flexipage:formfactor type="Large" width="SMALL" />
+        </flexipage:region>
+        <flexipage:region name="mid" label="Right Region" defaultWidth="Large">
+            <flexipage:formfactor type="Large" width="SMALL" />
+        </flexipage:region>   
+        <flexipage:region name="right" label="Right Region" defaultWidth="Large">
+            <flexipage:formfactor type="Large" width="SMALL" />
+        </flexipage:region>    
+    </flexipage:template>
+    <design:supportedFormFactors>
+        <design:supportedFormFactor type="Small"/>
+        <design:supportedFormFactor type="Large"/>
+    </design:supportedFormFactors>
+</design:component>

@@ -1,0 +1,198 @@
+<template>
+    <lightning-card title="HMRC Status Check">
+        <div class="slds-p-around_medium">
+            <canvas id="pieChart" width="400" height="400"></canvas>
+        </div>
+        <div class="slds-p-horizontal_small table-block">
+            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered fixed-header"
+                width="100%">
+                <thead>
+                    <tr class="slds-line-height_reset">
+                        <th scope="col">
+                            App
+                        </th>
+                        <th scope="col">
+                            Fname
+                        </th>
+                        <th scope="col">
+                            Lname
+                        </th>
+                        <th scope="col">
+                            App Status
+                        </th>
+                        <th scope="col">
+                            Posted Date
+                        </th>
+                        <th scope="col">
+                            Days <br>Since <br>Posted
+                        </th>
+                        <th scope="col">
+                            Client
+                        </th>
+                        <th scope="col">
+                            Agent
+                        </th>
+                        <th scope="col" class="checkbox-col">
+                            Not <br> Received
+                        </th>
+                        <th scope="col" class="checkbox-col">
+                            Processing
+                        </th>
+                        <th scope="col">
+                            Sent to
+                        </th>
+                        <th scope="col" class="date-col">
+                            Sent Date
+                        </th>
+                        <th scope="col" class="checkbox-col">
+                            C2
+                        </th>
+                        <th scope="col" class="checkbox-col">
+                            C3
+                        </th>
+                        <th scope="col" class="checkbox-col">
+                            Work <br> Item
+                        </th>
+                        <th scope="col" class="checkbox-col">
+                            DWP
+                        </th>
+                        <th scope="col" class="checkbox-col">
+                            BadNINO
+                        </th>
+                        <th scope="col" class="checkbox-col">
+                            No 64-8
+                        </th>
+                        <th scope="col" class="checkbox-col">
+                            BadInfo
+                        </th>
+                        <th scope="col" class="checkbox-col">
+                            Rejected
+                        </th>
+                        <th scope="col">
+                            Notes
+                        </th>
+                        <th scope="col" class="date-col">
+                            Repeat <br>(EDITS/NO <br>EDITS) Date
+                        </th>
+                        <th scope="col" class="date-col">
+                            Recheck Date
+                        </th>
+                        <th scope="col" class="date-col">
+                            64-8 Repost
+                        </th>
+                        <th scope="col" class="date-col">
+                            Recheck 64-8
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template for:each={apps} for:item="application">
+                        <tr class="slds-hint-parent" key={application.Id} data-id={application.Id}>
+                            <td data-label="Spec File">
+                                <a onclick={navigateToRecord} value={application.Id}>
+                                    <u>{application.Name}</u>
+                                </a>
+                            </td>
+                            <td data-label="Spec File">
+                                {application.First_Name__c}
+                            </td>
+                            <td data-label="Spec File">
+                                {application.Second_Name__c}
+                            </td>
+                            <td data-label="Spec File">
+                                {application.Status__c}
+                            </td>
+                            <td data-label="Spec File">
+                                {application.Repeat_EDITS_NO_EDITS_Date__c}
+                            </td>
+                            <td data-label="Spec File">
+                                {application.Days_Since_Posted__c}
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-button-icon icon-name="utility:copy" data-id="CopyClient"
+                                    class="slds-text-align_right" variant="bare" size="large" onclick={copyClient}>
+                                </lightning-button-icon>
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-button-icon icon-name="utility:copy" data-id="CopyAgent" onclick={copyClient}
+                                    class="slds-text-align_right" variant="bare" size="large">
+                                </lightning-button-icon>
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-input type="checkbox" data-id="Not_Received__c"
+                                    checked={application.Not_Received__c}
+                                    onchange={handleCheckboxClick}></lightning-input>
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-input type="checkbox" checked={application.Processing__c}
+                                    data-id="Processing__c" onchange={handleCheckboxClick}></lightning-input>
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-combobox value={application.Sent_to__c} options={options}
+                                    variant="label-hidden" data-id="Sent_to__c"
+                                    onchange={handleClick}></lightning-combobox>
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-input type="date" date-style="short" variant="label-hidden"
+                                    data-id="Sent_Date__c" value={application.Sent_Date__c}
+                                    onchange={handleClick}></lightning-input>
+                                <!-- <input type="date" value={application.Sent_Date__c} onchange={handleClick}
+                                    data-id="Sent_Date__c" placeholder="dd/mm/yyyy"
+                                    style="padding: 5px; border-radius: 5px;"/> -->
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-input type="checkbox" checked={application.C2__c} data-id="C2__c"
+                                    onchange={handleCheckboxClick}></lightning-input>
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-input type="checkbox" checked={application.C3__c} data-id="C3__c"
+                                    onchange={handleCheckboxClick}></lightning-input>
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-input type="checkbox" checked={application.Work_Item__c}
+                                    data-id="Work_Item__c" onchange={handleCheckboxClick}></lightning-input>
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-input type="checkbox" checked={application.DWP__c} data-id="DWP__c"
+                                    onchange={handleCheckboxClick}></lightning-input>
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-input type="checkbox" checked={application.BadNINO__c} data-id="BadNINO__c"
+                                    onchange={handleCheckboxClick}></lightning-input>
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-input type="checkbox" checked={application.No_64_8__c} data-id="No_64_8__c"
+                                    onchange={handleCheckboxClick}></lightning-input>
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-input type="checkbox" checked={application.BadInfo__c} data-id="BadInfo__c"
+                                    onchange={handleCheckboxClick}></lightning-input>
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-input type="checkbox" checked={application.Rejected__c} data-id="Rejected__c"
+                                    onchange={handleCheckboxClick}></lightning-input>
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-input type="text" variant="label-hidden"></lightning-input>
+                            </td>
+                            <td data-label="Spec File">
+                                {application.Repeat_EDITS_NO_EDITS_Date__c}
+                            </td>
+                            <td data-label="Spec File">
+                                {application.Recheck_Date__c}
+                            </td>
+                            <td data-label="Spec File">
+                                <lightning-input type="date" date-style="short" variant="label-hidden"
+                                    onchange={handleClick} data-id="X64_8_Repost__c"
+                                    value={application.X64_8_Repost__c}></lightning-input>
+                            </td>
+                            <td data-label="Spec File">
+                                {application.Recheck_64_8__c}
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </lightning-card>
+</template>

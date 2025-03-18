@@ -1,0 +1,204 @@
+<apex:page readOnly="true" standardController="Application__c" extensions="GetReceiptPdf" id="GetReceipt" sidebar="false" renderAs="advanced_pdf" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+                @page {
+                    size: 210mm 297mm;
+					margin-top: 50px;
+					margin-bottom: 20px;
+                    @bottom-left {
+                        content: element(footer);
+                    }
+                }
+                div.footer {
+            		position: running(footer);
+                    width: 100%;
+                    margin-right: 1px;
+                    text-align: center;
+				}
+				body {
+					font-family: "Roboto", sans-serif;
+					font-size: 14px;
+				}
+				table {
+					border-collapse: collapse;
+					width:100%;
+				}
+				/*td, th {
+					/*border-width: 15px;
+					border-style: solid;
+				}*/
+				th {
+					text-align:center;
+				}
+                h3 {
+					text-align: center;
+                }
+
+				.date-col {
+					text-align: center;
+				}
+				.breakPageAfter{
+      				page-break-after:always;
+   				}
+				p {
+					margin-bottom: 0px;
+					margin-top: 0px;
+				}
+				.output-data {
+					table {border:0px;}
+				}
+                .main-block p{
+                    padding-bottom: 10px
+                }
+                .main-table {
+                    width: 80%;
+                    text-align: center;
+                    margin: auto;
+                }
+                .main-table td, th {
+                    border-style: solid;
+                    border-width: 1px;
+                }
+            </style>
+        </head>
+        <body>
+            <!-- <div class="footer" style="widht:100%; color:#808080; font-size:8pt; height:20%">
+				<div>JGBA Ltd, Suite 2/11, Pure Offices, 1 Ainslie Road, Hillington, Glasgow, G52 4RU. Company No: SC349713</div>
+    		</div> -->
+            <table border="0">
+				<tr>
+					<td width="25%"></td>
+					<td width="25%"></td>
+					<td width="25%"></td>
+					<td>
+                        <apex:outputText escape="false" value="{!appObj.Full_Current_Address_Abroad__c}"/>
+                        <!-- <span style="{!IF(ISBLANK(appObj.Contact__r.MailingStreet), 'display:none', null)}">
+                            {!appObj.Contact__r.MailingStreet}<br/>
+                        </span>
+                        <span style="{!IF(ISBLANK(appObj.Contact__r.Account.Mailing_Line_2__c), 'display:none', null)}">
+                            {!appObj.Contact__r.Account.Mailing_Line_2__c}<br/>
+                        </span>
+                        <span style="{!IF(ISBLANK(appObj.Contact__r.MailingCity), 'display:none', null)}">
+                            {!appObj.Contact__r.MailingCity}<br/>
+                        </span>
+                        <span style="{!IF(ISBLANK(appObj.Contact__r.Account.Mailing_State__c), 'display:none', null)}">
+                            {!appObj.Contact__r.Account.Mailing_State__c}
+                            <br/>
+                        </span>
+                        <span style="{!IF(ISBLANK(appObj.Contact__r.MailingPostalCode), 'display:none', null)}">
+                            {!appObj.Contact__r.MailingPostalCode}
+                            <br/>
+                        </span>
+                        <span style="{!IF(ISBLANK(appObj.Contact__r.Account.Mailing_Country__c), 'display:none', null)}">
+                            {!appObj.Contact__r.Account.Mailing_Country__c}
+                            <br/>
+                        </span> -->
+					</td>
+				</tr>
+			</table>
+            <br/>
+			<div>
+                National Insurance Contributions &amp; Employer Office<br/>
+                HM Revenue &amp; Customs<br/>
+                BX5 5BD<br/>
+                United Kingdom<br/>
+			</div>
+            <br/>
+            <apex:outputText value="{0, date, d'/'M'/'yy}">
+                <b>Date:</b><apex:param value="{!NOW()}"/>
+            </apex:outputText>
+            <br/><br/>
+			<div><b>HMRC Ref:</b> {!appObj.HMRC_Ref__c}</div>
+			<div><b>NI Number:</b> {!appObj.National_Insurance_Number__c}</div>
+            <br/>
+            <h2 style="text-align: center;">
+                <strong style="font-size: 16px;">Request for Receipt for Voluntary NICs Paid <br/>&amp; Correct Allocation to Relevant Tax Years</strong>
+            </h2>
+            <div class="main-block">
+                <p>Dear Sir / Madam</p>
+                <p>Payment has just been made to HMRC for £______________________ via Electronic Banking [&nbsp;&nbsp;&nbsp;]  / Enclosed Sterling Draft [&nbsp;&nbsp;&nbsp;]</p>
+                <p>My payment reference used is: _____________________</p>
+                <p>This is to pay for___________ past years of voluntary National Insurance Contributions (NICs)</p>
+                <p><b>1. Please send a receipt for this payment to my address above.</b></p>
+                <p><b>2. Please confirm that my payment has been allocated against the tax years indicated below.</b></p>
+                <table class="main-table">
+                    <thead>
+                        <tr>
+                            <th>Tax Year</th>
+                            <th>Allocate to</th>
+                            <th>Tax Year</th>
+                            <th>Allocate to</th>
+                        </tr>
+                        <tr>
+                            <td>2006 to 2007</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                            <td>2015 to 2016</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                        </tr>
+                        <tr>
+                            <td>2007 to 2008</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                            <td>2016 to 2017</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                        </tr>
+                        <tr>
+                            <td>2008 to 2009</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                            <td>2017 to 2018</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                        </tr>
+                        <tr>
+                            <td>2009 to 2010</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                            <td>2018 to 2019</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                        </tr>
+                        <tr>
+                            <td>2010 to 2011</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                            <td>2019 to 2020</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                        </tr>
+                        <tr>
+                            <td>2011 to 2012</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                            <td>2020 to 2021</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                        </tr>
+                        <tr>
+                            <td>2012 to 2013</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                            <td>2021 to 2022</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                        </tr>
+                        <tr>
+                            <td>2013 to 2014</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                            <td>2022 to 2023</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                        </tr>
+                        <tr>
+                            <td>2014 to 2015</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                            <td>2023 to 2024</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
+                        </tr>
+                    </thead>
+                </table>
+                <br/>
+                <br/>
+                <p>
+                    Thank you in advance for your help.<br/>
+                    Yours sincerely
+                </p>
+                <br/>
+                <p>
+                    __________________<br/>
+                    {!appObj.Salutation__c}&nbsp;{!appObj.First_Name__c}&nbsp;{!appObj.Second_Name__c}
+                </p>
+
+            </div>
+        </body>
+    </html>
+</apex:page>

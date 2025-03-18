@@ -1,0 +1,72 @@
+<template>
+    <lightning-card title="Work">
+        <div style="margin-bottom: 0.5rem;">
+            <lightning-record-view-form record-id={lastUKEmployerId} object-api-name="Employer__c">
+                <template lwc:if={isEmployedUkEmployers}>
+                    <div class="slds-box slds-theme_default" style="display: flex;border:0;font-size:0.875rem">
+                        <div style="margin-right: 0.5rem;">
+                            <b><i>Type:</i></b><br>
+                            Status:<br>
+                            Co:<br>
+                            Postcode:<br>
+                            Last Day:<br>
+                        </div>
+                        <div>
+                            <b><i>UK Work</i></b><br>
+                            {lastUKEmployerType}<br>
+                            <lightning-output-field field-name="Employer_Name__c"
+                                variant="label-hidden"></lightning-output-field>
+                            <lightning-formatted-url value={urlPath} tooltip="Use https://domain-name"
+                                label={lastUKEmployer.Employers_Address__PostalCode__s} target="_blank">
+                            </lightning-formatted-url>
+                            </br>
+                            {lastUKWorkDate}
+                        </div>
+                    </div>
+                </template>
+                <template lwc:else>
+                    <div class="slds-box slds-theme_default" style="display: flex;border:0;font-size:0.875rem">
+                        <div style="margin-right: 0.5rem;">
+                            <b><i>Type:</i></b><br>
+                            Status:<br>
+                            Last Day:<br>
+                        </div>
+                        <div>
+                            <b><i>UK Work</i></b><br>
+                            {lastUKEmployerType}<br>
+                            {lastUKWorkDate}
+                        </div>
+                    </div>
+                </template>
+            </lightning-record-view-form>
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+            <template lwc:if={isEmptyAfterUkEmployers}>
+                <lightning-record-view-form record-id={firstAfterUKEmployerId} object-api-name="Employer__c">
+                    <div class="slds-box slds-theme_default" style="display: flex;border:0;font-size:0.875rem">
+                        <div style="margin-right: 0.5rem;">
+                            <b><i>Type:</i></b><br>
+                            Status:<br>
+                            <template lwc:if={isEmployedTypeAfterUkEmployers}>Co:<br></template>
+                            Start Day:<br>
+                        </div>
+                        <div>
+                            <b><i>Work After UK</i></b><br>
+                            {typeOfAbroadUKEmployer}<br>
+                            <template lwc:if={isEmployedTypeAfterUkEmployers}>
+                                <lightning-output-field field-name="Employer_Name__c"
+                                    variant="label-hidden"></lightning-output-field>
+                            </template>
+                            <span style="background-color:aqua">{abroadStartDate}</span><br>
+                        </div>
+                    </div>
+                </lightning-record-view-form>
+            </template>
+        </div>
+        <div slot="footer">
+            <a class="slds-card__footer-action" onclick={handleShowAllData}>
+                View All
+            </a>
+        </div>
+    </lightning-card>
+</template>

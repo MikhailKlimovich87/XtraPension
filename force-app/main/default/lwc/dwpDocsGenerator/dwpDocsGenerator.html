@@ -1,0 +1,32 @@
+<template>
+    <lightning-quick-action-panel header="DWP Email">
+        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+            <p>
+                Would you like to generate DWP docs below?
+            </p>
+            <br />
+            <div><b>Summary:</b></div>
+            <div class="slds-theme--default iframe">
+                <iframe src={summaryURL} height="100%" width="100%"></iframe>
+            </div>
+            <br />
+            <div><b>Work History:</b></div>
+            <div class="slds-theme--default iframe">
+                <iframe src={workHistoryURL} height="100%" width="100%"></iframe>
+            </div>
+        </div>
+        <div slot="footer">
+            <lightning-button variant="neutral" label="Cancel" onclick={handleCancel}>
+            </lightning-button>
+            <lightning-button variant="brand" class="slds-m-left_x-small" label="Generate" onclick={handleGenerate}
+                disabled={showSpinner}>
+            </lightning-button>
+        </div>
+    </lightning-quick-action-panel>
+    <div class="spinner">
+        <template if:true={showSpinner}>
+            <lightning-spinner alternative-text="Loading" variant="base" size="medium">
+            </lightning-spinner>
+        </template>
+    </div>
+</template>

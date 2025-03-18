@@ -1,0 +1,44 @@
+table {
+    width: 100%;
+}
+
+table td {
+    padding : 1px;
+    font-size: 14px;
+}
+
+input, select {
+    width: 100%;
+}
+select {
+    background-color: white;
+}
+
+.buttons {
+    margin-top: 8px;
+    text-align: right;
+}
+.dropdown-data{
+    padding: 0;
+    margin:0;
+}
+.copy-button {
+    /*display: inline-block;
+     text-align: right;
+    padding-right: 0.5rem;
+    padding-top: 0.2rem; */
+}
+
+.button-style{
+    border-radius: 2px;
+    background-color:#0176d3;
+    border:none;
+    color: white;
+    width: 85%;
+}
+
+.button-group{
+    display: flex;
+    align-items: center;
+    justify-content: space-between
+}

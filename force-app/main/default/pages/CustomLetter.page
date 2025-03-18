@@ -1,0 +1,264 @@
+<apex:page readOnly="true" standardController="Application__c" extensions="CustomLetterPdf" id="CustomLetter" sidebar="false" renderAs="advanced_pdf" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+
+                @page {
+                    size: 210mm 297mm;
+					margin-top: 50px;
+					margin-bottom: 20px;
+					@bottom-left {
+                        content: element(footer);
+                    }
+                }
+
+				div.footer {
+            		position: running(footer);
+                    width: 100%;
+                    margin-right: 1px;
+                    text-align: center;
+					color:#808080;
+					font-size:8pt;
+					height:20%
+				}
+
+				body {
+					font-family: "Roboto", sans-serif;
+					/* font-size: 11px; */
+				}
+
+				table {
+					border-collapse: collapse;
+					width:100%;
+				}
+
+				td, th {
+					border-width: 1px;
+					border-style: solid;
+				}
+
+				th {
+					text-align:center;
+				}
+
+                h3 {
+					text-align: center;
+                }
+
+				.date-col {
+					text-align: center;
+				}
+				.breakPageAfter{
+      				page-break-after:always;
+   				}
+            </style>
+        </head>
+        <body>
+			<div class="footer">
+				<div>JGBA Ltd, Suite 2/11, Pure Offices, 1 Ainslie Road, Hillington, Glasgow, G52 4RU. Company No: SC349713</div>
+    		</div>
+
+			<div>International Case Worker</div>
+			<div>PT Operations North East England</div>
+			<div>HM Revenue &amp; Customs</div>
+			<div>BX9 1AN, United Kingdom</div>
+			<br/>
+			<apex:outputText value="{0, date, d'/'M'/'yy}">
+    			<b>Date:</b><apex:param value="{!appObj.Custom_Letter_Date__c}"/>
+			</apex:outputText>
+			<div><b>Our Ref:</b>{!appObj.Name}</div>
+			<br/>
+			<div style="clear:both">
+                <b>Reference:</b> {!appObj.Salutation__c} {!appObj.First_Name__c} {!appObj.Second_Name__c} <span style="{!IF(ISBLANK(appObj.National_Insurance_Number__c), 'display:none', null)};"><b>National Ins No:</b> {!appObj.National_Insurance_Number__c}</span>
+            </div>
+			<div >
+				<p>Dear Sir / Madam<br/></p>
+				<p style="text-align: justify;">Please find enclosed completed CF83, 64-8 and our client's post-UK work abroad.<br/>
+				Where available, we also enclose social insurance/social security etc records.<br/></p>
+			</div>
+			<div>Please use OUR REFERENCE of ‘{!appObj.Name}’ in all correspondence.</div>
+			<!-- <div style="text-align: justify;">
+				We would appreciate it if you could ensure your assessment of their eligibility to pay Class 2 contributions, a statement of their National Insurance Contributions to date and the Class 2 Table of Voluntary National Insurance Shortfall is sent directly to us at "Suite 1/31, Pure Offices, 1 Ainslie Road, Hillington, Glasgow, G52 4RU" as the enclosed 64-8 authorises us to act as their agent. Our client's work history is below.
+			</div> -->
+			<div style="{!IF(OR(ISBLANK(appObj.Freeform_Text_Line1__c), ISBLANK(appObj.National_Insurance_Number__c)), 'display:none', 'text-align: justify;')};">
+				<br/>
+				<apex:outputText styleClass="output-data" escape="false" value="{!appObj.Freeform_Text_Line1__c}" style="margin-top:0px;text-align: justify; bottom-border-width: 0px"></apex:outputText>
+    		</div>
+			<div style="{!IF(ISBLANK(appObj.National_Insurance_Number__c), null, 'display:none')}">
+				<div style="{!IF(ISBLANK(appObj.Freeform_Text_Line1__c), 'display:none', 'text-align: justify;')};">
+					<br/>
+					<apex:outputText styleClass="output-data" escape="false" value="{!appObj.Freeform_Text_Line1__c}" style="margin-top:0px;text-align: justify; bottom-border-width: 0px"></apex:outputText>
+				</div>
+				<br/>
+				<div>They do not know their National Insurance Number but as best they can recall, they lived at / near:</div>
+				<br/>
+				<table style="-fs-table-paginate: paginate; border-style: solid; border-collapse: collapse;" border="1" cellspacing="0">
+					<tr>
+						<th>
+							From
+						</th>
+						<th>
+							To
+						</th>
+						<th>
+							UK Address
+						</th>
+					</tr>
+					<tr>
+						<td class="date-col" style="width:18%">
+							<apex:outputtext value="{0,date,dd MMM yyyy}">
+								<apex:param value="{!appObj.Previous_UK_Address_Start_Date_1__c}"></apex:param>
+							</apex:outputtext>
+						</td>
+						<td class="date-col" style="width:18%">
+							<apex:outputtext value="{0,date,dd MMM yyyy}">
+								<apex:param value="{!appObj.Previous_UK_Address_End_Date_1__c}"></apex:param>
+							</apex:outputtext>
+						</td>
+						<td>
+							{!appObj.Previous_UK_Address_1__Street__s}<span style="{!IF(ISBLANK(appObj.Previous_UK_Address_1__City__s),'display:none',null)};">, {!appObj.Previous_UK_Address_1__City__s}</span><span style="{!IF(ISBLANK(appObj.Previous_UK_Address_1__PostalCode__s),'display:none',null)};">, {!appObj.Previous_UK_Address_1__PostalCode__s}</span>
+						</td>
+					</tr>
+					<tr style="{!IF(OR(ISBLANK(appObj.Previous_UK_Address_Start_Date_2__c),
+									   ISBLANK(appObj.Previous_UK_Address_End_Date_2__c)), 'display:none', null)}">
+						<td class="date-col" style="width:18%">
+							<apex:outputtext value="{0,date,dd MMM yyyy}">
+								<apex:param value="{!appObj.Previous_UK_Address_Start_Date_2__c}"></apex:param>
+							</apex:outputtext>
+						</td>
+						<td class="date-col" style="width:18%">
+							<apex:outputtext value="{0,date,dd MMM yyyy}">
+								<apex:param value="{!appObj.Previous_UK_Address_End_Date_2__c}"></apex:param>
+							</apex:outputtext>
+						</td>
+						<td>
+							{!appObj.Previous_UK_Address_2__Street__s}<span style="{!IF(ISBLANK(appObj.Previous_UK_Address_2__City__s),'display:none',null)};">, {!appObj.Previous_UK_Address_2__City__s}</span><span style="{!IF(ISBLANK(appObj.Previous_UK_Address_2__PostalCode__s),'display:none',null)};">, {!appObj.Previous_UK_Address_2__PostalCode__s}</span>
+						</td>
+					</tr>
+					<tr style="{!IF(OR(ISBLANK(appObj.Previous_UK_Address_Start_Date_3__c),
+									   ISBLANK(appObj.Previous_UK_Address_End_Date_3__c)), 'display:none', null)}">
+						<td class="date-col" style="width:18%">
+							<apex:outputtext value="{0,date,dd MMM yyyy}">
+								<apex:param value="{!appObj.Previous_UK_Address_Start_Date_3__c}"></apex:param>
+							</apex:outputtext>
+						</td>
+						<td class="date-col" style="width:18%">
+							<apex:outputtext value="{0,date,dd MMM yyyy}">
+								<apex:param value="{!appObj.Previous_UK_Address_End_Date_3__c}"></apex:param>
+							</apex:outputtext>
+						</td>
+						<td>
+							{!appObj.Previous_UK_Address_3__Street__s}<span style="{!IF(ISBLANK(appObj.Previous_UK_Address_3__City__s),'display:none',null)};">, {!appObj.Previous_UK_Address_3__City__s}</span><span style="{!IF(ISBLANK(appObj.Previous_UK_Address_3__PostalCode__s),'display:none',null)};">, {!appObj.Previous_UK_Address_3__PostalCode__s}</span>
+						</td>
+					</tr>
+				</table>
+			</div>
+			<div style="{!IF(ISBLANK(empUKObj), 'display:none', null)};">
+				<br/>
+				<div><b>Last UK Work</b></div>
+				<div style="{!IF(ISBLANK(appObj.Freeform_Text_Line2__c), 'display:none', null)}; white-space: pre-line">
+					{!appObj.Freeform_Text_Line2__c}
+				</div>
+				<br/>
+				<table style="-fs-table-paginate: paginate; border-style: solid; border-collapse: collapse;" border="1" cellspacing="0">
+					<tr>
+						<th>
+							Start Date
+						</th>
+						<th>
+							End Date
+						</th>
+						<th>
+							Work
+						</th>
+					</tr>
+					<tr style="{!IF(ISBLANK(empUKObj), 'display:none', null)};">
+						<td class="date-col" style="width:18%">
+							<apex:outputtext value="{0,date,dd MMM yyyy}">
+								<apex:param value="{!empUKObj.Start_Date__c}"></apex:param>
+							</apex:outputtext>
+						</td>
+						<td class="date-col" style="width:18%">
+							<apex:outputtext value="{0,date,dd MMM yyyy}">
+								<apex:param value="{!empUKObj.End_Date__c}"></apex:param>
+							</apex:outputtext>
+						</td>
+						<td style="{!IF(OR(empUKObj.Type_Of_UK_Employment__c=='Unemployed',
+										   empUKObj.Type_Of_UK_Employment__c=='Self-Employed'),'','display:none')};">
+						    {!empUKObj.Type_Of_UK_Employment__c}
+						</td>
+						<td style="{!IF(empUKObj.Type_Of_UK_Employment__c=='Employed','','display:none')};">
+							{!empUKObj.Employer_Name__c}<br/>
+							{!empUKObj.Employers_Address__Street__s}<span style="{!IF(ISBLANK(empUKObj.Employers_Address__City__s),'display:none',null)};">, {!empUKObj.Employers_Address__City__s}</span><span style="{!IF(ISBLANK(empUKObj.Employers_Address__PostalCode__s),'display:none',null)};">, {!empUKObj.Employers_Address__PostalCode__s}</span>
+						</td>
+					</tr>
+				</table>
+			</div>
+			<div style="{!IF(ISBLANK(empAfterUKObjList), 'display:none', null)};">
+				<br/>
+				<div><b>After Leaving the UK</b></div>
+				<div style="{!IF(ISBLANK(appObj.Freeform_Text_Line3__c), 'display:none', null)}; white-space: pre-line">
+					{!appObj.Freeform_Text_Line3__c}
+				</div>
+				<br/>
+				<table style="-fs-table-paginate: paginate; border-style: solid; border-collapse: collapse;" border="1" cellspacing="0">
+					<tr>
+						<th>
+							Start Date
+						</th>
+						<th>
+							End Date
+						</th>
+						<th>
+							Work
+						</th>
+					</tr>
+					<apex:repeat value="{!empAfterUKObjList}" var="empl" >
+        				<tr>
+							<td class="date-col" style="width:18%">
+								<apex:outputtext value="{0,date,dd MMM yyyy}">
+									<apex:param value="{!empl.Start_Date__c}"></apex:param>
+								</apex:outputtext>
+							</td>
+							<td class="date-col" style="width:18%">
+								<apex:outputtext style="{!IF(OR(empl.Current_Work__c = 'No',ISNULL(empl.Current_Work__c)),'','display:none')};" value="{0,date,dd MMM yyyy}">
+									<apex:param value="{!empl.End_Date__c}"></apex:param>
+								</apex:outputtext>
+								<span style="{!IF(empl.Current_Work__c=='Yes','','display:none')};">Current</span>
+							</td>
+    						<td style="{!IF(OR(empl.Type_Of_After_UK_Employment__c=='Career Break',
+											   empl.Type_Of_After_UK_Employment__c=='Self-Employed',
+											   empl.Type_Of_After_UK_Employment__c=='Unemployed',
+											   empl.Type_Of_After_UK_Employment__c=='Family Carer',
+											   empl.Type_Of_After_UK_Employment__c=='Homemaker',
+											   empl.Type_Of_After_UK_Employment__c=='Disabled',
+											   empl.Type_Of_After_UK_Employment__c=='Retired',
+											   empl.Type_Of_After_UK_Employment__c=='Education',
+											   empl.Type_Of_After_UK_Employment__c=='Illness'), '','display:none')};">
+									{!empl.Type_Of_After_UK_Employment__c}
+							</td>
+							<td style="{!IF(empl.Type_Of_After_UK_Employment__c=='Employed','','display:none')};">
+									{!empl.Employer_Name__c}<br/>
+									{!empl.Employers_Address__Street__s}<span style="{!IF(ISBLANK(empl.Employers_Address__City__s), 'display:none',null)};">, {!empl.Employers_Address__City__s}</span><span style="{!IF(ISBLANK(empl.Employers_Address__StateCode__s), 'display:none',null)};">, {!empl.Employers_Address__StateCode__s}</span><span style="{!IF(ISBLANK(empl.Employers_Address__PostalCode__s),'display:none',null)};">, {!empl.Employers_Address__PostalCode__s}</span>, {!empl.Employers_Address__CountryCode__s}
+							</td>
+						</tr>
+    				</apex:repeat>
+				</table>
+			</div>
+			<div>
+				<div style="{!IF(ISBLANK(appObj.Freeform_Text_Line4__c), 'display:none', null)}; white-space: pre-line">
+					{!appObj.Freeform_Text_Line4__c}
+				</div>
+				<br/>
+				<div>=========================</div>
+				<apex:outputText escape="false" value="{!appObj.Freeform_Text_Line5__c}" style="margin-top:0px;text-align: justify;"></apex:outputText>
+				Yours sincerely<br/>
+				JGBA Ltd
+			</div>
+			<br/>
+			<div>
+				<b>Email: </b>payroll@jgbaaccountants.co.uk
+			</div>
+        </body>
+    </html>
+</apex:page>

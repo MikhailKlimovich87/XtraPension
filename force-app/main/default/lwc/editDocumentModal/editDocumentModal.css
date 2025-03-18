@@ -1,0 +1,43 @@
+.main-space {
+    font-family: "Roboto", sans-serif;
+    font-size: 1.1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+table {
+    border-collapse: collapse;
+    width:100%;
+    border: 0.15rem solid;
+}
+
+td, th {
+    border-width: 1px;
+    border-style: solid;
+    padding: 0.5rem;
+}
+
+th {
+    text-align:center;
+}
+
+h3 {
+    text-align: center;
+}
+
+.date-col {
+    text-align: center;
+}
+
+.date-container{
+    display: table;
+    width:100%;
+}
+.date-label{
+    display: table-cell;
+}
+
+.date-input {
+    display: table-cell;
+    width: 150px;
+}

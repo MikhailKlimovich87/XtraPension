@@ -1,0 +1,112 @@
+<apex:page readOnly="true" standardController="Application__c" extensions="GetNINOPdf" id="CustomLetter" sidebar="false" renderAs="advanced_pdf" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+                @page {
+                    size: 210mm 297mm;
+                    margin-top: 150px;
+                    margin-bottom: 20px;
+                    @top-center {
+                        content: element(header);
+                    }
+                    @bottom-left {
+                        content: element(footer);
+                    }
+                }
+                div.header {
+                    padding: 10px;
+                    position: running(header);
+                }
+                div.footer {
+                    position: running(footer);
+                    width: 100%;
+                    margin-right: 1px;
+                    text-align: center;
+                    color:#808080;
+                    font-size:8pt;
+                    height:20%
+                }
+                body {
+                    font-family: "Helvetica", sans-serif;
+                /* font-size: 11px; */
+                }
+                .header-table{
+                    width:100%
+                }
+                .header-text{
+                    font-size: 18pt;
+                    text-align:right;
+                }
+                .title{
+                    font-size: 18pt;
+                }
+                .first-page{
+                    padding-left:5px;
+                }
+                .first-page-body{
+                    font-size: 12pt;
+                }
+                .docs-info{
+                    padding-left:40px
+                }
+                li{
+                    list-style-type: disc;
+                    padding-left: 15px;
+                }
+
+                /* .breakPageAfter{
+                    page-break-after:always;
+                } */
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <table class="header-table">
+                    <tr>
+                        <td>
+                            <apex:image id="header-image" value="{!$Resource.HMRC_Sign}" width="137" height="85"/>
+                        </td>
+                        <td class="header-text" align="right">
+                            <b>
+                                <div>Get your National Insurance Number </div>
+                                <div>by post (CA5403)</div>
+                            </b>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="footer">
+                <div>JGBA Ltd, Suite 2/11, Pure Offices, 1 Ainslie Road, Hillington, Glasgow, G52 4RU. Company No: SC349713</div>
+            </div>
+            <div class="first-page">
+                <div class="title">
+                    <b>What to do next</b>
+                </div>
+                <div class="first-page-body">
+                    <p>
+                        Once you have printed and checked this form you must complete the declaration section on the last page.
+                    </p>
+                    <p>
+                        You should then post it and a photocopy of your identity document to:
+                    </p>
+                    <p class='docs-info'>
+                        National Insurance Contributions and Employer Office<br/>
+                        HM Revenue and Customs<br/>
+                        BX9 1AN
+                    </p>
+                    <p>
+                        You must include a photocopy of the following document, or we may not be able to process your application:
+                    </p>
+                    <ul>
+                        <li>Passport</li>
+                    </ul>
+                    <p>
+                        If you send an original document we can not guarantee that it will be returned to you.
+                    </p>
+                </div>
+            </div>
+            <div style="page-break-after: always"/>
+            <div>NEW PAGE</div>
+        </body>
+    </html>
+</apex:page>

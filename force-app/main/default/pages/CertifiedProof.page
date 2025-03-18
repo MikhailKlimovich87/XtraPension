@@ -1,0 +1,72 @@
+<apex:page renderAs="pdf" standardController="Application__c" extensions="CertifiedProofPdf" id="CertifiedProof" sidebar="false" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+                @page {
+                    size: 210mm 297mm;
+					margin: 5mm 5mm 5mm 20mm;
+                    @bottom-left {
+                        content: element(footer);
+                    }
+                }
+                div.footer {
+            		position: running(footer);
+                    width: 100%;
+                    margin-right: 1px;
+                    text-align: center;
+				}
+				body {
+					font-family: "Roboto", sans-serif;
+					font-size: 14px;
+				}
+                h3 {
+					text-align: center;
+                }
+                .inline {
+                    display: inline-block;
+                    vertical-align: top;
+                }
+                .block-data {
+                    margin: 20px 0 20px 0;
+                }
+                p {
+					margin-bottom: 0px;
+					margin-top: 0px;
+				}
+            </style>
+        </head>
+        <body>
+            <table border="0" width="100%">
+                <tr>
+                    <td width="20%"></td>
+                    <td width="20%"></td>
+                    <td width="20%"></td>
+                    <td width="20%"></td>
+                    <td style="text-align:right">
+                        <apex:outputText escape="false" value="{!appObj.Full_Current_Address_Abroad__c}"/>
+                    </td>
+                </tr>
+            </table>
+            <br/>
+            <br/>
+            <div>
+                International Case Worker Team (EU)<br/>
+                PT Operations North East England<br/>
+                HM Revenue &amp; Customs<br/>
+                BX9 1AN<br/>
+                United Kingdom
+            </div>
+            <br/>
+            <apex:outputText value="{0, date,dd MMMM yyyy}">
+                Date:&nbsp;<apex:param value="{!TODAY()}" />
+            </apex:outputText>
+            <br/>
+            <p>HMRC Ref: {!appObj.HMRC_Ref__c}</p>
+            <br/>
+            <br/>
+            <div class="main-block">
+                <apex:outputText styleClass="output-data" escape="false" value="{!docBody}" style="margin-top:0px;text-align: justify; bottom-border-width: 0px"></apex:outputText>
+            </div>
+        </body>
+    </html>
+</apex:page>

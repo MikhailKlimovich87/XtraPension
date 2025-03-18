@@ -1,0 +1,37 @@
+<template>
+    <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01"
+        class="slds-modal slds-fade-in-open slds-modal_medium">
+        <div class="slds-modal__container main-space">
+            <div class="slds-modal__header">
+                <h1 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Edit Certified Doc</h1>
+            </div>
+            <div class="slds-modal__content slds-p-around_xx-large" id="modal-content-id-1">
+                <div class="header-data">
+                    <lightning-formatted-rich-text value={fullAddress}>
+                    </lightning-formatted-rich-text>
+                </div>
+                <br />
+                <div class="caseworker-address">
+                    International Case Worker Team (EU)<br />
+                    PT Operations North East England<br />
+                    HM Revenue & Customs<br />
+                    BX9 1AN<br />
+                    United Kingdom
+                </div>
+                <br />
+                <div><b>Date: </b>{dateToday}</div>
+                <div><b>HMRC Ref: </b>{hmrcRef}</div>
+                <lightning-input-rich-text value={choseValue} onchange={handleChange} formats={allowedFormats}>
+                </lightning-input-rich-text>
+            </div>
+            <div class="slds-modal__footer">
+                <button class="slds-button slds-button_neutral" aria-label="Cancel and close"
+                    onclick={closeAction}>Cancel</button>
+                <button class="slds-button slds-button_brand" onclick={handleCreatePDF}>Generate Certified Doc And Send
+                    Email</button>
+            </div>
+        </div>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+</template>

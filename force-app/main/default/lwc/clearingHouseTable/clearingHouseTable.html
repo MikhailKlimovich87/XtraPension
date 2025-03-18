@@ -1,0 +1,28 @@
+<template>
+    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered" style="width:30rem">
+        <tbody>
+            <tr class="slds-hint-parent" style="background-color:green">
+                <td>{tableInfo.amountNINO_PRSI}</td>
+                <td>NINO</td>
+                <td>PRSI</td>
+            </tr>
+            <tr class="slds-hint-parent" style="background-color:yellow">
+                <td>{tableInfo.amountNINO_NoPRSI}</td>
+                <td>NINO</td>
+                <td>No PRSI</td>
+            </tr>
+            <tr class="slds-hint-parent" style="color:red">
+                <td>{tableInfo.amountNoNINO_PRSI}</td>
+                <td>No NINO</td>
+                <td>PRSI</td>
+            </tr>
+            <tr class="slds-hint-parent" style="color:red">
+                <td>{tableInfo.amountNoNINO_NoPRSI}</td>
+                <td>No NINO</td>
+                <td>No PRSI</td>
+            </tr>
+        </tbody>
+    </table>
+    </br>
+    <div><b>Total: </b>{tableInfo.total}</div>
+</template>

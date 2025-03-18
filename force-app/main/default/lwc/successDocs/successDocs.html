@@ -1,0 +1,16 @@
+<template>
+    <template lwc:if={showSpinner}>
+        <div>
+            <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+        </div>
+    </template>
+    <lightning-modal-header label="Charge Annual Service" size="full"></lightning-modal-header>
+    <lightning-modal-body class="slds-text-body_regular slds-m-bottom_medium" size="full">
+        <div>Are you sure to generate "Next Step 1 - Pay HMRC" and "Next Step 2 - Get Receipt" documents? </div>
+    </lightning-modal-body>
+    <lightning-modal-footer class="slds-m-top_small slds-m-bottom_medium" size="full">
+        <lightning-button variant="brand-outline" label="Cancel" onclick={closeModal}
+            class="slds-m-right_xx-small"></lightning-button>
+        <lightning-button variant="brand" label="Generate" onclick={handleGenerate}></lightning-button>
+    </lightning-modal-footer>
+</template>

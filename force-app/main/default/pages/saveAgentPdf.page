@@ -1,0 +1,13 @@
+<apex:page standardController="Application__c"  extensions="CustomLetterPdf" showHeader="false" title="Custom Letter" showQuickActionVfHeader="false" >
+    <apex:form >
+        <center>
+            <apex:commandButton action="{!pdfAction}"  value="Regenerate"/>
+            <apex:commandButton action="{!Cancel}"  value="Cancel" /> </center> <br/>
+        <center>
+            <!-- <apex:iframe height="700px"  width="1100px" src="/apex/ApplyCF83?id={!MstrID}"/> -->
+            <!-- <apex:iframe height="700px"  width="1100px" src="/apex/Agent64_8?id={!MstrID}"/> -->
+            <apex:iframe height="700px"  width="1100px" src="/apex/CustomLetter?id={!MstrID}"/>
+        </center>
+    </apex:form><br/><br/><br/>
+    <footer class="slds-modal__footer"></footer>
+</apex:page>

@@ -1,0 +1,238 @@
+<apex:page readOnly="true" standardController="Payment__c" renderAs="advanced_pdf" extensions="CreditNotePdf" id="CreditNote" standardStylesheets="false" showHeader="false" applyHtmlTag="false">
+  <html>
+    <head>
+      <style>
+        @page {
+          size: 210mm 297mm;
+          margin-top: 20px;
+          margin-bottom: 5px;
+          margin-left: 80px;
+          margin-right: 30px;
+        }
+
+        body,
+        html {
+          font-family: "Roboto", sans-serif;
+          height: 100%;
+          position: relative;
+          margin: 0px !important;
+          padding: 0px;
+          box-sizing: border-box;
+          text-decoration: none;
+          font-size: 16px;
+        }
+
+        .main-container {
+          font-family: Arial, Helvetica, sans-serif;
+          color: #000000;
+          font-size: 16px;
+          line-height: 1.4;
+          font-variant: normal;
+          font-style: normal;
+          max-width: 1000px;
+          overflow: hidden;
+          scroll-behavior: smooth;
+          height: auto;
+          width: 100%;
+          background-color: #fff;
+          margin: 0 auto;
+          padding: 0.2rem;
+        }
+
+        .logo {
+          vertical-align: text-top;
+          float: right;
+        }
+
+        .logo img {
+          max-width: 100%;
+          width: 360px;
+          height: auto;
+        }
+
+        .recept-container {
+          width: 100%;
+          padding-bottom: 5px;
+          display: table;
+          position: relative;
+          margin-bottom: 100px;
+        }
+
+        .recept-container-top {
+          vertical-align: text-top;
+          float: left;
+          font-size: 20px;
+        }
+
+        .receipt-details-container {
+          display: table;
+          margin-top: 5rem;
+          width: 100%;
+          margin-bottom: 100px;
+        }
+
+        .receipt-details-left {
+          float: left;
+          text-align: left;
+          font-size: 14px;
+        }
+
+        .receipt-details-right {
+          text-align: right;
+          float: right;
+          font-size: 14px;
+        }
+
+        .title-container {
+          margin-bottom: 8px;
+          margin-top: 5rem;
+          font-size: 24px;
+        }
+
+        .table-container {
+          text-align: center;
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .table-container thead th {
+          border: solid 2px black;
+          padding: 5px;
+        }
+
+        .table-container tbody td {
+          padding: 5px;
+          font-size: 14px;
+        }
+
+        .text-center {
+          text-align: center;
+        }
+
+        .text-left {
+          text-align: left;
+        }
+
+        .footer-container {
+          padding: 1rem;
+          text-align: center;
+          border: 1px solid #ccc;
+          margin-top: 310px;
+          font-size: 14px
+        }
+
+        .company-container {
+          margin-top: 1rem;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="main-container">
+        <div class="recept-container">
+          <div class="recept-container-top">
+            <strong> CREDIT NOTE </strong>
+          </div>
+          <div class="logo">
+            <img alt="Logo" src="https://tinderpoint--devsuccess.sandbox.file.force.com/file-asset-public/Logo?oid=00D7Y0000001WLx" title="Logo" />
+          </div>
+        </div>
+        <div class="receipt-details-container">
+          <div class="receipt-details-left">
+              <b>Credit Note No:</b> &nbsp;{!creditNoteObj.Name}
+              <br/>
+              <b>Refund Date:</b>&nbsp;
+              <apex:outputtext value="{0,date,dd MMM yyyy}">
+                <apex:param value="{!creditNoteObj.Refund_Date__c}"></apex:param>
+              </apex:outputtext>
+              <br/>
+              <b>Refund Method:</b> &nbsp;{!creditNoteObj.Refund_Method__c}
+          </div>
+          <div class="receipt-details-right">
+            <b>Client Details</b><br/>
+            {!paymentObj.Application__r.First_Name__c}&nbsp;{!paymentObj.Application__r.Second_Name__c}<br/>
+            {!paymentObj.Application__r.Contact__r.Account.PersonContact.MailingStreet}<br/>
+            <span style="{!IF(ISBLANK(paymentObj.Application__r.Contact__r.Account.PersonContact.MailingCity), 'display:none', null)};">
+              {!paymentObj.Application__r.Contact__r.Account.PersonContact.MailingCity}<br/>
+            </span>
+            <span style="{!IF(ISBLANK(paymentObj.Application__r.Contact__r.Account.Mailing_State__c), 'display:none', null)};">
+              {!paymentObj.Application__r.Contact__r.Account.Mailing_State__c}<br/>
+            </span>
+            <span style="{!IF(ISBLANK(paymentObj.Application__r.Contact__r.Account.PersonContact.MailingPostalCode), 'display:none', null)};">
+              {!paymentObj.Application__r.Contact__r.Account.PersonContact.MailingPostalCode}<br/>
+            </span>
+            <span style="{!IF(ISBLANK(paymentObj.Application__r.Contact__r.Account.Mailing_Country__c), 'display:none', null)};">
+              {!paymentObj.Application__r.Contact__r.Account.Mailing_Country__c}<br/>
+            </span>
+          </div>
+        </div>
+        <div class="title-container">
+          <strong> €{!creditNoteObj.Total__c} refunded on &nbsp;
+            <apex:outputtext value="{0,date,dd MMM yyyy}">
+              <apex:param value="{!creditNoteObj.Refund_Date__c}"></apex:param>
+            </apex:outputtext>
+          </strong>
+        </div>
+        <table class="table-container">
+          <thead>
+            <tr>
+              <th class="text-left"> Description </th>
+              <th style="width: 7%;">Qty</th>
+              <th style="width: 20%;">Unit Price</th>
+              <th style="width: 20%;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left"> Refund of {!creditNoteObj.Product_Name__c}</td>
+              <td>1</td>
+              <td>{!creditNoteObj.Amount__c}</td>
+              <td>{!creditNoteObj.Amount__c}</td>
+            </tr>
+            <tr>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
+            <tr>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td class="text-left">
+                <b>Subtotal</b>
+              </td>
+              <td>{!creditNoteObj.Amount__c}</td>
+            </tr>
+            <tr>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td class="text-left">
+                <b>VAT 23%</b>
+              </td>
+              <td>{!creditNoteObj.Tax_EU__c}</td>
+            </tr>
+            <tr>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td class="text-left">
+                <b>Total</b>
+              </td>
+              <td>{!creditNoteObj.Total__c}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="footer-container">
+          <div>
+            <strong>Got Questions About This Refund?</strong>
+          </div>
+          <div> Please email <a href="mailto:clients@xtrapension.com"> clients@xtrapension.com </a>
+          </div>
+          <div class="company-container">
+            <div> Irish Company No:&nbsp; 749802 </div>
+            <div> Irish (EU) VAT No: IE4198440CH </div>
+            <div> Reg Company Address: Gray Office Park, Headford Road, Galway, H91 WC1P, Ireland </div>
+          </div>
+        </div>
+      </div>
+    </body>
+  </html>
+</apex:page>

@@ -1,0 +1,20 @@
+<template>
+    <lightning-card title="UK Home Addresses">
+        <template for:each={ukAddresses} for:item="addr">
+            <div class="slds-box slds-theme_default"
+                style="display: flex;border:0;font-size:0.875rem; justify-content: space-between;" key={addr.id}>
+                <div style="margin-right: 0.5rem;">
+                    <b><i>{addr.title}</i></b><br>
+                    {addr.street}<br>
+                    {addr.city}<br>
+                    {addr.postalCode}<br>
+                </div>
+                <div>
+                    <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                        onclick={handleOpenModal} class="slds-text-align_right" variant="bare" name={addr.title}>
+                    </lightning-button-icon>
+                </div>
+            </div>
+        </template>
+    </lightning-card>
+</template>

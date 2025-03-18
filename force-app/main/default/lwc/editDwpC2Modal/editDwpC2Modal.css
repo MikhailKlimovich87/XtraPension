@@ -1,0 +1,45 @@
+.main-space {
+    font-family: "Roboto", sans-serif;
+    font-size: 1.0rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+table {
+    border-collapse: collapse;
+    width:100%;
+    border: 0.15rem solid;
+}
+
+td, th {
+    border-width: 1px;
+    border-style: solid;
+    padding: 0.5rem;
+}
+
+th {
+    text-align:center;
+}
+
+h3 {
+    text-align: center;
+}
+
+.date-col {
+    text-align: center;
+}
+
+.header-data {
+    padding-left: 70%;
+}
+.caseworker-address {
+    font-size: 1.2rem
+}
+
+ul:not(.browser-default) li {
+    list-style-type: disc;
+}
+
+ul {
+    margin-left: 1.5rem;
+}

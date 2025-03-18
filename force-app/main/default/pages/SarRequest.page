@@ -1,0 +1,112 @@
+<apex:page renderAs="pdf" standardController="Application__c" extensions="SarRequestPdf" id="SarRequest" sidebar="false" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+                @page {
+                    size: 210mm 297mm;
+					margin-top: 50px;
+					margin-bottom: 20px;
+                    @bottom-left {
+                        content: element(footer);
+                    }
+                }
+                div.footer {
+            		position: running(footer);
+                    width: 100%;
+                    margin-right: 1px;
+                    text-align: center;
+				}
+				body {
+					font-family: "Roboto", sans-serif;
+					font-size: 14px;
+				}
+                h3 {
+					text-align: center;
+                }
+                .inline {
+                    display: inline-block;
+                    vertical-align: top;
+                }
+                .block-data {
+                    margin: 20px 0 20px 0;
+                }
+            </style>
+        </head>
+        <body>
+            <table border="0">
+				<tr>
+					<td width="20%"></td>
+					<td width="20%"></td>
+					<td width="20%"></td>
+					<td width="20%"></td>
+					<td style="text-align:right">
+                        <apex:outputText escape="false" value="{!appObj.Full_Current_Address_Abroad__c}"/>
+					</td>
+				</tr>
+			</table>
+            <br/>
+			<div>
+                SARS/DPU<br/>
+                HM Revenue and Customs<br/>
+                National Insurance Contributions Office<br/>
+                BX9 1AN<br/>
+                UK<br/>
+			</div>
+            <br/>
+            <apex:outputText value="{0, date, d'/'M'/'yyyy}">
+                <apex:param value="{!NOW()}"/>
+            </apex:outputText>
+            <h3>Request for Past Employer Details</h3>
+            <div class="main-block">
+                <div class="block-data">Dear Sir / Madam</div>
+                <div class="block-data"><b>Name:</b> {!appObj.Salutation__c}&nbsp;{!appObj.First_Name__c}&nbsp;{!appObj.Second_Name__c}</div>
+                <div class="block-data"><b>DOB:</b>
+                    <apex:outputText value="{0, date, d'/'M'/'yyyy}">
+                        <apex:param value="{!appObj.Date_Of_Birth__c}"/>
+                    </apex:outputText></div>
+                <div class="block-data"><b>NINO:</b> {!appObj.National_Insurance_Number__c}</div>
+                <div class="block-data">
+                    <div class="inline"><b>Last UK Address:&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</b></div>
+                    <div class="inline">
+                        <span style="{!IF(ISBLANK(appObj.Last_UK_Home_Address__Street__s), 'display:none', null)}">
+                            {!appObj.Last_UK_Home_Address__Street__s}<br/>
+                        </span>
+                        <span style="{!IF(ISBLANK(appObj.Last_UK_Home_Address__City__s), 'display:none', null)}">
+                            {!appObj.Last_UK_Home_Address__City__s}<br/>
+                        </span>
+                        <span style="{!IF(ISBLANK(appObj.Last_UK_Home_Address__PostalCode__s), 'display:none', null)}">
+                            {!appObj.Last_UK_Home_Address__PostalCode__s}
+                            <br/>
+                        </span>
+                        <span style="{!IF(ISBLANK(appObj.Last_UK_Home_Address_Country__c), 'display:none', null)}">
+                            {!appObj.Last_UK_Home_Address_Country__c}
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <div class="inline"><b>Current Address Abroad: &nbsp;</b></div>
+                    <div class="inline"><apex:outputText escape="false" value="{!appObj.Full_Current_Address_Abroad__c}"/></div>
+                </div>
+                <div class="block-data">
+                    <div><b>1) Information I need:</b></div>
+                    <div>What was the employer(s) name, employer(s) address and dates of my UK employment?</div>
+                </div>
+                <div class="block-data">
+                    <div class="inline"><b>2) For Years:</b></div>
+                    <div class="inline">From ___________   To ____________ incl</div>
+                </div>
+                <div class="block-data">
+                    <div><b>3) Reason for Request:</b></div>
+                    <div>Need details for application to pay Voluntary National Insurance Contributions</div>
+                </div>
+                <div class="block-data">
+                    Yours sincerely
+                </div>
+                <div class="block-data">
+                    ________________<br/>
+                    {!appObj.Salutation__c}&nbsp;{!appObj.First_Name__c}&nbsp;{!appObj.Second_Name__c}
+                </div>
+            </div>
+        </body>
+    </html>
+</apex:page>

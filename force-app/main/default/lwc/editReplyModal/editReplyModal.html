@@ -1,0 +1,48 @@
+<template>
+    <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01"
+        class="slds-modal slds-fade-in-open slds-modal_medium">
+        <div class="slds-modal__container main-space">
+            <div class="slds-modal__header">
+                <h1 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Edit HMRC Reply</h1>
+            </div>
+            <div class="slds-modal__content slds-p-around_xx-large" id="modal-content-id-1">
+                <div class="header-data">
+                    JGBA Ltd<br />
+                    Suite 2/11,<br />
+                    Pure Offices<br />
+                    1 Ainslie Road<br />
+                    Glasgow<br />
+                    G52 4RU
+                </div>
+                <br />
+                <div class="caseworker-address">
+                    International Case Worker Team<br/>
+                    PT Operations North East England<br/>
+                    HM Revenue &#38; Customs<br/>
+                    BX9 1AN<br/>
+                    United Kingdom
+                </div>
+                <br />
+                <div><b>Date: </b>{dateToday}</div>
+                <br />
+                <div><b>HMRC Ref: </b>{hmrcRef}</div>
+                <div><b>Our Ref: </b>{appName}</div>
+                <br />
+                <div><b>NI Number: </b>{nino}</div>
+                <div><b>Client Name: </b>{firstName} {secondName}</div>
+                <br />
+                <lightning-input-rich-text value={choseValue} onchange={handleChange} formats={allowedFormats}>
+                </lightning-input-rich-text>
+                <br />
+                Yours sincerely<br />
+                JGBA Ltd<br />
+            </div>
+            <div class="slds-modal__footer">
+                <button class="slds-button slds-button_neutral" aria-label="Cancel and close"
+                    onclick={closeAction}>Cancel</button>
+                <button class="slds-button slds-button_brand" onclick={handleCreatePDF}>Save</button>
+            </div>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+</template>

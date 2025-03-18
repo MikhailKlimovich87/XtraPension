@@ -1,0 +1,1098 @@
+<apex:page readOnly="true" standardController="Application__c" extensions="ApplicationAgentPdf" id="Agent64_8" renderAs="advanced_pdf" standardStylesheets="false" showHeader="false" applyHtmlTag="false">
+    <html>
+        <head>
+            <style>
+                @page {
+                    size: A4;
+
+                    @bottom-center {
+                        content: element(footer);
+                    }
+                }
+
+                h1 {
+                    color: #3B8A7F;
+                    font-size: 22px;
+                }
+
+                h2 {
+                    color: #3B8A7F;
+                    font-size: 20px;
+                }
+
+                h3 {
+                    color: #3B8A7F;
+                    font-size: 16px;
+                }
+
+                p {
+                    font-size: 13px;
+                }
+
+                span {
+                    font-size: 13px;
+                }
+
+                .header {
+                    text-align: right;
+                }
+
+                .divider {
+                    width: 100%;
+                    height: 4px;
+                    background-color: #3B8A7F;
+                }
+
+                div.footer {
+                    position: running(footer);
+                }
+
+                .pagenumber:before {
+                    content: counter(page);
+                }
+
+                .section {
+                    display: inline-block;
+                    width: 49%;
+
+                    padding: 10px 0 0 0;
+                    margin: 0;
+
+                    background-color: #eff6f5;
+                    border: solid 1px #A7CBC5;
+                }
+
+                .section1 {
+                    display: inline-block;
+                    width: 49%;
+
+                    padding: 10px 0 80px 0;
+                    margin: 0;
+                }
+
+                .big-section {
+                    float: left;
+                    display: inline-block;
+                    width: 100%;
+
+                    padding: 0;
+                    margin: 0;
+
+                    background-color: #eff6f5;
+                    border: solid 1px #A7CBC5;
+                }
+
+                .section-header {
+                    margin-left: 20px;
+                }
+
+                .insection {
+
+                	padding-left: 5px;
+                	padding-right: 5px;
+
+                }
+
+                .insection-number {
+                    padding-left: 8px;
+                    background-color: white;
+                    border: solid 1px #A7CBC5;
+                }
+
+                .insection-checkbox {
+                    padding-left: 8px;
+                	width: 50px;
+                    background-color: white;
+                    border: solid 1px #A7CBC5;
+                }
+
+                .insection-body {
+                    padding: 6px 0px;
+                }
+
+                .line-input {
+                    border: solid 1px #A7CBC5;
+                    background-color: white;
+                    padding: 0 10px;
+                }
+
+                .line-input1 {
+                    border: solid 1px #A7CBC5;
+                    background-color: white;
+                }
+
+                .label-text{
+                	color: black;
+                    font-size: 22px;
+                	margin: 0;
+                	padding:10px 0 0 0;
+                }
+
+                .part-input {
+                    display: inline-block;
+                    border: solid 1px #A7CBC5;
+                    background-color: white;
+                    padding: 4px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div>
+                    <apex:image value="{!$Resource.HMRCLogo}" width="15%"/>
+                    <h1>Authorising your agent</h1>
+                </div>
+                <div class="divider"></div>
+            </div>
+
+            <div style="width: 100%;">
+                <!--First section - Read the Notes-->
+                <div class="section1" style="float: left">
+
+                    <div class="insection">
+
+                        <div>
+                            <span>This form was updated in March 2022.<br/>
+								<strong>Read the Notes on page 3 before filling in this authority</strong><br/>
+								If you do not have an agent but would like another person to
+								communicate with HMRC on your behalf follow the guidance
+								at www.gov.uk/appoint-tax-agent<br/>
+								This form overrides any earlier authority given to HMRC.
+								HMRC may contact you in the future to reauthorise your
+								agent relationship to comply with the UK General Data
+								Protection Regulation (UK GDPR). For more details on what
+								your agent will have access to, follow the guidance at
+								www.gov.uk/government/publications/tax-agents-andadvisers
+                                -authorising-your-agent-64-8<br/>
+								<strong>To change your agent or withdraw your consent</strong><br/>
+								Follow the guidance at www.gov.uk/guidance/change
+                                -orremove-your-tax-agents-authorisation<br/>
+								<strong>Multiple agents</strong><br/>
+								If you have more than one agent (for example, one acting for
+								the PAYE scheme and another for Corporation Tax) fill in one
+								of these forms for each agent.</span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="line-input1">
+                                <span>I, {!appObj.First_Name__c} {!appObj.Second_Name__c}</span><br/>
+                                <span>of (name of business, company or trust if applicable)</span><br/>
+                                <span> </span><br/>
+                                <span>authorise HMRC to disclose information to (agent’s business name)</span><br/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span>Give your personal details or company registered office here</span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="line-input1">
+                                <span>Address</span><br/>
+                                <span> </span><br/>
+                                <span> </span><br/>
+                                <span>Postcode</span><br/>
+                                <span>Phone number</span><br/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+
+                        </div>
+                        <div class="insection-body">
+                            <div class="line-input1">
+                                <span>I confirm that the nominated agent has agreed to act on my behalf, and
+									the authorisation is correct and complete.
+									This authorisation is limited to the matters indicated on this form.</span><br/>
+                                <span>Signature</span><br/>
+                                <span>Date</span><br/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span>Give your agent’s details here</span>
+                        </div>
+                       <div class="insection-body">
+                            <div class="line-input1">
+                                <span>Address</span><br/>
+                                <span>Post code</span><br/>
+                                <span>Phone number</span><br/>
+                                <span>Agent code (SA)</span><br/>
+                                <span>Agent code (CT)</span><br/>
+                                <span>Client reference</span><br/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!--Second section -->
+                <div class="section" style="float: right">
+                    <div class="insection">
+                        <div>
+                            <span><strong>Self Assessment</strong></span>
+                            <span class="insection-checkbox">  </span>
+                            <span>If you tick this box you must give
+								your National Insurance number
+								(NINO) and/or your Unique Tax
+								reference (UTR)</span>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>Partnership </strong></span>
+                            <span class="insection-checkbox">  </span>
+                            <span>If you tick this box you must give
+								your Unique Tax reference (UTR)</span>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                                <span>Your agent will have access to your Self Assessment and
+									Partnership information such as your income, tax, national
+									insurance, pension as well as your personal and financial
+									information. For more information go to
+									www.gov.uk/selfassessment
+								</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>National Insurance number</strong></span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                            <div class="part-input">
+                                  7
+                            </div>
+                            <div class="part-input">
+                                8
+                            </div>
+                            <div class="part-input">
+                                9
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>Unique Tax reference (UTR) if applicable</strong></span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="part-input">
+                                  0
+                            </div>
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                            <div class="part-input">
+                                  7
+                            </div>
+                            <div class="part-input">
+                                8
+                            </div>
+                            <div class="part-input">
+                                9
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span>If UTR has not been issued yet tick here</span>
+                            <span class="insection-checkbox">  </span>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span>If you’re a Self Assessment taxpayer, we’ll send your
+								Statement of Account to you, but if you would like
+								us to send it to your agent instead tick here
+								Paying any amount due is your responsibility.</span>
+                            <span class="insection-checkbox">  </span>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>Trust</strong></span>
+                            <span class="insection-checkbox">  </span>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                                <span>Your agent will have access to your personal and financial
+									information for your trust. For more information go to
+                                    www.gov.uk/trusts-taxes
+								</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>Unique Tax Reference (UTR) if applicable</strong></span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="part-input">
+                                 0
+                            </div>
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                            <div class="part-input">
+                                  7
+                            </div>
+                            <div class="part-input">
+                                8
+                            </div>
+                            <div class="part-input">
+                                9
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                         <span><strong>Individual Pay As You Earn (PAYE)</strong></span>
+                         <span class="insection-checkbox">  </span>
+                    </div>
+                    <div class="insection">
+                        <div>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                                <span>Your agent will have access to your PAYE information
+									such as your income, tax, national insurance, pension as
+									well as your personal and financial information. For more
+									information go to
+									www.gov.uk/topic/personal-tax/income-tax
+								</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>National Insurance number</strong></span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                            <div class="part-input">
+                                  7
+                            </div>
+                            <div class="part-input">
+                                8
+                            </div>
+                            <div class="part-input">
+                                9
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!--Second section - 3 Employment-->
+                <div class="section" style="float: left">
+                     <div class="insection">
+                         <span><strong>Corporation Tax</strong></span>
+                         <span class="insection-checkbox">  </span>
+                    </div>
+                    <div class="insection">
+                        <div>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                                <span>Your agent will have access to your company and financial
+									information and be able to update the company
+									communication and contact details. For more information
+									go to www.gov.uk/topic/business-tax/corporation-tax
+								</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>Company Registration number</strong></span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                            <div class="part-input">
+                                  7
+                            </div>
+                            <div class="part-input">
+                                8
+                            </div>
+                        </div>
+                    </div>
+                     <div class="insection">
+                        <div>
+                            <span><strong>Company’s Unique Tax reference</strong></span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="part-input">
+                                  0
+                            </div>
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                            <div class="part-input">
+                                  7
+                            </div>
+                            <div class="part-input">
+                                8
+                            </div>
+                            <div class="part-input">
+                                  9
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                         <span><strong>Tax credits</strong></span>
+                         <span class="insection-checkbox">  </span>
+                    </div>
+                    <div class="insection">
+                        <div>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                                <span>Your agent will have access to your personal and financial
+									information relating to your Tax Credit claim. They
+                                    can act on your behalf but cannot receive payments.
+                                    Correspondence will still be sent to you. For joint tax credit
+									claims we need both claimants to sign this authority for
+                                    HMRC to deal with your agent. For more information go to
+									www.gov.uk/taxcredits
+								</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>National Insurance number</strong></span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                            <div class="part-input">
+                                  7
+                            </div>
+                            <div class="part-input">
+                                8
+                            </div>
+                            <div class="part-input">
+                                9
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                                <span>If you have a joint tax credit claim and the other claimant
+									wants HMRC to deal with this agent, they must give
+									their name and sign here
+								</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>Joint claimant’s name</strong></span>
+                        </div>
+                       <div class="insection-body">
+                            <div class="line-input">
+                                <span></span><br/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>Joint claimant’s National Insurance number</strong></span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                            <div class="part-input">
+                                  7
+                            </div>
+                            <div class="part-input">
+                                8
+                            </div>
+                            <div class="part-input">
+                                9
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>Joint claimant’s signature</strong></span>
+                        </div>
+                       <div class="insection-body">
+                            <div class="line-input">
+                                <span></span><br/>
+                                <span></span><br/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                         <span><strong>VAT</strong></span>
+                         <span class="insection-checkbox">  </span>
+                    </div>
+                    <div class="insection">
+                        <div>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                                <span>Please note if you have signed up for Making Tax Digital
+									for VAT, this form cannot be used to authorise an agent to
+									manage your Making Tax Digital services.<br/>
+									We’ll continue to send correspondence to you rather than
+									to your agent but we can deal with your agent in writing or
+									by phone on specific matters.<br/>
+									If your agent wants to submit VAT returns online on your
+									behalf, you’ll need to authorise them through your business
+									tax account or ask your agent to begin authorisation
+									through their digital services. You may receive a letter
+									containing a PIN which you’ll need to pass to your agent to
+									complete authorisation.<br/>
+									For more information go to<br/>
+									www.gov.uk/topic/business-tax/vat
+								</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>VAT Registration number</strong></span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                            <div class="part-input">
+                                  7
+                            </div>
+                            <div class="part-input">
+                                8
+                            </div>
+                            <div class="part-input">
+                                9
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 <!--4-th section -->
+                <div class="section" style="float: right">
+                    <div class="insection">
+                         <span><strong>Construction Industry Scheme (CIS)</strong></span>
+                         <span class="insection-checkbox">  </span>
+                    </div>
+                    <div class="insection">
+                        <div>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                                <span>Your agent will have access to your returns, subcontractors’
+									income and deductions.
+									For more information go to
+									www.gov.uk/what-is-the-construction-industry-scheme
+								</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>CIS Reference number</strong></span>
+                        </div>
+                       <div class="insection-body">
+                            <div class="line-input">
+                                <span></span><br/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>PAYE Reference number</strong></span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <span>/</span>
+                            <div class="part-input">
+                                  0
+                            </div>
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                            <div class="part-input">
+                                  7
+                            </div>
+                            <div class="part-input">
+                                8
+                            </div>
+                            <div class="part-input">
+                                9
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>Agent Government Gateway identifier</strong></span><br/>
+                            <span>(required for online access)</span>
+                        </div>
+                       <div class="insection-body">
+                            <div class="line-input">
+                                <span></span><br/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>PAYE Agent ID code</strong></span>
+                        </div>
+                       <div class="insection-body">
+                            <div class="line-input">
+                                <span></span><br/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                                <span>Please select below how you would like your agent to receive
+                                    the information, you can tick more than one box.<br/>
+									 I am a contractor in the CIS and authorise the agent
+									named above to use the CIS online services to receive
+									information over the internet from HMRC on my
+									behalf and I have given my Agent Government
+									Gateway ID and PAYE Agent code.
+								</span>
+                                <span class="insection-checkbox">  </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                                <span>I am a contractor in the CIS and authorise the agent
+									named above to receive information over the phone
+									and in writing from HMRC on my behalf.
+								</span>
+                                <span class="insection-checkbox">  </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                         <span><strong>Employers’ PAYE</strong></span>
+                         <span class="insection-checkbox">  </span>
+                    </div>
+                    <div class="insection">
+                        <div>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                                <span> Note: Only complete this section if you’re an employer
+									operating PAYE.<br/>
+ 									Your agent will have access to your employees’ personal and
+									financial information.<br/>
+ 									For more information go to www.gov.uk/paye
+								</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>PAYE Reference number</strong></span>
+                        </div>
+                        <div class="insection-body">
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <span>/</span>
+                            <div class="part-input">
+                                  0
+                            </div>
+                            <div class="part-input">
+                                  1
+                            </div>
+                            <div class="part-input">
+                                2
+                            </div>
+                            <div class="part-input">
+                                3
+                            </div>
+                            <div class="part-input">
+                                  4
+                            </div>
+                            <div class="part-input">
+                                5
+                            </div>
+                            <div class="part-input">
+                                6
+                            </div>
+                            <div class="part-input">
+                                  7
+                            </div>
+                            <div class="part-input">
+                                8
+                            </div>
+                            <div class="part-input">
+                                9
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>Agent Government Gateway identifier</strong></span><br/>
+                            <span>(required for online access)</span>
+                        </div>
+                       <div class="insection-body">
+                            <div class="line-input">
+                                <span></span><br/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><strong>PAYE Agent ID code</strong></span>
+                        </div>
+                       <div class="insection-body">
+                            <div class="line-input">
+                                <span></span><br/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                                <span>Please select below how you would like your agent to receive
+                                    the information, you can tick more than one box.<br/>
+									I authorise the agent named above to use PAYE online
+									services to receive information over the internet from
+									HMRC on my behalf and I have given my Agent
+									Government Gateway ID and PAYE Agent ID code.
+								</span>
+                                <span class="insection-checkbox">  </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                        </div>
+                        <div class="insection-body">
+                            <div>
+                                <span>I authorise the agent named above to receive
+									information over the phone and in writing from
+									HMRC on my behalf
+								</span>
+                                <span class="insection-checkbox">  </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--5-th section - Read the Notes-->
+                <div class="section1" style="float: left">
+                    <h1 class="label-text">Notes</h1>
+                    <div class="insection">
+                        <div>
+                            <span><h1 class="label-text">How we use your information</h1></span><br/>
+								<span>HMRC is committed to protecting the privacy and security of
+								your personal information.<br/>
+								This authorisation covers acts under:<br/>
+								• UK General Data Protection Act (UK GDPR)<br/>
+								• Data Protection Act (DPA) 2018<br/>
+								• Commissioner’s for Revenue and Customs Act (CRCA) 2005<br/>
+								For more information go to:<br/>
+								• www.gov.uk/government/publications/data
+                                -protection-actdpa-information-hm-revenue-and
+                                -customs-hold-about-you<br/>
+								• IDG40120 – Sharing information outside of HMRC: legal
+								obligations: lawful disclosure under section 18 CRCA
+								www.gov.uk/hmrc-internal-manuals/information
+                                -disclosureguide/idg40120<br/>
+								This authority allows us to exchange, amend and disclose
+								information about you with your agent and to deal with
+								them on matters within the responsibility of HMRC, as
+								specified on this form.<br/>
+								HMRC is not responsible for how your agent uses or holds
+								your personal information. You should contact your agent
+								directly if you want more information. </span>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><h1 class="label-text">Who should sign this form</h1></span><br/>
+								<span>Please note the legal age for an individual to give consent is
+									generally 13 years and above in England and Wales and 12
+									years and above in Scotland. </span>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><h1 class="label-text">Agent Government Gateway identifier</h1></span><br/>
+								<span>Agents can find their Agent Government Gateway identifier
+									by logging on to HMRC online services for agents and
+									selecting ‘Authorise client’ from the left hand menu.
+									The identifier will appear on the next screen under the title
+									‘Agent identifier’ </span>
+                        </div>
+                    </div>
+                   <div class="insection">
+                        <div>
+                            <span><h1 class="label-text">Other Agent Authorisation options</h1></span><br/>
+                            <span><strong>Temporary basis</strong><br/>
+									Use form COMP1 to temporarily authorise an agent to act
+									on your behalf if you’re having a compliance check carried
+									out. For more information go to www.gov.uk/guidance/taxadviser
+                                    -authorisation-for-compliance-checks </span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!--6-th section - Read the Notes-->
+                <div class="section1" style="float: right">
+                    <h1 class="label-text"></h1>
+                    <div class="insection">
+                        <div>
+                            <span><strong>High Income Child Benefit Charge</strong><br/>
+								Use form CH995 to authorise an appointed tax adviser to
+								deal with your High Income Child Benefit Charge affairs.
+								For more information go to
+								www.gov.uk/government/publications/child-benefit
+                                -authorisea-tax-adviser-for-high-income-child
+                                -benefit-charge-mattersch995 </span>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+								<span><strong>Tax credits and Child Benefit</strong><br/>
+									Use form TC689 to authorise someone to act on your
+									behalf for Tax Credit and Child Benefit matters. For more
+									information go to
+									www.gov.uk/government/publications/tax-credits-and
+                                    -childbenefit-allow-someone-else-to-act-for-you-tc689 </span>
+                        </div>
+                    </div>
+                    <div class="insection">
+                        <div>
+                            <span><h1 class="label-text">Digital Services</h1></span><br/>
+                           <span>You can also authorise your agent to act for you online using
+								our digital services. For more information go to
+								www.gov.uk/guidance/client-authorisation-an-overview </span>
+                        </div>
+                    </div>
+                   <div class="insection">
+                        <div>
+                            <span><h1 class="label-text">Where to send this form</h1></span><br/>
+                            <span>Only send pages 1 and 2 to HMRC, do not send page 3.<br/>
+								Keep page 3 for your records.<br/>
+								When you’ve completed pages 1 and 2 of this form please
+								send them to:<br/>
+								National Insurance Contributions and Employer Office
+								HM Revenue and Customs
+								BX9 1AN<br/>
+								There are some exceptions to this to help speed the handling
+								of your details in certain circumstances. If this form:<br/>
+								• accompanies other correspondence, send it to the
+								appropriate HMRC office<br/>
+								• is solely for Corporation Tax Affairs, send it to the HMRC
+								office that deals with the company<br/>
+								• is for a High Net Worth customer, send it to the appropriate
+								High Net Worth Unit<br/>
+								• accompanies a VAT Registration application, send it to the
+								appropriate VAT Registration Unit<br/>
+								• has been specifically requested by an HMRC office, send it
+								back to the office </span>
+                        </div>
+                    </div>
+
+                </div>
+
+
+            </div>
+
+            <div class="footer">
+                <div>Page <span class="pagenumber"/>of 3</div>
+            </div>
+        </body>
+    </html>
+</apex:page>

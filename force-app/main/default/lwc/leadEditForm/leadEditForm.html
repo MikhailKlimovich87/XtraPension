@@ -1,0 +1,256 @@
+<template>
+    <lightning-card>
+        <template lwc:if={isShowEditForm}>
+            <div class="slds-p-horizontal_small">
+                <lightning-record-edit-form record-id={recordId} object-api-name={objectApiName}
+                    onsuccess={handleSuccess}>
+                    <lightning-messages></lightning-messages>
+                    <div class="slds-grid slds-wrap">
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Contact__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="When__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Job__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Lead_Type__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Lead_Date__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Last_Conversation__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Location__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Born__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Source__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Agent__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="NINO__c"></lightning-input-field>
+                        </div>
+                        <!-- <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Potential__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Status__c"></lightning-input-field>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Next_Action__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="To_Do_When__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Phone"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Last_Conversation__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Estimate__c" readonly="true"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Source__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Country__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Job__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="Lead_Date__c"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input-field field-name="OwnerId"></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_2-of-2">
+                            <lightning-input-field field-name="Email"></lightning-input-field>
+                        </div> -->
+                    </div>
+                    <lightning-button label="Cancel" onclick={handleClose}></lightning-button>
+                    <lightning-button variant="brand" type="submit" label="Save"></lightning-button>
+                </lightning-record-edit-form>
+            </div>
+        </template>
+        <template lwc:else>
+            <div class="slds-p-horizontal_small">
+                <lightning-record-view-form record-id={recordId} object-api-name={objectApiName} density="comfy">
+                    <div class="slds-grid slds-wrap">
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Contact__c" class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="When__c" class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Job__c" class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Lead_Type__c"
+                                class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Lead_Date__c"
+                                class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Last_Conversation__c"
+                                class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Location__c"
+                                class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Born__c" class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Source__c" class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Agent__c" class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="NINO__c" class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <!-- <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Potential__c"
+                                class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Status__c" class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Next_Action__c"
+                                class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="To_Do_When__c"
+                                class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Phone" data-phone="phone-data"
+                                class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:copy" alternative-text="Copy" title="Copy"
+                                onclick={handleCopy} class="slds-text-align_right copy-phone" variant="bare">
+                            </lightning-button-icon>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Last_Conversation__c"
+                                class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 estimate-field">
+                            <div>
+                                <span class="slds-form-element__label">Estimate</span>
+                            </div>
+                            <a href={estimate} class="link-data" target="_blank">
+                                See PDF
+                            </a>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Source__c" class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Country__c" class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Job__c" class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="Lead_Date__c"
+                                class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 table-row">
+                            <lightning-output-field field-name="OwnerId" class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div>
+                        <div class="slds-col slds-size_2-of-2 table-row">
+                            <lightning-output-field field-name="Email" class="field-data"></lightning-output-field>
+                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit" title="Edit"
+                                onclick={handleOpenModal} class="slds-text-align_right" variant="bare">
+                            </lightning-button-icon>
+                        </div> -->
+                    </div>
+                </lightning-record-view-form>
+            </div>
+        </template>
+    </lightning-card>
+</template>

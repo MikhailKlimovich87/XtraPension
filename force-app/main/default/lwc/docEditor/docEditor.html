@@ -1,0 +1,43 @@
+<template>
+    <template lwc:if={showSpinner}>
+        <div>
+            <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+        </div>
+    </template>
+    <template lwc:if={showSpinner}>
+        <div>
+            <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+        </div>
+    </template>
+    <lightning-card title="Doc Editor">
+        <p class="slds-p-horizontal_small"><lightning-combobox name="template" label="Status" value={value}
+                placeholder="Select template" options={options} onchange={handleChange}></lightning-combobox>
+        </p>
+        <p class="slds-m-top_small">
+            <lightning-button label="Edit" title="Non-primary action" onclick={handleClick}
+                class="slds-m-left_x-small">Edit</lightning-button>
+        </p>
+    </lightning-card>
+    <template if:true={isOpenModal}>
+        <c-edit-reply-modal onhidepopup={closePopup} chose-value={currentValue} ongeneratepdf={handleGeneratePdf}
+            first-name={firstName} second-name={secondName} nino={nino} app-name={appName} hmrc-ref={hmrcRef}>
+        </c-edit-reply-modal>
+    </template>
+    <template if:true={isOpenDWPStatusModal}>
+        <c-edit-dwp-status-reply onhidepopup={closePopup} chose-value={currentValue} ongeneratepdf={handleGeneratePdf}
+            first-name={firstName} second-name={secondName} nino={nino} app-name={appName} hmrc-ref={hmrcRef}
+            date-of-bitrh={dateOfBirth} email-address={customerEmail} full-address={addressInfo}>
+        </c-edit-dwp-status-reply>
+    </template>
+    <template if:true={isCertifiedDocModal}>
+        <c-edit-certified-doc-modal onhidepopup={closePopup} ongeneratepdf={handleGeneratePdf}
+            full-address={addressInfo} hmrc-ref={hmrcRef} chose-value={currentValue}>
+        </c-edit-certified-doc-modal>
+    </template>
+    <template if:true={isDWP2RequestModal}>
+        <c-edit-dwp-c2-modal onhidepopup={closePopup} ongeneratepdf={handleGeneratePdf} full-address={addressInfo}
+            chose-value={currentValue} nino={nino} first-name={firstName} second-name={secondName}
+            abroad-empl={abroadEmployers} last-empl={lastUkEmployer}>
+        </c-edit-dwp-c2-modal>
+    </template>
+</template>

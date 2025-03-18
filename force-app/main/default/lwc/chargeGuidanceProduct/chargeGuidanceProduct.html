@@ -1,0 +1,91 @@
+<template>
+    <template lwc:if={showSpinner}>
+        <div>
+            <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+        </div>
+    </template>
+    <lightning-modal-header label="Charge Success Payment" size="full"></lightning-modal-header>
+    <template if:true={isExistChargeProductName}>
+        <div class="slds-m-around_medium">
+            <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                <thead>
+                    <tr class="slds-line-height_reset">
+                        <th class="" scope="col">
+                        </th>
+                        <th class="" scope="col">
+                            Product Name
+                        </th>
+                        <th class="" scope="col">
+                            Amount
+                        </th>
+                        <th class="" scope="col">
+                            Status
+                        </th>
+                        <th class="" scope="col">
+                            Payment Date
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template iterator:it={filetabledata}>
+                        <tr class="slds-hint-parent" key={it.value.Id}>
+                            <td data-label="Spec File">
+                                <template lwc:if={it.value.isPaid}>
+                                    <div class="slds-cell-wrap">
+                                        <lightning-icon icon-name="utility:success" alternative-text="Success!"
+                                            variant="success" size="xx-small"></lightning-icon>
+                                    </div>
+                                </template>
+                                <template lwc:else>
+                                    <div class="slds-cell-wrap">
+                                        <lightning-icon icon-name="utility:error" alternative-text="Error!"
+                                            variant="error" size="xx-small"></lightning-icon>
+                                    </div>
+                                </template>
+                            </td>
+                            <td data-label="Spec File">
+                                <div class="slds-cell-wrap">{it.value.prodName}</div>
+                            </td>
+                            <td data-label="Spec File">
+                                <div class="slds-cell-wrap">{it.value.amount}</div>
+                            </td>
+                            <td data-label="Spec File">
+                                <div class="slds-cell-wrap">{it.value.status}</div>
+                            </td>
+                            <td data-label="Spec File">
+                                <div class="slds-cell-wrap">{it.value.paymentDate}</div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+            <p class="slds-m-top_medium">The amount of paid payments: {totalAmount} {currencyCode}</p>
+        </div>
+        <lightning-modal-body class="slds-text-body_regular slds-m-bottom_medium" size="full">
+            <div>Are you sure you want to pay all the remaining payments?</div>
+            <div class="slds-grid">
+                <div class="slds-col slds-size_1-of-6">
+                    <div class="slds-form-element__label">
+                        <b>Remaining amount:</b>
+                    </div>
+                </div>
+                <div class="slds-col slds-size_2-of-6">
+                    <lightning-input type="number" value={remainingAmount} label="Amount" variant="label-hidden"
+                        aria-labelledby="otherlabel" style="width: 25%" onchange={changeAmount} step="any"
+                        formatter="currency"></lightning-input>
+                </div>
+            </div>
+        </lightning-modal-body>
+    </template>
+    <template if:true={isExistErrorData}>
+        <lightning-modal-body style="color:red" size="full">
+            {errorData}
+        </lightning-modal-body>
+    </template>
+    <lightning-modal-footer class="slds-m-top_small slds-m-bottom_medium" size="full">
+        <lightning-button variant="brand-outline" label="Cancel" onclick={closeModal}
+            class="slds-m-right_xx-small"></lightning-button>
+        <lightning-button variant="brand" label="Charge" onclick={handleCharge}
+            disabled={isExistErrorData}></lightning-button>
+    </lightning-modal-footer>
+</template>
