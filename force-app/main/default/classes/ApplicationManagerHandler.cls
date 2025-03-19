@@ -83,8 +83,8 @@ public with sharing class ApplicationManagerHandler {
                         applicationData?.address?.country,
                         applicationData.address?.state);
                 } else stateName = applicationData.address?.state;
-                				String currentStateValue = STATE_CODES.get(stateName);
-				if (currentStateValue == null) {
+                String currentStateValue = STATE_CODES.get(stateName);
+				if (String.isBlank(currentStateValue) && String.isNotBlank(stateName)) {
 					stateName = '';
                     Application_Form_Error__c errorData = new Application_Form_Error__c();
                     errorData.Error_Body__c = applicationData?.name + ' - ' + applicationData?.email + '\n' + 'State Code doesn\'t exist on the org. Please check it and add';

@@ -114,8 +114,12 @@ global class StripeWebhookHandler {
                         paymentIntent?.shipping?.address?.state);
                 } else stateName = paymentIntent?.shipping?.address?.state;
 				String currentStateValue = STATE_CODES.get(stateName);
-				if (currentStateValue == null) {
+				if (String.isBlank(currentStateValue) && String.isNotBlank(stateName)) {
 					stateName = '';
+                    Application_Form_Error__c errorData = new Application_Form_Error__c();
+                    errorData.Error_Body__c = firstName + ' ' + lastName + ' - ' + account.PersonEmail + '\n' + 'State Code doesn\'t exist on the org. Please check it and add';
+                    errorData.Error_Date__c = Date.today();
+                    insert errorData;
 				}
 				String streetData = paymentIntent?.shipping?.address?.line1;
 				if (String.isNotBlank(paymentIntent?.shipping?.address?.line2)) {
