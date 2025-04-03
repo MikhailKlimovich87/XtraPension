@@ -72,6 +72,10 @@
             </div>
 			<div >
 				<p>Dear Sir / Madam<br/></p>
+				<p style="{!IF(ISBLANK(appObj.DWP_Callback_Request__c), 'display:none', 'text-align:justify;')}">
+					{!appObj.DWP_Callback_Request__c}  is when our client registered on the DWP Callback facility to allow submission of this CF83 application after 5 April 2025 deadline as per official guidance.
+					<br/>
+				</p>
 				<p style="text-align: justify;">Please find enclosed completed CF83, 64-8 and our client's post-UK work abroad.<br/>
 				Where available, we also enclose social insurance/social security etc records.<br/></p>
 			</div>
