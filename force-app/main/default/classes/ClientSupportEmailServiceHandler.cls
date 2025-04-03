@@ -21,29 +21,6 @@ global class ClientSupportEmailServiceHandler implements Messaging.InboundEmailH
         emailMessage.Has_Attachment__c = emailAttachments != null ? true : false;
         emailMessage.Email_Message_Status__c = newStatus.Id;
 
-        // if (subject != null && subject.contains('A0')) {
-        //     Integer startNumber;
-        //     if (Test.isRunningTest()) {
-        //         startNumber = subject.indexOf('A');
-        //     } else startNumber = subject.indexOf('A0');
-        //     String applicationName = subject.substring(startNumber, startNumber + 6);
-
-        //     List<Application__c> applications = [
-        //         SELECT
-        //             Id,
-        //             Email__c
-        //         FROM Application__c
-        //         WHERE Name = :applicationName
-        //     ];
-        //     if (applications.isEmpty()) {
-        //         result.success = false;
-        //         return result;
-        //     }
-        //     Application__c currentApplication = applications[0];
-        //     emailMessage.relatedToId    = currentApplication.Id;
-        //     emailMessage.Application__c = currentApplication.Id;
-        // }
-
         if (email.fromAddress != null) {
             List<Application__c> applications = [
                 SELECT

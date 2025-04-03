@@ -1,0 +1,66 @@
+<template>
+    <lightning-card title="Moved to QC Approved Report">
+        <div class="slds-p-horizontal_small table-block">
+            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered fixed-header"
+                style="height: 500px">
+                <thead class="header">
+                    <tr class="slds-line-height_reset">
+                        <th scope="col" width="10%">
+                            <div class="slds-truncate"></div>
+                        </th>
+                        <template for:each={users} for:item="user">
+                            <th class="" scope="col" key={user.Id}>
+                                <div class="slds-truncate">{user.Name}</div>
+                            </th>
+                        </template>
+                    </tr>
+                </thead>
+                <!-- <tbody class="scrollable"> -->
+                <tbody>
+                    <tr class="slds-hint-parent">
+                        <template for:each={todayData} for:item="change">
+                            <td data-label="Changes" key={change}>
+                                <div class="slds-truncate">{change}</div>
+                            </td>
+                        </template>
+                    </tr>
+                    <tr class="slds-hint-parent">
+                        <template for:each={yesterdayData} for:item="change">
+                            <td data-label="Changes" key={change}>
+                                <div class="slds-truncate">{change}</div>
+                            </td>
+                        </template>
+                    </tr>
+                    <tr class="slds-hint-parent">
+                        <template for:each={thisWeekData} for:item="change">
+                            <td data-label="Changes" key={change}>
+                                <div class="slds-truncate">{change}</div>
+                            </td>
+                        </template>
+                    </tr>
+                    <tr class="slds-hint-parent">
+                        <template for:each={lastWeekData} for:item="change">
+                            <td data-label="Changes" key={change}>
+                                <div class="slds-truncate">{change}</div>
+                            </td>
+                        </template>
+                    </tr>
+                    <tr class="slds-hint-parent">
+                        <template for:each={thisMonthData} for:item="change">
+                            <td data-label="Changes" key={change}>
+                                <div class="slds-truncate">{change}</div>
+                            </td>
+                        </template>
+                    </tr>
+                    <tr class="slds-hint-parent">
+                        <template for:each={lastMonthData} for:item="change">
+                            <td data-label="Changes" key={change}>
+                                <div class="slds-truncate">{change}</div>
+                            </td>
+                        </template>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </lightning-card>
+</template>

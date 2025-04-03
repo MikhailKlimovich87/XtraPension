@@ -10,7 +10,7 @@ public class HMRCRepliesDocsGenerator implements Queueable, Database.AllowsCallo
         'Certified_Doc_Template__c'       => 'CerifiedDoc',
         'EU_Residency_Appeal_Template__c' => 'EU Residency Appeal',
         'Maiden_Name_Template__c'         => 'Maiden Name',
-        'DWP_C2_Request_Template__c'      => 'DWP C2 Request'
+        'DWP_C2_Request_Template__c'      => 'DWP_C2_Request'
     };
 
     private final static String ORG_WIDE = 'clients@xtrapension.com';
@@ -69,6 +69,16 @@ public class HMRCRepliesDocsGenerator implements Queueable, Database.AllowsCallo
                                 currentApplication.Name + '_' + FIELD_BODY_TO_FILE_NAME.get(typeOfTemplate);
             saveFile(pdfBlob, finalTitle);
         }  else if (typeOfTemplate == 'DWP_C2_Request_Template__c') {
+            List<Application__c> apps = [
+			    SELECT
+				    First_Name__c,
+				    Second_Name__c,
+				    Name
+			    FROM Application__c
+			    WHERE Id = :applicationId
+		    ];
+		    if(apps.isEmpty()) return;
+		    Application__c currentApplication = apps[0];
             PageReference savepage ;
             savepage = Page.DWP_C2Request;
             savepage.getParameters().put('id', applicationId);
@@ -79,7 +89,8 @@ public class HMRCRepliesDocsGenerator implements Queueable, Database.AllowsCallo
             } else {
                 pdfBlob = Blob.valueOf('Test');
             }
-            String finalTitle = FIELD_BODY_TO_FILE_NAME.get(typeOfTemplate);
+            String finalTitle = currentApplication.First_Name__c + '_' + currentApplication.Second_Name__c + '_' +
+                                currentApplication.Name + '_' +  + FIELD_BODY_TO_FILE_NAME.get(typeOfTemplate);
             saveFile(pdfBlob, finalTitle);
         } else {
             PageReference savepage ;

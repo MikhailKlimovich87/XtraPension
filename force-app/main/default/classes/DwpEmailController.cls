@@ -246,10 +246,10 @@ public class DwpEmailController {
             insert twilioMessage;
 
             if(response.getHtttpStatusCode() >= 201 && response.getHtttpStatusCode() < 300) {
-                app.Status__c = 'DWP Shortfall Pending';
                 app.is_Sent_DWP_SMS_Message__c = true;
-                update app;
             }
+            app.Status__c = 'DWP Shortfall Pending';
+            update app;
         } else {
             app.Status__c = 'DWP Shortfall Pending';
             app.is_Sent_DWP_SMS_Message__c = true;
@@ -304,12 +304,11 @@ public class DwpEmailController {
 
             // Insert the record
             insert twilioMessage;
-            
             if(response.getHtttpStatusCode() >= 201 && response.getHtttpStatusCode() < 300) {
-                app.Status__c = 'DWP Shortfall Pending';
                 app.is_Sent_DWP_SMS_Message__c = true;
-                update app;
             }
+            app.Status__c = 'DWP Shortfall Pending';
+            update app;
         } else {
             app.Status__c = 'DWP Shortfall Pending';
             app.is_Sent_DWP_SMS_Message__c = true;

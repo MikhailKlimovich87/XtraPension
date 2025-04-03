@@ -14,7 +14,11 @@ public class DWP_C2RequestPdfTest {
             LIMIT 1
         ];
         Id personContactId = currentContact[0].Id;
-        Application__c testApplication = TestDataFactory.createApplication(personContactId, true);
+        Application__c testApplication = TestDataFactory.createApplication(personContactId, false);
+        testApplication.DWP_C2_Request_Template__c = 'Test Top' + 
+        'SPLIT=============' +
+        'Test Bottom';
+        insert testApplication;
         TestDataFactory.createEmployer(testApplication.Id, 'Work After UK','Homemaker', true);
     }
 

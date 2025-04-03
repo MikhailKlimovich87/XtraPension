@@ -360,8 +360,20 @@ public class XtraPensionConstants {
             '<br>' +
         '</p>' +
         '<p>Please find enclosed evidence of my post-UK work abroad as shown by social insurance/social security etc records.</p>' +
-        '<p>' +
-            '<br>' +
-        '</p>' +
-        '<p><strong style="font-size: 16px;">Date I left the UK:{DateOfLeavingUK}</strong>.</p>';
+        '<br/>' +
+        '<p><strong style="font-size: 16px;">Date I left the UK:{DateOfLeavingUK}</strong>.</p>' +
+        'SPLIT=============' +
+        '<p>I believe I qualify to pay Class 2 contributions for past years under HMRC\'s stated criteria that:</p>' +
+        '<br/>' +
+        '<ul>' +
+        '<li>I was ordinarily employed (/self-employed) immediately before last leaving the UK</li>' +
+        '<li>I was in employment which was not employment in respect of earnings from which Class 1 contributions were payable.</li>' +
+        '<li>I was in employment abroad continuously paying social insurance (as verified by the official Govt contributions statement enclosed)</li>' +
+        '<li>I lived in the UK (/EU) for a continuous 3 year period before the period for which NI contributions are to be paid.</li>' +
+        '<li>I paid the qualifying amount of contributions in 3 years or more in UK (/EU)</li>' +
+        '</ul>' +
+        '<br/>' +
+        '<p>As I was habitually resident in an EU country and was previously compulsorily insured in the UK, I believe I therefore qualify for voluntary Class 2 contributions under Article 14 of EC Regulation 883/2004, the shared ‘EU Residency’ rule.</p>' +
+        '<br/>' +
+        '<p>Yours sincerely</p>';
 }

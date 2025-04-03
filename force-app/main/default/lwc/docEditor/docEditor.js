@@ -95,8 +95,6 @@ export default class DocEditor extends LightningElement {
             if (result) {
                 this.abroadEmployers = result.abroadEmployers;
                 this.lastUkEmployer = result.lastUkEmployer;
-                console.log('this.abroadEmployers === ', this.abroadEmployers);
-                console.log('this.lastUkEmployer === ', this.lastUkEmployer);
                 result.htmlInfo.map(data => {
                     if (data.templateName ==='CUSTOM') {
                         this.customTemplate = data.htmlValue

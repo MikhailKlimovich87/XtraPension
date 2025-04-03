@@ -77,7 +77,6 @@ public class ApexToolkit {
             wrapper.isSuccess = false;
             return wrapper;
         }
-        System.debug('envelopConfig.Name === ' + envelopConfig.Name);
         //create a new document for the Envelope
         dfsle.Document templateDocument = dfsle.Document.fromTemplate(
             myTemplateId, // templateId in dfsle.UUID format
@@ -133,6 +132,7 @@ public class ApexToolkit {
         myEnvelope = dfsle.EnvelopeService.sendEnvelope(
             myEnvelope, // The envelope to send
             true); // Send now?
+        System.debug('myEnvelope ==== ' + myEnvelope);
         wrapper.isSuccess = true;
         wrapper.envelop   = myEnvelope;
         return wrapper;

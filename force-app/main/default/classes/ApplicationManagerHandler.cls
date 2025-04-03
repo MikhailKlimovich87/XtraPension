@@ -663,6 +663,7 @@ public with sharing class ApplicationManagerHandler {
                             Type_Of_After_UK_Employment__c    = 'Career Break',
                             Current_Work__c                   = employer?.isCurrently == true ? 'Yes' : 'No'
                         );
+                        System.debug('employer?.country ==== ' + employer?.country);
                         if (app.Career_Break_Employer_Start_Date1__c == null) {
                             app.put('Career_Break_Employer_Start_Date1__c', Date.valueOf(employer?.startDate));
                             app.put('Career_Break_Employer_End_Date1__c', Date.valueOf(employer?.endDate));

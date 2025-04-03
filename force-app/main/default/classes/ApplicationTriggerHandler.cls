@@ -11,12 +11,12 @@ public without sharing class ApplicationTriggerHandler {
     private static final String APPEAL_PRODUCT_NAME = 'Appeal';
 
     Map<String, Integer> VAL_AGENTS_PROPORTION = new Map<String, Integer> {
-        'Sean'       => 10,
-        'Ciara'      => 10,
-        'Niamh'      => 20,
-        'Becky'      => 20,
-        'Monica'     => 20,
-        'MaryClaire' => 20
+        'Sean'       => 13,
+        'Ciara'      => 13,
+        //'Niamh'      => 0,
+        'Becky'      => 24,
+        'Monica'     => 25,
+        'MaryClaire' => 25
     };
 
     private static Map<String, Integer> AGENTS_PROPORTION = new Map<String, Integer> {
@@ -61,20 +61,22 @@ public without sharing class ApplicationTriggerHandler {
     private final static String REGISTRATION_ORG_WIDE = 'clients@xtrapension.com';
     private final static String REGISTRATION_TEMPLATE_NAME = 'Registration Data Information';
     // private final static Map<String, String> AGENT_NAME_BY_EMAIL = new Map<String, String> {
-    //     'Adrian'  => 'adrian@xtrapension.com',
-    //     'Amy'     => 'amy@xtrapension.com',
-    //     'Megan'   => 'megan@xtrapension.com',
-    //     'Patrick' => 'patrick@xtrapension.com',
-    //     'Tomas'   => 'tomas@xtrapension.com',
-    //     'Sean'    => 'sean@xtrapension.com',
-    //     'George'  => 'george@xtrapension.com',
-    //     'Gerard'  => 'gerard@xtrapension.com'
+    //     'Adrian'    => 'adrian@xtrapension.com',
+    //     'Amy'       => 'amy@xtrapension.com',
+    //     'Megan'     => 'megan@xtrapension.com',
+    //     'Patrick'   => 'patrick@xtrapension.com',
+    //     'Tomas'     => 'tomas@xtrapension.com',
+    //     'Sean'      => 'sean@xtrapension.com',
+    //     'George'    => 'george@xtrapension.com',
+    //     'Gerard'    => 'gerard@xtrapension.com',
+    //     'Brett'     => 'brett@xtrapension.com',
+    //     'Christina' => 'christina@xtrapension.com'
     // };
 
     // private static Map<String, String> VAL_AGENTS_BY_EMAIL = new Map<String, String> {
     //     'Sean'       => 'seanb@xtrapension.com',
     //     'Ciara'      => 'ciara@xtrapension.com',
-    //     'Niamh'      => 'agent1@xtrapension.com',
+    //     //'Niamh'      => 'agent1@xtrapension.com',
     //     'Becky'      => 'becky@xtrapension.com ',
     //     'Monica'     => 'monica@xtrapension.com',
     //     'MaryClaire' => 'mary@xtrapension.com'
@@ -97,7 +99,9 @@ public without sharing class ApplicationTriggerHandler {
         'George'     => 'mishaklimovich87@gmail.com',
         'Ciaran'     => 'mishaklimovich87@gmail.com',
         'Paul'       => 'mishaklimovich87@gmail.com',
-        'Elaine'     => 'mishaklimovich87@gmail.com'
+        'Elaine'     => 'mishaklimovich87@gmail.com',
+        'Brett'      => 'mishaklimovich87@gmail.com',
+        'Christina'  => 'mishaklimovich87@gmail.com'
     };
 
         private static Map<String, String> VAL_AGENTS_BY_EMAIL = new Map<String, String> {
@@ -954,13 +958,14 @@ public without sharing class ApplicationTriggerHandler {
                    Status__c = 'NINO/Doc Needed' OR
                    Status__c = 'Pending Client' OR
                    Status__c = 'Fix') AND
-            Val_Agent__c != null
+                   Val_Agent__c != null AND
+                   Val_Agent__c != 'Niamh'
         ];
         if(valAgentApps.isEmpty()) {
             currApp.Val_Agent__c = (new List<String>( VAL_AGENTS_PROPORTION.keySet()))[0];
             return;
         }
-        if(currApp.Current_Address_Abroad_Country__c == 'Australia' || currApp.Current_Address_Abroad_Country__c == 'New Zealand') {
+        if(currApp.Current_Address_Abroad_Country__c == 'Australia' || currApp.Current_Address_Abroad_Country__c == 'New Zealand' || currApp.Current_Address_Abroad_Country__c == 'South Korea') {
             currApp.Val_Agent__c = 'Becky';
             return;
         }
@@ -1033,10 +1038,8 @@ public without sharing class ApplicationTriggerHandler {
 		List<Application__c> newAgentApps = [
 	        SELECT New_Agent__c
             FROM Application__c
-            WHERE (Status__c = 'Fix' OR
-                   Status__c = 'Agent Check' OR
-                   Status__c = 'QC Approved') AND
-                   New_Agent__c != null
+            WHERE Status__c = 'Agent Check' AND
+                  New_Agent__c != null
         ];
         if(newAgentApps.isEmpty()) {
             return (new List<String>( AGENTS_PROPORTION.keySet()))[0];

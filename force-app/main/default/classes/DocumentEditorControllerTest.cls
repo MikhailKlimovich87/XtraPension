@@ -15,6 +15,19 @@ public with sharing class DocumentEditorControllerTest {
         ];
         Id personContactId = currentContact[0].Id;
         Application__c testApplication = TestDataFactory.createApplication(personContactId, true);
+        TestDataFactory.createEmployer(testApplication.Id, 'Work After UK', 'Disabled', true);
+        TestDataFactory.createEmployer(testApplication.Id, 'Work After UK', 'Homemaker', true);
+        TestDataFactory.createEmployer(testApplication.Id, 'Work After UK', 'Education', true);
+        TestDataFactory.createEmployer(testApplication.Id, 'Work After UK', 'Family Carer', true);
+        TestDataFactory.createEmployer(testApplication.Id, 'Work After UK', 'Self-Employed', true);
+        Employer__c testEmployer = new Employer__c(
+            Start_Date__c                  = Date.valueOf('2001-03-08'),
+            End_Date__c                    = Date.valueOf('2005-02-09'),
+            Type__c                        = 'UK Work',
+            Type_Of_UK_Employment__c       = 'Self-Employed',
+            Application__c                 = testApplication.Id
+        );
+        insert testEmployer;
     }
 
     @IsTest

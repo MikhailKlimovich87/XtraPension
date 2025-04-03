@@ -78,13 +78,13 @@
                 <p><b>National Insurance No:</b> {!appObj.National_Insurance_Number__c}</p>
                 <p><b>Name:</b> {!appObj.First_Name__c} {!appObj.Second_Name__c}</p>
                 <div class="main-block">
-                    <apex:outputText styleClass="output-data" escape="false" value="{!docBody}" style="margin-top:0px;text-align: justify; bottom-border-width: 0px"></apex:outputText>
+                    <apex:outputText styleClass="output-data" escape="false" value="{!topDocBody}" style="margin-top:0px;text-align: justify; bottom-border-width: 0px"></apex:outputText>
                 </div>
                 <div style="{!IF(ISBLANK(empUKObj), 'display:none', null)};">
                     <br/>
                     <div><b>Last UK Work</b></div>
                     <br/>
-                    <table style="-fs-table-paginate: paginate; border-style: solid; border-collapse: collapse;" border="1" cellspacing="0" class="empl-data">
+                    <table style="-fs-table-paginate: paginate; border-style: solid; border-collapse: collapse;" border="1" cellspacing="0">
                         <tr>
                             <th>
                                 Start Date
@@ -95,26 +95,30 @@
                             <th>
                                 Work
                             </th>
+                            <th>
+                                Type
+                            </th>
                         </tr>
                         <tr style="{!IF(ISBLANK(empUKObj), 'display:none', null)};">
-                            <td class="date-col" style="width:18%">
+                            <td class="date-col" style="width:18%; text-align: center;">
                                 <apex:outputtext value="{0,date,dd MMM yyyy}">
                                     <apex:param value="{!empUKObj.Start_Date__c}"></apex:param>
                                 </apex:outputtext>
                             </td>
-                            <td class="date-col" style="width:18%">
+                            <td class="date-col" style="width:18%; text-align: center;">
                                 <apex:outputtext value="{0,date,dd MMM yyyy}">
                                     <apex:param value="{!empUKObj.End_Date__c}"></apex:param>
                                 </apex:outputtext>
                             </td>
                             <td style="{!IF(OR(empUKObj.Type_Of_UK_Employment__c=='Unemployed',
                                                empUKObj.Type_Of_UK_Employment__c=='Self-Employed'),'','display:none')};">
-                                {!empUKObj.Type_Of_UK_Employment__c}
                             </td>
                             <td style="{!IF(empUKObj.Type_Of_UK_Employment__c=='Employed','','display:none')};">
                                 {!empUKObj.Employer_Name__c}<br/>
                                 {!empUKObj.Employers_Address__Street__s}<span style="{!IF(ISBLANK(empUKObj.Employers_Address__City__s),'display:none',null)};">, {!empUKObj.Employers_Address__City__s}</span><span style="{!IF(ISBLANK(empUKObj.Employers_Address__PostalCode__s),'display:none',null)};">, {!empUKObj.Employers_Address__PostalCode__s}</span>
                             </td>
+                            <td style="width:18%; text-align: center;">{!empUKObj.Type_Of_UK_Employment__c}</td>
+
                         </tr>
                     </table>
                 </div>
@@ -122,7 +126,7 @@
                     <br/>
                     <div><b>After Leaving the UK</b></div>
                     <br/>
-                    <table style="-fs-table-paginate: paginate; border-style: solid; border-collapse: collapse;" border="1" cellspacing="0" class="empl-data">
+                    <table style="-fs-table-paginate: paginate; border-style: solid; border-collapse: collapse;" border="1" cellspacing="0">
                         <tr>
                             <th>
                                 Start Date
@@ -133,15 +137,18 @@
                             <th>
                                 Work
                             </th>
+                            <th>
+                                Type
+                            </th>
                         </tr>
                         <apex:repeat value="{!empAfterUKObjList}" var="empl" >
                             <tr>
-                                <td class="date-col" style="width:18%">
+                                <td class="date-col" style="width:18%; text-align: center;">
                                     <apex:outputtext value="{0,date,dd MMM yyyy}">
                                         <apex:param value="{!empl.Start_Date__c}"></apex:param>
                                     </apex:outputtext>
                                 </td>
-                                <td class="date-col" style="width:18%">
+                                <td class="date-col" style="width:18%;text-align: center;">
                                     <apex:outputtext style="{!IF(OR(empl.Current_Work__c = 'No',ISNULL(empl.Current_Work__c)),'','display:none')};" value="{0,date,dd MMM yyyy}">
                                         <apex:param value="{!empl.End_Date__c}"></apex:param>
                                     </apex:outputtext>
@@ -156,28 +163,20 @@
                                                    empl.Type_Of_After_UK_Employment__c=='Retired',
                                                    empl.Type_Of_After_UK_Employment__c=='Education',
                                                    empl.Type_Of_After_UK_Employment__c=='Illness'), '','display:none')};">
-                                        {!empl.Type_Of_After_UK_Employment__c}
                                 </td>
                                 <td style="{!IF(empl.Type_Of_After_UK_Employment__c=='Employed','','display:none')};">
                                         {!empl.Employer_Name__c}<br/>
                                         {!empl.Employers_Address__Street__s}<span style="{!IF(ISBLANK(empl.Employers_Address__City__s), 'display:none',null)};">, {!empl.Employers_Address__City__s}</span><span style="{!IF(ISBLANK(empl.Employers_Address__StateCode__s), 'display:none',null)};">, {!empl.Employers_Address__StateCode__s}</span><span style="{!IF(ISBLANK(empl.Employers_Address__PostalCode__s),'display:none',null)};">, {!empl.Employers_Address__PostalCode__s}</span>, {!empl.Employers_Address__CountryCode__s}
                                 </td>
+                                <td style="text-align: center; width:18%;">{!empl.Type_Of_After_UK_Employment__c}</td>
                             </tr>
                         </apex:repeat>
                     </table>
                 </div>
                 <br/>
-                <p>I believe I qualify to pay Class 2 contributions for past years under HMRC's stated criteria that: </p>
-                <ul>
-                    <li>I was ordinarily employed (/self-employed) immediately before last leaving the UK</li>
-                    <li>I was in employment which was not employment in respect of earnings from which Class 1 contributions were payable.</li>
-                    <li>I was in employment abroad continuously paying social insurance (as verified by the official Govt contributions statement enclosed)</li>
-                    <li>I lived in the UK (/EU) for a continuous 3 year period before the period for which NI contributions are to be paid.</li>
-                    <li>I paid the qualifying amount of contributions in 3 years or more in UK (/EU)</li>
-                </ul>
-                <p>As I was habitually resident in an EU country and was previously compulsorily insured in the UK, I believe I therefore qualify for voluntary Class 2 contributions under Article 14 of EC Regulation 883/2004, the shared 'EU Residency' rule.</p>
-                <br/>
-                <p>Yours sincerely</p>
+                <div class="main-block">
+                    <apex:outputText styleClass="output-data" escape="false" value="{!bottomDocBody}" style="margin-top:0px;text-align: justify; bottom-border-width: 0px"></apex:outputText>
+                </div>
                 <br/>
                 <p>_________________</p>
                 <p>{!appObj.First_Name__c} {!appObj.Second_Name__c}</p>
@@ -185,6 +184,6 @@
                 <p><b>Tel:</b> {!appObj.Tel__c}</p>
                 <p><b>Email:</b> {!appObj.Email__c} (Please also cc NICS@jgbaglasgow.co.uk on all email comms)</p>
             </div>
-        </body>  
-    </html>  
+        </body>
+    </html>
 </apex:page>

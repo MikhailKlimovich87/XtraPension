@@ -41,6 +41,8 @@ public without sharing class AgentSalesReportController {
                 Agent_Making_Sale__c != 'Paul' AND
                 Agent_Making_Sale__c != 'George (Irish)' AND
                 Agent_Making_Sale__c != 'George (Aussie)' AND
+                Agent_Making_Sale__c != 'Ciaran' AND
+                Agent_Making_Sale__c != 'Amy' AND
                 CreatedDate >= :lastQtrStartDate
         ];
         Schema.SObjectType objSobjectType = Schema.getGlobalDescribe().get(OBJECT_NAME);
@@ -51,7 +53,7 @@ public without sharing class AgentSalesReportController {
         List<String> agentsName = new List<String>();
         for( Schema.PicklistEntry pickListVal : ple) {
             String name = pickListVal.getValue();
-            if (name == 'Carmel' || name == 'Kitty' || name == 'Ann-Louise' || name == 'John H' || name == 'Ciara' || name == 'Emma' || name == 'Elaine' || name == 'Barry' || name == 'Paul' || name == 'George (Irish)' || name == 'George (Aussie)') {
+            if (name == 'Carmel' || name == 'Kitty' || name == 'Ann-Louise' || name == 'John H' || name == 'Ciara' || name == 'Emma' || name == 'Elaine' || name == 'Barry' || name == 'Paul' || name == 'George (Irish)' || name == 'George (Aussie)' || name == 'Ciaran' || name == 'Amy') {
                 continue;
             }
             agentsName.add(name);

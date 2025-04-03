@@ -25,108 +25,88 @@
                 <div><b>National Insurance No: </b>{nino}</div>
                 <div><b>Name: </b>{firstName} {secondName}</div>
                 <br />
-                <lightning-input-rich-text value={choseValue} onchange={handleChange} formats={allowedFormats}>
+                <lightning-input-rich-text value={topData} onchange={handleChangeTopArea} formats={allowedFormats}>
                 </lightning-input-rich-text>
                 <br />
-                <!-- <template lwc:if={isExistUKEmployers}>  -->
-                <h3><b>Last UK Work</b></h3>
-                <br>
-                <table>
-                    <tr>
-                        <th  width="15%">
-                            Start Date
-                        </th>
-                        <th  width="15%">
-                            End Date
-                        </th>
-                        <th>
-                            Work
-                        </th>
-                    </tr>
-                    <tr>
-                        <td>{lastEmpl.Start_Date__c}</td>
-                        <td>{lastEmpl.End_Date__c}</td>
-                        <template if:true={isEmployedEmployer}>
+                <template lwc:if={isExistUKEmployers}>
+                    <br>
+                    <h3><b>Last UK Work</b></h3>
+                    <br>
+                    <table>
+                        <tr>
+                            <th width="18%">
+                                Start Date
+                            </th>
+                            <th width="18%">
+                                End Date
+                            </th>
+                            <th>
+                                Work
+                            </th>
+                            <th width="18%">
+                                Type
+                            </th>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">{lastEmpl.startDate}</td>
+                            <td style="text-align: center;">{lastEmpl.endDate}</td>
                             <td>
-                                {lastEmpl.Employer_Name__c}<br>
-                                {lastEmpl.Employers_Address__Street__s},  {lastEmpl.Employers_Address__City__s}, {lastEmpl.Employers_Address__PostalCode__s}
+                                {lastEmpl.employerName}<br>
+                                {lastEmpl.addressData}
                             </td>
-                        </template>
-                        <template if:false={isEmployedEmployer}>
-                            <td>
-                                {lastEmpl.Type_Of_UK_Employment__c}
+                            <td style="text-align: center;">
+                                {lastEmpl.employerType}
                             </td>
-                        </template>
-                    </tr>
-                </table>
-                <!-- </template> -->
-                <br>
-                <h3><b>After Leaving the UK</b></h3>
-                <br>
-                <table>
-                    <tr>
-                        <th width="15%">
-                            Start Date
-                        </th>
-                        <th width="15%">
-                            End Date
-                        </th>
-                        <th>
-                            Work
-                        </th>
-                    </tr>
-                    <template for:each={abroadEmpl} for:item="employer">
-                        <tr key={employer.numberOfEmployer}>
-
-                            <td>{employer.Start_Date__c}</td>
-                            <template if:true={employer.currentWork}>
-                                <td>Current</td>
-                            </template>
-                            <template if:false={employer.currentWork}>
-                                <td>{employer.End_Date__c}</td>
-                            </template>
-                            <td>
-                                {employer.Type_Of_After_UK_Employment__c}
-                            </td>
-                            <!-- <template if:true={employer.isEmployedType}> -->
-                                <!-- <td>
-                                    {employer.Employer_Name__c}<br>
-                                    {employer.Employers_Address__Street__s},  {employer.Employers_Address__City__s}, {employer.Employers_Address__PostalCode__s}
-                                </td> -->
-                            <!-- </template> -->
-                            <!-- <template if:false={employer.isEmployedType}>
+                        </tr>
+                    </table>
+                </template>
+                <template lwc:if={isExistAfterUKEmployers}>
+                    <br>
+                    <h3><b>After Leaving the UK</b></h3>
+                    <br>
+                    <table>
+                        <tr>
+                            <th width="18%">
+                                Start Date
+                            </th>
+                            <th width="18%">
+                                End Date
+                            </th>
+                            <th>
+                                Work
+                            </th>
+                            <th width="18%">
+                                Type
+                            </th>
+                        </tr>
+                        <template for:each={abroadEmpl} for:item="employer">
+                            <tr key={employer.numberOfEmployer}>
+                                <td style="text-align: center;">{employer.startDate}</td>
+                                <td style="text-align: center;">
+                                    <template if:true={employer.currentWork}>
+                                        Current
+                                    </template>
+                                    <template if:false={employer.currentWork}>
+                                        {employer.endDate}
+                                    </template>
+                                </td>
                                 <td>
+                                    <template if:true={employer.isEmployedType}>
+                                        {employer.employerName}<br>
+                                        {employer.addressData}
+                                    </template>
+                                </td>
+                                <td style="text-align: center;">
                                     {employer.employerType}
                                 </td>
-                            </template> -->
-                        </tr>
-                    </template>
-                </table>
-                <div>
-                    <br/>
-                    <div>I believe I qualify to pay Class 2 contributions for past years under HMRC's stated criteria that:
-                    </div>
-                    <br/>
-                    <ul>
-                        <li>I was ordinarily employed (/self-employed) immediately before last leaving the UK</li>
-                        <li>I was in employment which was not employment in respect of earnings from which Class 1
-                            contributions were payable.</li>
-                        <li>I was in employment abroad continuously paying social insurance (as verified by the official
-                            Govt contributions statement enclosed)</li>
-                        <li>I lived in the UK (/EU) for a continuous 3 year period before the period for which NI
-                            contributions are to be paid.</li>
-                        <li>I paid the qualifying amount of contributions in 3 years or more in UK (/EU)</li>
-                    </ul>
-                </div>
-                <br/>
-                <div>
-                    As I was habitually resident in an EU country and was previously compulsorily insured in the UK, I believe I therefore qualify for voluntary Class 2 contributions under Article 14 of EC Regulation 883/2004, the shared 'EU Residency' rule.
-                </div>
-                <br/>
-                <br/>
-                <div>
-                    Yours sincerely<br />
-                </div>
+                            </tr>
+                        </template>
+                    </table>
+                </template>
+                <br />
+                <lightning-input-rich-text value={bottomData} onchange={handleChangeBottomArea} formats={allowedFormats}>
+                </lightning-input-rich-text>
+                <br />
             </div>
             <div class="slds-modal__footer">
                 <button class="slds-button slds-button_neutral" aria-label="Cancel and close"

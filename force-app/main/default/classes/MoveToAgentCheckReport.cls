@@ -146,6 +146,15 @@ public without sharing class MoveToAgentCheckReport {
     }
 
     private static PeriodData getChanges(String periodName, Map<Date, Map<String, List<Application__history>>> agentCheckChangesCounter) {
+        PeriodData finalResult = new PeriodData();
+        finalResult.dataValue = new List<String>();
+        finalResult.dataValue.add(periodName);
+        if (agentCheckChangesCounter.size() == 0) {
+            for (User user : ACTIVE_USERS) {
+                finalResult.dataValue.add('0');
+            }
+            return finalResult;
+        }
         List<PeriodData> fullChanges = new List<PeriodData>();
         for(Date changeDate : agentCheckChangesCounter.keySet()) {
             PeriodData usersData = new PeriodData();
@@ -160,9 +169,6 @@ public without sharing class MoveToAgentCheckReport {
             }
             fullChanges.add(usersData);
         }
-        PeriodData finalResult = new PeriodData();
-        finalResult.dataValue = new List<String>();
-        finalResult.dataValue.add(periodName);
         for (Integer i = 0; i < fullChanges.size(); i++ ) {
             for (Integer j = 1; j < fullChanges[i].dataValue.size(); j++) {
                 if (i == 0) {

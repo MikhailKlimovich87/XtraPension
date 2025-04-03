@@ -1,9 +1,9 @@
 public class DocumentEditorController {
     public class EditModalWrapper {
         @AuraEnabled
-        public List<Employer__c> abroadEmployers {get; set;}
+        public List<EmployerData> abroadEmployers {get; set;}
         @AuraEnabled
-        public Employer__c lastUkEmployer{get; set;}
+        public EmployerData lastUkEmployer{get; set;}
         @AuraEnabled
         public List<HTMLData> htmlInfo{get; set;}
     }
@@ -22,6 +22,32 @@ public class DocumentEditorController {
         @AuraEnabled
         public String typeOfTemplate{get; set;}
     }
+
+    public class EmployerData {
+        @AuraEnabled
+        public String startDate{get; set;}
+        @AuraEnabled
+        public String endDate{get; set;}
+        @AuraEnabled
+        public String employerName{get; set;}
+        @AuraEnabled
+        public String addressData {get; set;}
+        @AuraEnabled
+        public Integer numberOfEmployer {get; set;}
+        @AuraEnabled
+        public Boolean includeEmployer {get; set;}
+        @AuraEnabled
+        public String checkboxFieldName{get; set;}
+        @AuraEnabled
+        public String employerId{get; set;}
+        @AuraEnabled
+        public Boolean isEmployedType{get; set;}
+        @AuraEnabled
+        public Boolean currentWork {get; set;}
+        @AuraEnabled
+        public String employerType{get; set;}
+    }
+
     public static Application__c currentApp;
     public static final Map<String, String> TEMPLATE_NAME_TO_APPLICATION_FIELD = new Map<String, String> {
         'NINO'                => 'NINO_Template__c',
@@ -49,7 +75,7 @@ public class DocumentEditorController {
     @AuraEnabled(cacheable='true')
     public static EditModalWrapper getEmailTemplateData(String applicationId) {
         EditModalWrapper resultWrapper = new EditModalWrapper();
-        resultWrapper.abroadEmployers = new List<Employer__c>();
+        resultWrapper.abroadEmployers = new List<EmployerData>();
         resultWrapper.htmlInfo = new List<HTMLData>();
         List<HTMLData> templates = new List<HTMLData>();
         List<Application__c> applications = [
@@ -84,7 +110,9 @@ public class DocumentEditorController {
                         Employers_Address_Country__c,
                         Type_Of_UK_Employment__c,
                         Type_Of_After_UK_Employment__c,
-                        Type__c
+                        Type__c,
+                        Current_Work__c,
+                        Add_to_custom_letter__c
                     FROM Employers__r)
             FROM Application__c
             WHERE Id = :applicationId
@@ -111,10 +139,69 @@ public class DocumentEditorController {
         resultWrapper.htmlInfo.addAll(templates);
         if (currentApplication.Employers__r.size() != 0) {
             for (Employer__c empl : currentApplication.Employers__r) {
-                if (empl.Type__c == 'UK Work') {
-                    resultWrapper.lastUkEmployer = empl;
+                if (empl.Type__c == 'UK Work' && empl.Type__c != 'Not employed') {
+                    EmployerData lastUKEmployer = new EmployerData();
+                    lastUKEmployer.employerName = empl.Type_Of_UK_Employment__c == 'Employed' ?
+                        empl.Employer_Name__c :
+                        '';
+                    lastUKEmployer.startDate = empl.Start_Date__c != null ?
+                        ((Datetime)empl.Start_Date__c).format('EEE dd MMM yyyy') :
+                        null;
+                    lastUKEmployer.endDate   = empl.End_Date__c != null ?
+                        ((Datetime)empl.End_Date__c).format('EEE dd MMM yyyy') :
+                        null;
+                    lastUKEmployer.addressData = empl.Type_Of_UK_Employment__c == 'Employed' ?
+                        empl.Employers_Address__Street__s + ', ' +
+                        empl.Employers_Address__City__s + ', ' +
+                        empl.Employers_Address__PostalCode__s + ', ' +
+                        empl.Employers_Address__CountryCode__s :
+                        '';
+                    lastUKEmployer.employerType = empl.Type_Of_UK_Employment__c;
+                    resultWrapper.lastUkEmployer = lastUKEmployer;
                 } else if (empl.Type__c == 'Work After UK') {
-                    resultWrapper.abroadEmployers.add(empl);
+                    EmployerData abroadEmplolyer = new EmployerData();
+                    abroadEmplolyer.employerName = empl.Employer_Name__c;
+                    abroadEmplolyer.startDate = empl?.Start_Date__c != null ? ((Datetime)empl?.Start_Date__c).format('EEE dd MMM yyyy') : '';
+                    abroadEmplolyer.endDate =  empl?.End_Date__c == null ? '' : ((Datetime)empl?.End_Date__c).format('EEE dd MMM yyyy');
+                    if (empl.Type_Of_After_UK_Employment__c == 'Employed') {
+                        abroadEmplolyer.isEmployedType = true;
+                        abroadEmplolyer.employerType = 'Employed';
+                        abroadEmplolyer.addressData = (String) empl.Employers_Address__Street__s  + ', ' +
+                                                      ((String) empl.Employers_Address__City__s == null ? '' : (String) empl.Employers_Address__City__s + ', ' ) +
+                                                      ((String) empl.Employers_Address__PostalCode__s == null ? '' : (String) empl.Employers_Address__PostalCode__s + ', ' ) +
+                                                     (String) empl.Employers_Address__CountryCode__s;
+                        abroadEmplolyer.currentWork = empl.Current_Work__c == 'Yes' ? true : false;
+                    } else if (empl.Type_Of_After_UK_Employment__c == 'Career Break') {
+                        abroadEmplolyer.isEmployedType = false;
+                        abroadEmplolyer.employerType = 'Career Break';
+                    } else if (empl.Type_Of_After_UK_Employment__c == 'Self-Employed') {
+                        abroadEmplolyer.isEmployedType = false;
+                        abroadEmplolyer.employerType = 'Self-Employed';
+                    } else if (empl.Type_Of_After_UK_Employment__c == 'Unemployed') {
+                        abroadEmplolyer.isEmployedType = false;
+                        abroadEmplolyer.employerType = 'Unemployed';
+                    } else if (empl.Type_Of_After_UK_Employment__c == 'Family Carer') {
+                        abroadEmplolyer.isEmployedType = false;
+                        abroadEmplolyer.employerType = 'Family Carer';
+                    } else if (empl.Type_Of_After_UK_Employment__c == 'Homemaker') {
+                        abroadEmplolyer.isEmployedType = false;
+                        abroadEmplolyer.employerType = 'Homemaker';
+                    } else if (empl.Type_Of_After_UK_Employment__c == 'Disabled') {
+                        abroadEmplolyer.isEmployedType = false;
+                        abroadEmplolyer.employerType = 'Disabled';
+                    } else if (empl.Type_Of_After_UK_Employment__c == 'Retired') {
+                        abroadEmplolyer.isEmployedType = false;
+                        abroadEmplolyer.employerType = 'Retired';
+                    } else if (empl.Type_Of_After_UK_Employment__c == 'Education') {
+                        abroadEmplolyer.isEmployedType = false;
+                        abroadEmplolyer.employerType = 'Education';
+                    } else if (empl.Type_Of_After_UK_Employment__c == 'Illness') {
+                        abroadEmplolyer.isEmployedType = false;
+                        abroadEmplolyer.employerType = 'Illness';
+                    }
+                    abroadEmplolyer.employerId = empl.Id;
+                    abroadEmplolyer.includeEmployer = empl.Add_to_custom_letter__c;
+                    resultWrapper.abroadEmployers.add(abroadEmplolyer);
                 }
             }
         }

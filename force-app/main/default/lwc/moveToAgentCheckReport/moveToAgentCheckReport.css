@@ -12,4 +12,5 @@
 th, td {
     text-align: center;
     height: 10px;
+    border-width: 2px;
 }

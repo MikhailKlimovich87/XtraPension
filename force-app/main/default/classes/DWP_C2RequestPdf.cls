@@ -1,7 +1,8 @@
 public class DWP_C2RequestPdf {
     public String MstrId{get;set;}
     public Application__c appObj{get;set;}
-    public String docBody{get;set;}
+    public String topDocBody{get;set;}
+	public String bottomDocBody{get;set;}
     public Employer__c empUKObj{get;set;}
     public List<Employer__c> empAfterUKObjList{get;set;}
 
@@ -22,7 +23,11 @@ public class DWP_C2RequestPdf {
             LIMIT 1
 		];
         if (appObj.DWP_C2_Request_Template__c != null) {
-            docBody = appObj.DWP_C2_Request_Template__c;
+			String[] textAreaData = appObj.DWP_C2_Request_Template__c.split('SPLIT=============');
+			if (textAreaData.size() == 2) {
+				topDocBody = textAreaData[0];
+ 				bottomDocBody = textAreaData[1];
+			}
         }
         List<Employer__c> lastUkEmployer= [
 			SELECT

@@ -8,7 +8,8 @@ public without sharing class SendToPHReportController {
                     FROM User
                     WHERE IsActive = true AND
                         (Name = 'Fiona Carey' OR
-                        Name = 'Rob Landy')
+                        Name = 'Rob Landy' OR
+                        Name = 'John Ring' )
                 ];
                 if (!activeUsers.isEmpty()) {
                     ACTIVE_USERS = activeUsers;
@@ -33,7 +34,12 @@ public without sharing class SendToPHReportController {
             WHERE CreatedDate = LAST_N_DAYS:180 AND
                   Field = 'Status__c' AND (
                   CreatedBy.Name = 'Fiona Carey' OR
-                  CreatedBy.Name = 'Rob Landy')
+                  CreatedBy.Name = 'Rob Landy' OR
+                  CreatedBy.Name = 'John Ring') AND
+                  (Parent.Status__c = 'DWP Teleclaim'  OR
+                   Parent.Status__c = 'Posted' OR
+                   Parent.Status__c = 'DWP 2 Emails Sent' OR
+                   Parent.Status__c = 'DWP Shortfall Pending')
             ORDER BY CreatedDate DESC];
         if (historyData.size() == 0) {
             return null;
@@ -126,6 +132,15 @@ public without sharing class SendToPHReportController {
     }
 
     private static PeriodData getChanges(String periodName, Map<Date, Map<String, List<Application__history>>> agentCheckChangesCounter) {
+        PeriodData finalResult = new PeriodData();
+        finalResult.dataValue = new List<String>();
+        finalResult.dataValue.add(periodName);
+        if (agentCheckChangesCounter.size() == 0) {
+            for (User user : ACTIVE_USERS) {
+                finalResult.dataValue.add('0');
+            }
+            return finalResult;
+        }
         List<PeriodData> fullChanges = new List<PeriodData>();
         for(Date changeDate : agentCheckChangesCounter.keySet()) {
             PeriodData usersData = new PeriodData();
@@ -140,9 +155,6 @@ public without sharing class SendToPHReportController {
             }
             fullChanges.add(usersData);
         }
-        PeriodData finalResult = new PeriodData();
-        finalResult.dataValue = new List<String>();
-        finalResult.dataValue.add(periodName);
         for (Integer i = 0; i < fullChanges.size(); i++ ) {
             for (Integer j = 1; j < fullChanges[i].dataValue.size(); j++) {
                 if (i == 0) {

@@ -11,6 +11,8 @@ export default class EditDwpC2Modal extends LightningElement {
     @api abroadEmpl;
     @api lastEmpl;
     choseValue;
+    topData;
+    bottomData;
 
     allowedFormats = [
         'font',
@@ -39,23 +41,28 @@ export default class EditDwpC2Modal extends LightningElement {
     connectedCallback() {
         var newDate = new Date();
         this.dateToday = newDate.toLocaleDateString('en-GB');
-        console.log('this.abroadEmpl === ', this.abroadEmpl);
-        console.log('this.lastEmpl === ', this.lastEmpl);
-
+        let splitResult = this.choseValue.split("SPLIT=============");
+        if(splitResult.length == 2){
+            this.topData = splitResult[0];
+            this.bottomData = splitResult[1];
+        };
     }
 
     closeAction() {
         this.dispatchEvent(new CustomEvent('hidepopup'));
     }
 
-    handleChange(event) {
-        this.choseValue = event.target.value;
+    handleChangeTopArea(event) {
+        this.topData = event.target.value;
+    }
+    handleChangeBottomArea(event) {
+        this.bottomData = event.target.value;
     }
 
     handleCreatePDF() {
         this.dispatchEvent(new CustomEvent(
             'generatepdf', {
-                detail: this.choseValue
+                detail: this.topData + 'SPLIT=============' + this.bottomData
            })
         );
         this.closeAction();
@@ -65,5 +72,19 @@ export default class EditDwpC2Modal extends LightningElement {
     get isEmployedEmployer() {
         if (this.lastEmpl.Type_Of_UK_Employment__c == 'Employed') return true;
         else return false;
+    }
+
+    @api
+    get isExistUKEmployers() {
+        console.log('this.lastEmpl === ', this.lastEmpl);
+        
+        return this.lastEmpl == undefined ? false : true;
+    }
+
+    @api
+    get isExistAfterUKEmployers() {
+        console.log('this.abroadEmpl === ', this.abroadEmpl);
+
+        return this.abroadEmpl == undefined ? false : true;
     }
 }
