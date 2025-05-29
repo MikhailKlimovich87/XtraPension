@@ -18,11 +18,11 @@ export default class EditDocumentModal extends LightningElement {
     currDate;
 
     connectedCallback() {
-        this.startLetterData = this.app.Freeform_Text_Line1__c;
-        this.sectionA_Data   = this.app.Freeform_Text_Line2__c;
-        this.sectionB_Data   = this.app.Freeform_Text_Line3__c;
-        this.sectionC_Data   = this.app.Freeform_Text_Line4__c;
-        this.extraInfoData   = this.app.Freeform_Text_Line5__c;
+        this.startLetterData = this.app.Freeform_RichText_Line1__c;
+        this.sectionA_Data   = this.app.Freeform_RichText_Line2__c;
+        this.sectionB_Data   = this.app.Freeform_RichText_Line3__c;
+        this.sectionC_Data   = this.app.Freeform_RichText_Line4__c;
+        this.extraInfoData   = this.app.Freeform_RichText_Line5__c;
         if(!this.app.Custom_Letter_Date__c) {
             let newDate = new Date();
             this.currDate       = newDate.toISOString();
@@ -111,6 +111,11 @@ export default class EditDocumentModal extends LightningElement {
     @api
     get isExistThirdLastUKAddress() {
         return (this.app.Previous_UK_Address_Start_Date_3__c == null || this.app.Previous_UK_Address_End_Date_3__c == null) ? false : true;
+    }
+
+    @api
+    get isExistDWPCallbackRequest() {
+        return (this.app.DWP_Callback_Request__c == null) ? false : true;
     }
 
     @api

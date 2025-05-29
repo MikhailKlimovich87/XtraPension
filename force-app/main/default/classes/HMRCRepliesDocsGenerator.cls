@@ -44,7 +44,7 @@ public class HMRCRepliesDocsGenerator implements Queueable, Database.AllowsCallo
             String finalTitle = currentApplication.First_Name__c + '_' + currentApplication.Second_Name__c + '_' +
                                 currentApplication.Name + '_' + FIELD_BODY_TO_FILE_NAME.get(typeOfTemplate);
 
-            saveFile(pdfBlob, finalTitle);            
+            saveFile(pdfBlob, finalTitle);
         } else if (typeOfTemplate == 'DWP_Status_Check_Template__c') {
             List<Application__c> apps = [
 			    SELECT

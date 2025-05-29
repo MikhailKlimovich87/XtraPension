@@ -343,6 +343,69 @@ public with sharing class ApplicationTriggerTest {
         System.assertEquals(null, applicationAfterUpdate.Abroad_Employer_Start_Date1__c);
     }
 
+        @IsTest
+    static void updateSelfemployedAbroadFieldTestCase4() {
+        List<Product2> products = TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        List<Contact> currentContact = [
+            SELECT
+                Id,
+                AccountId
+            FROM Contact
+            WHERE AccountId = :account.Id
+            LIMIT 1
+        ];
+        Id personContactId = currentContact[0].Id;
+        Application__c testApplication = TestDataFactory.createApplication(personContactId, false);
+        testApplication.Agent_Making_Sale__c = 'None';
+        insert testApplication;
+
+        // EmailTemplate validEmailTemplate = new EmailTemplate();
+        //     validEmailTemplate.isActive = true;
+        //     validEmailTemplate.Name = 'Registration Data Information';
+        //     validEmailTemplate.DeveloperName = 'Registration_Data_Information';
+        //     validEmailTemplate.TemplateType = 'text';
+        //     validEmailTemplate.FolderId = UserInfo.getUserId();
+        // insert validEmailTemplate;
+
+        Employer__c selfEmployedEmployer = TestDataFactory.createEmployer(testApplication.Id, 'Work After UK', 'Self-Employed', true);
+        Employer__c employedEmployer     = TestDataFactory.createEmployer(testApplication.Id, 'Work After UK', 'Employed', false);
+        employedEmployer.Employers_Address__City__s        = 'Test';
+        employedEmployer.Employers_Address__CountryCode__s = 'AU';
+        employedEmployer.Employers_Address__PostalCode__s  = '1124';
+        employedEmployer.Employers_Address__StateCode__s   = 'QLD';
+        employedEmployer.Employers_Address__Street__s      = '12 Test Street';
+        employedEmployer.Employers_Address_State__c        = 'Queensland';
+        employedEmployer.Employers_Address_Country__c      = 'Australia';
+        insert employedEmployer;
+        testApplication.SelfEmployment_Employment_Abroad__c = 'Self-Employed';
+        update testApplication;
+        List<Application__c> applications = [
+            SELECT
+                Abroad_Employer_Address1__City__s,
+                Abroad_Employer_Address1__CountryCode__s,
+                Abroad_Employer_Address1__PostalCode__s,
+                Abroad_Employer_Address1__StateCode__s,
+                Abroad_Employer_Address1__Street__s,
+                Abroad_Employer_End_Date1__c,
+                Abroad_Employer_Name1__c,
+                Abroad_Employer_Start_Date1__c,
+                Abroad_Employer_Address1_State__c,
+                Abroad_Employer_Address1_Country__c,
+                Self_Employed_Start_Date1__c,
+                Self_Employed_End_Date1__c,
+                SelfEmployment_Employment_Abroad__c
+            FROM Application__c
+            LIMIT 1
+        ];
+        if (applications.isEmpty()) {
+            return;
+        }
+        Application__c applicationAfterUpdate = applications[0];
+    }
+
+
     @IsTest
     static void updateRelatedDocumentsAfterChangeApplicationNameTest() {
         TestDataFactory.createProductsWithPrices();
@@ -899,6 +962,172 @@ public with sharing class ApplicationTriggerTest {
         System.assertEquals(1,i);
     }
 
+    @isTest
+    static void deferredCustomNotificationAppsTest() {
+        Profile p = [SELECT Id FROM Profile WHERE Name='Standard User'];
+        User u = new User(
+            Alias = 'Daniel',
+            Email= 'daniel@test.com',
+            EmailEncodingKey='UTF-8',
+            FirstName='Daniel',
+            LastName='Testing',
+            LanguageLocaleKey='en_US',
+            LocaleSidKey='en_IE_EURO',
+            ProfileId = p.Id,
+            TimeZoneSidKey ='Europe/Dublin',
+            UserName = 'daniel.xtrapension@test.com');
+        insert u;
+        List<Product2> products = TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        List<Contact> currentContact = [
+            SELECT
+                Id,
+                AccountId
+            FROM Contact
+            WHERE AccountId = :account.Id
+            LIMIT 1
+        ];
+        Id personContactId = currentContact[0].Id;
+        Application__c testApplication = TestDataFactory.createApplication(personContactId, true);
+        Test.startTest();
+        testApplication.Status__c = 'Deferred';
+        update testApplication;
+        Test.stopTest();
+        Integer i = Limits.getEmailInvocations();
+        System.assertEquals(1,i);
+    }
+
+    @isTest
+    static void didClientChangeNameTest() {
+        List<Product2> products = TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        List<Contact> currentContact = [
+            SELECT
+                Id,
+                AccountId
+            FROM Contact
+            WHERE AccountId = :account.Id
+            LIMIT 1
+        ];
+        Id personContactId = currentContact[0].Id;
+        Application__c testApplication = TestDataFactory.createApplication(personContactId, false);
+        testApplication.Did_Client_Change_Name__c = 'No';
+        insert testApplication;
+        Test.startTest();
+        testApplication.Did_Client_Change_Name__c = 'Yes';
+        update testApplication;
+        Test.stopTest();
+        List<Application__c> appsAfterUpdate = [
+            SELECT Did_You_Change_Name__c
+            FROM Application__c
+        ];
+        Assert.areEqual(true,appsAfterUpdate[0].Did_You_Change_Name__c);
+    }
+
+    @isTest
+    static void updateDaysSinceContactTest() {
+        List<Product2> products = TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        List<Contact> currentContact = [
+            SELECT
+                Id,
+                AccountId
+            FROM Contact
+            WHERE AccountId = :account.Id
+            LIMIT 1
+        ];
+        Id personContactId = currentContact[0].Id;
+        Application__c testApplication = TestDataFactory.createApplication(personContactId, false);
+        testApplication.Who__c = 'John';
+        insert testApplication;
+        Test.startTest();
+        testApplication.Who__c = 'Monica';
+        update testApplication;
+        Test.stopTest();
+    }
+
+    @isTest
+    static void sendGoogleReviewEmailTest() {
+        List<Product2> products = TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        List<Contact> currentContact = [
+            SELECT
+                Id,
+                AccountId
+            FROM Contact
+            WHERE AccountId = :account.Id
+            LIMIT 1
+        ];
+        Id personContactId = currentContact[0].Id;
+        Application__c testApplication = TestDataFactory.createApplication(personContactId, false);
+        testApplication.Status__c = 'Agent Call';
+        insert testApplication;
+        Test.startTest();
+        testApplication.Status__c = 'Charge CC';
+        update testApplication;
+        Test.stopTest();
+    }
+
+    @isTest
+    static void generateSuccessDocsTest() {
+        List<Product2> products = TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        List<Contact> currentContact = [
+            SELECT
+                Id,
+                AccountId
+            FROM Contact
+            WHERE AccountId = :account.Id
+            LIMIT 1
+        ];
+        Id personContactId = currentContact[0].Id;
+        Application__c testApplication = TestDataFactory.createApplication(personContactId, true);
+        Test.startTest();
+        testApplication.Status__c = 'Send to Client';
+        update testApplication;
+        Test.stopTest();
+    }
+
+    @isTest
+    static void generateAllMainDocsTest() {
+        Test.setMock(HttpCalloutMock.class, new GeneratePDFMock());
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        List<Contact> currentContact = [
+            SELECT
+                Id,
+                AccountId
+            FROM Contact
+            WHERE AccountId = :account.Id
+            LIMIT 1
+        ];
+        Id personContactId = currentContact[0].Id;
+        Application__c testApplication = TestDataFactory.createApplication(personContactId, true);
+        ContentVersion testContentVersion = TestDataFactory.createTestContentVersion(true);
+        Id contDocId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :testContentVersion.Id][0].ContentDocumentId;
+        ContentDocumentLink conDocLink = new ContentDocumentLink();
+        conDocLink.LinkedEntityId = testApplication.Id;
+        conDocLink.ContentDocumentId = contDocId;
+        insert conDocLink;
+        Agent__c testAgent = TestDataFactory.createAgent(true);
+        testApplication.Agent__c = testAgent.Id;
+        update testApplication;
+        Order order = TestDataFactory.createOrder(testApplication.Id, account.Id, true);
+        TestDataFactory.createPayment(testApplication.Id, order.Id, true);
+        TestDataFactory.createEmployer(testApplication.Id, 'UK Work', null, true);
+        TestDataFactory.createXtraPensionDataCustomSetting(true);
+        Test.startTest();
+        testApplication.Status__c = 'Form Completed';
+        update testApplication;
+        Test.stopTest();
+    }
+
     private class PaymentMethodMock implements HttpCalloutMock {
         public HTTPResponse respond(HTTPRequest req) {
             // Create a fake response
@@ -917,7 +1146,7 @@ public with sharing class ApplicationTriggerTest {
         }
     }
 
-    static testMethod void fakeTest(){
-        ApplicationTriggerHandler.fakeMethod();
-    }
+    // static testMethod void fakeTest(){
+    //     ApplicationTriggerHandler.fakeMethod();
+    // }
 }

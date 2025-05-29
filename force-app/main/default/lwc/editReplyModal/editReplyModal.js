@@ -9,6 +9,7 @@ export default class EditReplyModal extends LightningElement {
     @api appName;
     @api hmrcRef;
     @api nino;
+    currDate;
 
     allowedFormats = [
         'font',
@@ -37,6 +38,7 @@ export default class EditReplyModal extends LightningElement {
     connectedCallback() {
         var newDate = new Date();
         this.dateToday = newDate.toLocaleDateString('en-GB');
+        this.currDate  = new Date().toISOString();
     }
 
     handleChange(event) {
@@ -45,10 +47,16 @@ export default class EditReplyModal extends LightningElement {
     closeAction() {
         this.dispatchEvent(new CustomEvent('hidepopup'));
     }
+    saveCurrDate(event) {
+        this.currDate = event.target.value;
+    }
     handleCreatePDF() {
         this.dispatchEvent(new CustomEvent(
             'generatepdf', {
-                detail: this.choseValue
+                detail: {
+                    body:this.choseValue,
+                    dateData: this.currDate
+                }
            })
         );
         this.closeAction();

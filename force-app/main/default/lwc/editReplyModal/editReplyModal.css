@@ -35,3 +35,14 @@ h3 {
 .caseworker-address {
     font-size: 1.2rem
 }
+.date-container{
+    display: table;
+    width:100%;
+}
+.date-label{
+    display: table-cell;
+}
+.date-input {
+    display: table-cell;
+    width: 150px;
+}

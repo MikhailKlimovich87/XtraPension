@@ -16,6 +16,7 @@ public class DWP_C2RequestPdf {
                 National_Insurance_Number__c,
                 DWP_C2_Request_Template__c,
                 Full_Current_Address_Abroad__c,
+				HMRC_Reply_Doc_Generate_Date__c,
                 Tel__c,
 				Email__c
             FROM Application__c

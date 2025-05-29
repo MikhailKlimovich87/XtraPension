@@ -43,3 +43,15 @@ ul:not(.browser-default) li {
 ul {
     margin-left: 1.5rem;
 }
+
+.date-container{
+    display: table;
+    width:100%;
+}
+.date-label{
+    display: table-cell;
+}
+.date-input {
+    display: table-cell;
+    width: 150px;
+}

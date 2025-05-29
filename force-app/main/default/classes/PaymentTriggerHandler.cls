@@ -18,16 +18,66 @@ public class PaymentTriggerHandler {
     public static final String[] ADMIN_EMAIL_ADDRESS  = new String[] {
         'mishaklimovich87@gmail.com'
     };
+    //public static final String ADMIN_FAIL_REMINDER_EMAIL_ADDRESS = 'jr@xtrapension.com';
+    public static final String ADMIN_FAIL_REMINDER_EMAIL_ADDRESS = 'mishaklimovich87@gmail.com';
+    public static final String FAIL_PAYMENT_SMS_MESSAGE = 'Hi - We got an error when trying to charge your credit card. Please see our email (check spam folder). Thanks. XtraPension Ltd';
+    public static final String ACCOUNT_ID = XtraPension_Data__c.getInstance().Twilio_Account__c;
+    public static final String TOKEN_ID   = XtraPension_Data__c.getInstance().Twilio_Token__c;
+    public static final String FROM_NAME = 'XtraPension';
+    private static final OrgWideEmailAddress DEFAULT_ORG_WIDE_EMAIL_ADDRESS {
+        get {
+            if (DEFAULT_ORG_WIDE_EMAIL_ADDRESS == null) {
+                List<OrgWideEmailAddress> orgWideEmailAddresses = [
+                    SELECT Id
+                    FROM OrgWideEmailAddress
+                    WHERE Address = 'clients@xtrapension.com'
+                    WITH USER_MODE
+                    LIMIT 1
+                ];
+                if (!orgWideEmailAddresses.isEmpty()) {
+                    DEFAULT_ORG_WIDE_EMAIL_ADDRESS = orgWideEmailAddresses[0];
+                }
+            }
+            return DEFAULT_ORG_WIDE_EMAIL_ADDRESS;
+        }
+        private set;
+    }
+
+    private static final EmailTemplate PAYMENT_ERROR_TEMPLATE {
+        get {
+            if (PAYMENT_ERROR_TEMPLATE == null) {
+                List<EmailTemplate> emailTemplates = [
+                    SELECT Id, Subject, Body
+                    FROM EmailTemplate
+                    WHERE DeveloperName = 'Payment_error_message'
+                    WITH USER_MODE
+                    LIMIT 1
+                ];
+                if (!emailTemplates.isEmpty()) {
+                    PAYMENT_ERROR_TEMPLATE = emailTemplates[0];
+                }
+            }
+        return PAYMENT_ERROR_TEMPLATE;
+    }
+        private set;
+    }
 
     public static void sendEmailAfterChangeStatus(Map<Id, Payment__c> newPayments, Map<Id, Payment__c> oldPayments) {
         List<Payment__c> paidPayments = new List<Payment__c>();
+        Set<Id> failPaymentIds = new Set<Id>();
         for (Payment__c payment : newPayments.values()) {
             if (payment.Status__c == 'Paid' && payment.Status__c != oldPayments.get(payment.Id).Status__c) {
                 paidPayments.add(payment);
             }
+            if (payment.Status__c == 'Fail' && payment.Status__c != oldPayments.get(payment.Id).Status__c) {
+                failPaymentIds.add(payment.Id);
+            }
         }
         if (!paidPayments.isEmpty()) {
             sendReceipt(paidPayments);
+        }
+        if (!failPaymentIds.isEmpty()) {
+            sendFailNotification(failPaymentIds);
         }
     }
 
@@ -201,5 +251,97 @@ public class PaymentTriggerHandler {
         message.toAddresses = ADMIN_EMAIL_ADDRESS;
         Messaging.SingleEmailMessage[] messages = new List<Messaging.SingleEmailMessage> {message};
         Messaging.SendEmailResult[] results = Messaging.sendEmail(messages);
+    }
+
+    public static void sendFailNotification(Set<Id> failPaymentIds) {
+        if (failPaymentIds.size() == 0) return;
+        List<Payment__c> failPayments = [
+            SELECT
+                Id,
+                Application__c,
+                Application__r.Email__c,
+                Application__r.Name,
+                Application__r.First_Name__c,
+                Application__r.Second_Name__c,
+                Error_Message__c,
+                Application__r.Contact__c,
+                Application__r.Related_Contact_Phone__c
+            FROM Payment__c
+            WHERE Id IN :failPaymentIds
+        ];
+        Messaging.SingleEmailMessage[] messages = new List<Messaging.SingleEmailMessage>();
+        List<String> phones = new List<String>();
+        for (Payment__c payment : failPayments) {
+            Messaging.SingleEmailMessage singleErrorMessage = generateSingleEmailMessage(payment);
+            singleErrorMessage.setTemplateId(PAYMENT_ERROR_TEMPLATE.Id);
+            singleErrorMessage.setToAddresses(new String[] {payment.Application__r.Email__c});
+            singleErrorMessage.setTargetObjectId(payment.Application__r.Contact__c);
+            singleErrorMessage.setWhatId(payment.Id);
+            messages.add(singleErrorMessage);
+
+            Messaging.SingleEmailMessage singleAdminReminderMessage = generateSingleEmailMessage(payment);
+            singleAdminReminderMessage.setPlainTextBody('Stripe Reason: ' + payment.Error_Message__c);
+            singleAdminReminderMessage.setSubject('XP - CC FAILURE - ' + payment.Application__r.Name + ' - ' + payment.Application__r.First_Name__c + ' ' + payment.Application__r.Second_Name__c);
+            singleAdminReminderMessage.setToAddresses(new String[] {ADMIN_FAIL_REMINDER_EMAIL_ADDRESS});
+            messages.add(singleAdminReminderMessage);
+
+            phones.add(payment.Application__r.Related_Contact_Phone__c);
+            if(phones.size() == 100) {
+                sendMessage(phones, FAIL_PAYMENT_SMS_MESSAGE);
+                phones = new List<String>();
+            }
+        }
+        if(messages.size() != 0) {
+            Messaging.sendEmail(messages);
+        }
+        if (phones.size() > 0) sendMessage(phones, FAIL_PAYMENT_SMS_MESSAGE);
+    }
+
+    public static void sendMessage(List<String> phoneData, String messageBody) {
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint('https://api.twilio.com/2010-04-01/Accounts/' + ACCOUNT_ID + '/Messages');
+        req.setMethod('POST');
+        req.setHeader('Content-Type', 'application/x-www-form-urlencoded');
+        Blob headerValue = Blob.valueOf(ACCOUNT_ID + ':' + TOKEN_ID);
+        String authorizationHeader = 'BASIC ' + EncodingUtil.base64Encode(headerValue);
+        req.setHeader('Authorization', authorizationHeader);
+        for (String phone : phoneData) {
+            if(phone != null) {
+                req.setBody('To=' + EncodingUtil.urlEncode(phone,'UTF-8') + '&From=' + FROM_NAME + '&Body=' + messageBody);
+                try {
+                    Http http = new Http();
+                    //if (Test.isRunningTest()) return;
+                    HTTPResponse res = http.send(req);
+                    System.debug(res.getBody());
+                    if(res.getStatusCode() == 201) System.debug('@@@Twilio Success' + phone);
+                    else {
+                        System.debug('@@@Twilio failed' + phone);
+                        ErrorResponseWrapper erw =(ErrorResponseWrapper)json.deserialize(res.getBody(), ErrorResponseWrapper.class);
+                        System.debug('@@@Twilio error' + erw.message);
+                    }
+                } catch(Exception ex){
+                    System.debug('Error message = ' + ex.getMessage());
+                }
+            }
+        }
+    }
+
+    public class ErrorResponseWrapper {
+        String code;
+        String message;
+        String moreInfo;
+        String status;
+    }
+
+    private static Messaging.SingleEmailMessage generateSingleEmailMessage(Payment__c payment) {
+        Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
+        message.setUseSignature(false);
+        message.setBccSender(false);
+        message.setSaveAsActivity(true);
+        message.setTreatTargetObjectAsRecipient(false);
+        message.setWhatId(payment.Application__c);
+        message.setOrgWideEmailAddressId(DEFAULT_ORG_WIDE_EMAIL_ADDRESS.Id);
+
+        return message;
     }
 }

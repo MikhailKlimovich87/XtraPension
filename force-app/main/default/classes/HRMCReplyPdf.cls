@@ -21,7 +21,8 @@ public class HRMCReplyPdf {
                 HMRC_Ref__c,
                 National_Insurance_Number__c,
                 Second_Name__c,
-                First_Name__c
+                First_Name__c,
+                HMRC_Reply_Doc_Generate_Date__c
             FROM Application__c
 			WHERE Id =: MstrId
 		];

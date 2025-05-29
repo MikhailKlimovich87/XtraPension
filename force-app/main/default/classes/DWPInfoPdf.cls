@@ -25,7 +25,8 @@ public class DWPInfoPdf {
                 Divorce_Date__c,
                 Last_UK_Home_Address__City__s,
                 Last_UK_Home_Address__PostalCode__s,
-                Last_UK_Home_Address__Street__s
+                Last_UK_Home_Address__Street__s,
+                Date_of_Last_Pay_Contributions__c
             FROM Application__c
 			WHERE Id =: MstrId
 		];

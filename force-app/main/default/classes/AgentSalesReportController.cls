@@ -43,6 +43,7 @@ public without sharing class AgentSalesReportController {
                 Agent_Making_Sale__c != 'George (Aussie)' AND
                 Agent_Making_Sale__c != 'Ciaran' AND
                 Agent_Making_Sale__c != 'Amy' AND
+                Agent_Making_Sale__c != 'Christina' AND
                 CreatedDate >= :lastQtrStartDate
         ];
         Schema.SObjectType objSobjectType = Schema.getGlobalDescribe().get(OBJECT_NAME);
@@ -53,7 +54,7 @@ public without sharing class AgentSalesReportController {
         List<String> agentsName = new List<String>();
         for( Schema.PicklistEntry pickListVal : ple) {
             String name = pickListVal.getValue();
-            if (name == 'Carmel' || name == 'Kitty' || name == 'Ann-Louise' || name == 'John H' || name == 'Ciara' || name == 'Emma' || name == 'Elaine' || name == 'Barry' || name == 'Paul' || name == 'George (Irish)' || name == 'George (Aussie)' || name == 'Ciaran' || name == 'Amy') {
+            if (name == 'Christina' || name == 'Carmel' || name == 'Kitty' || name == 'Ann-Louise' || name == 'John H' || name == 'Ciara' || name == 'Emma' || name == 'Elaine' || name == 'Barry' || name == 'Paul' || name == 'George (Irish)' || name == 'George (Aussie)' || name == 'Ciaran' || name == 'Amy') {
                 continue;
             }
             agentsName.add(name);
@@ -100,7 +101,7 @@ public without sharing class AgentSalesReportController {
                     if (createdDate <= todayDate && createdDate >= currentMonthStartDate) {
                         agentData.thisMonthCount+=1;
                     }
-                    if (createdDate < lastMonthEndDate && createdDate > lastMonthStartDate) {
+                    if (createdDate < lastMonthEndDate && createdDate >= lastMonthStartDate) {
                         agentData.lastMonthCount+=1;
                     }
                     if (createdDate <= currentQtrEndDate && createdDate >= currentQtrStartDate) {

@@ -30,13 +30,11 @@ global class ClientSupportEmailServiceHandler implements Messaging.InboundEmailH
                 WHERE Email__c = :email.fromAddress
                 LIMIT 1
             ];
-            if (applications.isEmpty()) {
-                result.success = false;
-                return result;
+            if (!applications.isEmpty()) {
+                Application__c currentApplication = applications[0];
+                emailMessage.relatedToId    = currentApplication.Id;
+                emailMessage.Application__c = currentApplication.Id;
             }
-            Application__c currentApplication = applications[0];
-            emailMessage.relatedToId    = currentApplication.Id;
-            emailMessage.Application__c = currentApplication.Id;
         }
         if (emailMessage != null) {
             insert emailMessage;

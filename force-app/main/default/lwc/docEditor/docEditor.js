@@ -40,13 +40,14 @@ export default class DocEditor extends LightningElement {
     certifiedDocTemplate;
     euResidencyAppealTemplate;
     maidenNameTemplate;
-    dwp2RequestTemplate
+    dwp2RequestTemplate;
     bodyValue;
     error;
     errorData;
     showSpinner = false;
     abroadEmployers;
     lastUkEmployer;
+    dateOfReply;
 
     @wire(getRecord, { recordId: "$recordId", fields })
     application;
@@ -169,17 +170,20 @@ export default class DocEditor extends LightningElement {
     }
 
     handleGeneratePdf(event) {
-        this.bodyValue = event.detail;
-        this.sendDataToCreateFile(this.bodyValue);
+        this.bodyValue = event.detail.body;
+        this.dateOfReply = event.detail.dateData;
+        this.sendDataToCreateFile(this.bodyValue, this.dateOfReply);
     }
 
-    @api async sendDataToCreateFile(bodyInfo) {
+    @api async sendDataToCreateFile(bodyInfo, replyDate) {
         this.showSpinner = !this.showSpinner;
         let fileData = {
             "applicationId": this.recordId,
             "fieldValue": bodyInfo,
-            "typeOfTemplate":this.currentLabel
+            "typeOfTemplate":this.currentLabel,
+            "dateOfReply":replyDate
         }
+        console.log('fileData ==== ', fileData);
         await generateHMRCReplyFile({
             messageData: fileData
         }).then(result => {

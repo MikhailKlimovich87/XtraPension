@@ -39,7 +39,6 @@ global class VoluntaryContributionEmailServiceHandler implements Messaging.Inbou
         emailMessage.Has_Attachment__c = emailAttachments != null ? true : false;
         emailMessage.Email_Message_Status__c = newStatus.Id;
         emailMessage.NICS_JGBA_message__c = true;
-        System.debug('body ==== ' + email.plainTextBody);
 
         String[] applicationEmails = new List<String>();
         if (email.fromAddress == 'IPC.REVIEWANDRECONTEAM@dwp.gov.uk') {
@@ -62,21 +61,25 @@ global class VoluntaryContributionEmailServiceHandler implements Messaging.Inbou
             ORDER BY CreatedDate DESC
             LIMIT 1
         ];
-        if (applications.isEmpty()) {
-            result.success = false;
-            return result;
+        if (!applications.isEmpty()) {
+            Application__c currentApplication = applications[0];
+            emailMessage.relatedToId    = currentApplication.Id;
+            emailMessage.Application__c = currentApplication.Id;
+            agentEmailMessage = generateSingleEmailMessage(
+                currentApplication.Name + ' - ' + currentApplication.First_Name__c + ' ' + currentApplication.Second_Name__c + ' - DWP E-mail Received',
+                currentApplication.Id
+            );
+        } else {
+            agentEmailMessage = generateSingleEmailMessage(
+                'DWP E-mail Received',
+                null
+            );
         }
-        Application__c currentApplication = applications[0];
-        emailMessage.relatedToId    = currentApplication.Id;
-        emailMessage.Application__c = currentApplication.Id;
-        agentEmailMessage = generateSingleEmailMessage(
-            currentApplication.Name + ' - ' + currentApplication.First_Name__c + ' ' + currentApplication.Second_Name__c + ' - DWP E-mail Received',
-            currentApplication.Id
-        );
 
         if (emailMessage != null) {
             insert emailMessage;
         }
+        System.debug('emailAttachments === ' + emailAttachments);
         if (emailAttachments != null && emailMessage != null) {
             List<ContentVersion> attachContVersions = new List<ContentVersion>();
             for (Messaging.InboundEmail.BinaryAttachment attachment : emailAttachments) {
@@ -92,6 +95,7 @@ global class VoluntaryContributionEmailServiceHandler implements Messaging.Inbou
             for (ContentVersion version : attachContVersions) {
 	            contVersIds.add(version.id);
             }
+            System.debug('contVersIds === ' + contVersIds);
             List<ContentVersion> contVersAfterInsert = [
                 SELECT ContentDocumentId
                 FROM ContentVersion
@@ -101,6 +105,7 @@ global class VoluntaryContributionEmailServiceHandler implements Messaging.Inbou
             for (ContentVersion version : contVersAfterInsert) {
                 contDocIds.add(version.ContentDocumentId);
             }
+            System.debug('contDocIds === ' + contDocIds);
             List<ContentDocumentLink> newLinks = new List<ContentDocumentLink>();
             for (Id conDocId : contDocIds) {
                 ContentDocumentLink conDocLink = new ContentDocumentLink();
@@ -113,6 +118,7 @@ global class VoluntaryContributionEmailServiceHandler implements Messaging.Inbou
             if (!newLinks.isEmpty()) {
                 insert newLinks;
             }
+            System.debug('newLinks === ' + newLinks);
         }
         if (agentEmailMessage != null) {
             Messaging.SingleEmailMessage[] messages = new List<Messaging.SingleEmailMessage> {agentEmailMessage};
@@ -131,7 +137,9 @@ global class VoluntaryContributionEmailServiceHandler implements Messaging.Inbou
         message.setBccSender(false);
         message.setSaveAsActivity(true);
         message.setTreatTargetObjectAsRecipient(false);
-        message.setWhatId(appId);
+        if (appId != null) {
+            message.setWhatId(appId);
+        }
         message.setSubject(subject);
         message.setPlainTextBody('');
         message.setOrgWideEmailAddressId(DEFAULT_ORG_WIDE_EMAIL_ADDRESS.Id);

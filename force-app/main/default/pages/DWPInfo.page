@@ -73,7 +73,7 @@
             </style>
         </head>
         <body>
-            <h3 style="text-align:center"><u>Summary of Information Needed for TELECLAIM by Phone to Dept of Work &amp; Pensions</u></h3>
+            <h3 style="text-align:center"><u>Below is for YOUR Reference Only. Do NOT Send to Dept of Work &amp; Pensions</u></h3>
             <table border="1" cellspacing="0">
                 <tr>
 	                <td width="25%" style="padding-right: 10px;">
@@ -133,7 +133,7 @@
 		            </td>
 		            <td width="25%">
                         <span style="{!IF(AND(appObj.Are_You_Single__c, appObj.Are_You_Divorced__c),null,'display:none')};">
-                            Divorced
+                            Divorced/Bereaved/Separated
                         </span>
                         <span style="{!IF(AND(appObj.Are_You_Single__c, NOT(appObj.Are_You_Divorced__c)),null,'display:none')};">
                             Single
@@ -186,7 +186,7 @@
                     </td>
                     <td>
                         <apex:outputtext value="{0,date,dd MMM yyyy}">
-				            <apex:param value="{!appObj.Date_Of_Leaving_Last_UK__c}"></apex:param>
+				            <apex:param value="{!appObj.Date_of_Last_Pay_Contributions__c}"></apex:param>
 				        </apex:outputtext>
                     </td>
                     <td>&nbsp; </td>

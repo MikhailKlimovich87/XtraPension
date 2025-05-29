@@ -113,7 +113,7 @@ public without sharing class MovedToQCApprovedReportController {
             if (changeDate <= todayDate && changeDate >= currentMonthStartDate) {
                 thisMonthAgentCheckChangesCounter.put(changeDate,currMapChanges);
             }
-            if (changeDate < lastMonthEndDate && changeDate > lastMonthStartDate) {
+            if (changeDate < lastMonthEndDate && changeDate >= lastMonthStartDate) {
                 lastMonthAgentCheckChangesCounter.put(changeDate,currMapChanges);
             }
         }

@@ -16,14 +16,21 @@
                 </div>
                 <br />
                 <div class="caseworker-address">
-                    International Case Worker Team<br/>
-                    PT Operations North East England<br/>
-                    HM Revenue &#38; Customs<br/>
-                    BX9 1AN<br/>
+                    International Case Worker Team<br />
+                    PT Operations North East England<br />
+                    HM Revenue &#38; Customs<br />
+                    BX9 1AN<br />
                     United Kingdom
                 </div>
                 <br />
-                <div><b>Date: </b>{dateToday}</div>
+                <div style="date-container">
+                    <div class="date-label">
+                        <b>Date: </b>
+                    </div>
+                    <lightning-input type="date" class="date-input" date-style="short" value={currDate}
+                        onchange={saveCurrDate}>
+                    </lightning-input>
+                </div>
                 <br />
                 <div><b>HMRC Ref: </b>{hmrcRef}</div>
                 <div><b>Our Ref: </b>{appName}</div>

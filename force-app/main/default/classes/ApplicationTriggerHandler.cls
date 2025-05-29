@@ -60,65 +60,67 @@ public without sharing class ApplicationTriggerHandler {
     };
     private final static String REGISTRATION_ORG_WIDE = 'clients@xtrapension.com';
     private final static String REGISTRATION_TEMPLATE_NAME = 'Registration Data Information';
-    // private final static Map<String, String> AGENT_NAME_BY_EMAIL = new Map<String, String> {
-    //     'Adrian'    => 'adrian@xtrapension.com',
-    //     'Amy'       => 'amy@xtrapension.com',
-    //     'Megan'     => 'megan@xtrapension.com',
-    //     'Patrick'   => 'patrick@xtrapension.com',
-    //     'Tomas'     => 'tomas@xtrapension.com',
-    //     'Sean'      => 'sean@xtrapension.com',
-    //     'George'    => 'george@xtrapension.com',
-    //     'Gerard'    => 'gerard@xtrapension.com',
-    //     'Brett'     => 'brett@xtrapension.com',
-    //     'Christina' => 'christina@xtrapension.com'
-    // };
-
-    // private static Map<String, String> VAL_AGENTS_BY_EMAIL = new Map<String, String> {
-    //     'Sean'       => 'seanb@xtrapension.com',
-    //     'Ciara'      => 'ciara@xtrapension.com',
-    //     //'Niamh'      => 'agent1@xtrapension.com',
-    //     'Becky'      => 'becky@xtrapension.com ',
-    //     'Monica'     => 'monica@xtrapension.com',
-    //     'MaryClaire' => 'mary@xtrapension.com'
-    // };
-
-    // private static Map<String, String> DOC_AGENTS_BY_EMAIL = new Map<String, String> {
-    //     'Daniel'  => 'daniel@xtrapension.com',
-    //     'Edryl'   => 'edryl@xtrapension.com',
-    //     'Camille' => 'camille@xtrapension.com',
-    //     'Maria'   => 'maria@xtrapension.com'
-    // };
-
     private final static Map<String, String> AGENT_NAME_BY_EMAIL = new Map<String, String> {
-        'Barry'      => 'mishaklimovich87@gmail.com',
-        'Ciara'      => 'mishaklimovich87@gmail.com',
-        'Emma'       => 'mishaklimovich87@gmail.com',
-        'John R'     => 'mishaklimovich87@gmail.com',
-        'Megan'      => 'mishaklimovich87@gmail.com',
-        'Tomas'      => 'mishaklimovich87@gmail.com',
-        'George'     => 'mishaklimovich87@gmail.com',
-        'Ciaran'     => 'mishaklimovich87@gmail.com',
-        'Paul'       => 'mishaklimovich87@gmail.com',
-        'Elaine'     => 'mishaklimovich87@gmail.com',
-        'Brett'      => 'mishaklimovich87@gmail.com',
-        'Christina'  => 'mishaklimovich87@gmail.com'
+        'Adrian'    => 'adrian@xtrapension.com',
+        'Amy'       => 'amy@xtrapension.com',
+        'Megan'     => 'megan@xtrapension.com',
+        'Patrick'   => 'patrick@xtrapension.com',
+        'Tomas'     => 'tomas@xtrapension.com',
+        'Sean'      => 'sean@xtrapension.com',
+        'George'    => 'george@xtrapension.com',
+        'Gerard'    => 'gerard@xtrapension.com',
+        'Brett'     => 'brett@xtrapension.com',
+        'Christina' => 'christina@xtrapension.com',
+        'Jamie'     => 'jamie@xtrapension.com'
     };
 
-        private static Map<String, String> VAL_AGENTS_BY_EMAIL = new Map<String, String> {
-        'Sean'       => 'mihail.klimovich@outlook.com',
-        'Ciara'      => 'mihail.klimovich@outlook.com',
-        'Niamh'      => 'mihail.klimovich@outlook.com',
-        'Becky'      => 'mihail.klimovich@outlook.com',
-        'Monica'     => 'mihail.klimovich@outlook.com',
-        'MaryClaire' => 'mihail.klimovich@outlook.com'
+    private static Map<String, String> VAL_AGENTS_BY_EMAIL = new Map<String, String> {
+        'Sean'       => 'seanb@xtrapension.com',
+        'Ciara'      => 'ciara@xtrapension.com',
+        //'Niamh'      => 'agent1@xtrapension.com',
+        'Becky'      => 'becky@xtrapension.com ',
+        'Monica'     => 'monica@xtrapension.com',
+        'MaryClaire' => 'mary@xtrapension.com'
     };
 
     private static Map<String, String> DOC_AGENTS_BY_EMAIL = new Map<String, String> {
-        'Daniel'  => 'mihail.klimovich@outlook.com',
-        'Edryl'   => 'mihail.klimovich@outlook.com',
-        'Camille' => 'mihail.klimovich@outlook.com',
-        'Maria'   => 'mihail.klimovich@outlook.com'
+        'Daniel'  => 'daniel@xtrapension.com',
+        'Edryl'   => 'edryl@xtrapension.com',
+        'Camille' => 'camille@xtrapension.com',
+        'Maria'   => 'maria@xtrapension.com'
     };
+
+    // private final static Map<String, String> AGENT_NAME_BY_EMAIL = new Map<String, String> {
+    //     'Barry'      => 'mishaklimovich87@gmail.com',
+    //     'Ciara'      => 'mishaklimovich87@gmail.com',
+    //     'Emma'       => 'mishaklimovich87@gmail.com',
+    //     'John R'     => 'mishaklimovich87@gmail.com',
+    //     'Megan'      => 'mishaklimovich87@gmail.com',
+    //     'Tomas'      => 'mishaklimovich87@gmail.com',
+    //     'George'     => 'mishaklimovich87@gmail.com',
+    //     'Ciaran'     => 'mishaklimovich87@gmail.com',
+    //     'Paul'       => 'mishaklimovich87@gmail.com',
+    //     'Elaine'     => 'mishaklimovich87@gmail.com',
+    //     'Brett'      => 'mishaklimovich87@gmail.com',
+    //     'Christina'  => 'mishaklimovich87@gmail.com',
+    //     'Jamie'      => 'mishaklimovich87@gmail.com'
+    // };
+
+    //     private static Map<String, String> VAL_AGENTS_BY_EMAIL = new Map<String, String> {
+    //     'Sean'       => 'mihail.klimovich@outlook.com',
+    //     'Ciara'      => 'mihail.klimovich@outlook.com',
+    //     'Niamh'      => 'mihail.klimovich@outlook.com',
+    //     'Becky'      => 'mihail.klimovich@outlook.com',
+    //     'Monica'     => 'mihail.klimovich@outlook.com',
+    //     'MaryClaire' => 'mihail.klimovich@outlook.com'
+    // };
+
+    // private static Map<String, String> DOC_AGENTS_BY_EMAIL = new Map<String, String> {
+    //     'Daniel'  => 'mihail.klimovich@outlook.com',
+    //     'Edryl'   => 'mihail.klimovich@outlook.com',
+    //     'Camille' => 'mihail.klimovich@outlook.com',
+    //     'Maria'   => 'mihail.klimovich@outlook.com'
+    // };
 
     private static final OrgWideEmailAddress OWD {
         get {
@@ -180,6 +182,7 @@ public without sharing class ApplicationTriggerHandler {
         Set<Id> updateAgentStatusApps = new Set<Id>();
         Set<Id> salesAgentCustomNotificationApps = new Set<Id>();
         Set<Id> valAgentCustomNotificationApps = new Set<Id>();
+        Set<Id> deferredCustomNotificationApps = new Set<Id>();
         List<Application__c> changedStatusesApps = new List<Application__c>();
 
         for (Application__c app : newApplications.values()) {
@@ -256,6 +259,10 @@ public without sharing class ApplicationTriggerHandler {
             if (app.Status__c == 'Agent Check'  && app.Status__c != oldApplications.get(app.Id).Status__c && oldApplications.get(app.Id).Status__c == 'Fix') {
                 valAgentCustomNotificationApps.add(app.Id);
             }
+            if (app.Status__c == 'Deferred'  && app.Status__c != oldApplications.get(app.Id).Status__c) {
+                deferredCustomNotificationApps.add(app.Id);
+            }
+
         }
         if (!googleReviewSendEmailApps.isEmpty()) {
             sendGoogleReviewEmail(googleReviewSendEmailApps);
@@ -314,6 +321,9 @@ public without sharing class ApplicationTriggerHandler {
         }
         if (!valAgentCustomNotificationApps.isEmpty()) {
             sendValAgentCustomNotification(valAgentCustomNotificationApps);
+        }
+        if (!deferredCustomNotificationApps.isEmpty()) {
+            sendDeferredCustomNotificationToValAgent(deferredCustomNotificationApps);
         }
     }
 
@@ -1330,183 +1340,253 @@ public without sharing class ApplicationTriggerHandler {
         }
     }
 
-    public static void fakeMethod(){
-        Integer i = 0;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
-        i++;
+    private static void sendDeferredCustomNotificationToValAgent(Set<Id> currentAppIds) {
+        List<Application__c> apps = [
+            SELECT
+                Val_Agent__c,
+                First_Name__c,
+                Second_Name__c,
+                Name
+            FROM Application__c
+            WHERE Id = :currentAppIds
+        ];
+
+        if (apps.isEmpty()) {
+            return;
+        }
+        List<String> names = new List<String>();
+        for (Application__c app : apps) {
+            names.add(app.Val_Agent__c);
+        }
+        List<User> users = [
+            SELECT
+                Id,
+                FirstName
+            FROM User
+            WHERE FirstName IN :names
+        ];
+        if (users.isEmpty()) {
+            return;
+        }
+        Map<String, Id> valAgentNameByUserId = new Map<String, Id>();
+        for (User user : users) {
+            valAgentNameByUserId.put(user.FirstName, user.Id);
+        }
+        if (AGENT_NOTIFICATION == null) {
+            return;
+        }
+        List<ContentDocumentLink> notesData = [
+            SELECT
+                ContentDocument.Title,
+                ContentDocument.LatestPublishedVersion.VersionData,
+                LinkedEntityId
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId IN :currentAppIds AND
+                  ContentDocument.FileExtension = 'snote'
+            ORDER BY ContentDocument.CreatedDate DESC
+        ];
+        Map<Id, ContentDocumentLink> appIdByLatestNote = new Map<Id, ContentDocumentLink>();
+        for (ContentDocumentLink link : notesData) {
+            if (appIdByLatestNote.get(link.LinkedEntityId) == null) {
+                appIdByLatestNote.put(link.LinkedEntityId, link);
+            }
+        }
+        List<Messaging.SingleEmailMessage> lstSingleEmailMessage = new List<Messaging.SingleEmailMessage>();
+        for(Application__c app : apps) {
+            String subject = app.Name + ' ' + app.First_Name__c + ' ' + app.Second_Name__c  + ' - APP MOVED TO DEFERRED';
+            Messaging.CustomNotification notification = new Messaging.CustomNotification();
+            notification.setTitle(subject);
+            notification.setBody(subject);
+            notification.setNotificationTypeId(AGENT_NOTIFICATION.Id);
+            notification.setTargetId(app.Id);
+            notification.send(new Set<String> {valAgentNameByUserId.get(app.Val_Agent__c)});
+            Messaging.SingleEmailMessage message = sendMessage(app, subject, VAL_AGENTS_BY_EMAIL.get(app.Val_Agent__c));
+            ContentDocumentLink currNote = appIdByLatestNote.get(app.Id);
+            if(currNote != null) {
+                message.setHtmlBody('<p>' + currNote.ContentDocument.Title + '</p>' + currNote.ContentDocument.LatestPublishedVersion.VersionData.toString());
+            }
+            lstSingleEmailMessage.add(message);
+        }
+        Messaging.SendEmailResult[] result = Messaging.sendEmail(lstSingleEmailMessage);
     }
+
+    // public static void fakeMethod(){
+    //     Integer i = 0;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    //     i++;
+    // }
 }

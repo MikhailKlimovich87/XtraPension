@@ -14,7 +14,7 @@ public class XtraPensionConstants {
 		    'As our client was habitually resident in an EU country and was previously compulsorily insured in the UK, we believe they therefore qualify for voluntary Class 2 contributions under Article 14 of EC Regulation 883/2004 (and Article 32(1)(a) of the EU-UK Withdrawal Agreement Act 2020)' + 
   	    '</p>';
     public static final String FREEFORM_CLASS2_FIELD_DEFAULT_VALUE =
-		'We would appreciate it if you could ensure your assessment of their eligibility to pay Class 2 contributions, a statement of their National Insurance Contributions to date and the Class 2 Table of Voluntary National Insurance <b>SHORTFALL IS SENT DIRECTLY TO US</b> at "Suite 2/11, Pure Offices, 1 Ainslie Road, Hillington, Glasgow, G52 4RU" as the enclosed 64-8 authorises us to act as their agent. Our client\'s work history is below.';
+		'<p>We would appreciate it if you could ensure your assessment of their eligibility to pay Class 2 contributions, a statement of their National Insurance Contributions to date and the Class 2 Table of Voluntary National Insurance <b>SHORTFALL IS SENT DIRECTLY TO US</b> at "Suite 2/11, Pure Offices, 1 Ainslie Road, Hillington, Glasgow, G52 4RU" as the enclosed 64-8 authorises us to act as their agent. Our client\'s work history is below.</p>';
     public static final String  NINO_INFO =
         '<div class="message-item">' +
             '<b>&#8226; National Insurance Number</b>' +

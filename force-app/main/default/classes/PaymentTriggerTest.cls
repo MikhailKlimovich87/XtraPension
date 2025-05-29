@@ -28,7 +28,10 @@ public class PaymentTriggerTest {
             FROM Payment__c
         ];
         testPayment[0].Status__c = 'Paid';
+        Test.startTest();
         update testPayment;
+        Test.stopTest();
+        Assert.areEqual(1, Limits.getEmailInvocations());
     }
 
     @IsTest
@@ -48,6 +51,19 @@ public class PaymentTriggerTest {
         Map<Id, Payment__c> newPayments = new Map<Id, Payment__c>();
         newPayments.put(currentPayment.Id, currentPayment);
         PaymentTriggerHandler.sendEmailAfterCreatePaidPayment(newPayments);
+    }
+
+    @IsTest
+    static void changePaymentStatusToFailTest() {
+        List<Payment__c> testPayment = [
+            SELECT Status__c
+            FROM Payment__c
+        ];
+        testPayment[0].Status__c = 'Fail';
+        Test.startTest();
+        update testPayment;
+        Test.stopTest();
+        Assert.areEqual(1, Limits.getEmailInvocations());
     }
 
     private class PaymentMethodMock implements HttpCalloutMock {

@@ -36,7 +36,9 @@ public without sharing class DocumentsContentController {
                 ContentDocument.Title LIKE '%Private Pensions%' OR
                 ContentDocument.Title LIKE 'CURRENT JOB reply' OR
                 ContentDocument.Title LIKE 'NINO reply' OR
-                ContentDocument.Title LIKE 'EU Residency Appeal'
+                ContentDocument.Title LIKE 'EU Residency Appeal' OR
+                ContentDocument.Title LIKE '%PENALTY%' OR
+                ContentDocument.Title LIKE '%2024ANNUAL'
                 )
             ORDER BY ContentDocument.CreatedDate DESC
         ];
@@ -58,11 +60,17 @@ public without sharing class DocumentsContentController {
             SELECT
                 Name,
                 Type_Of_Employment__c,
-                Freeform_Text_Line1__c,
-                Freeform_Text_Line2__c,
-                Freeform_Text_Line3__c,
-                Freeform_Text_Line4__c,
-                Freeform_Text_Line5__c,
+                // Freeform_Text_Line1__c,
+                // Freeform_Text_Line2__c,
+                // Freeform_Text_Line3__c,
+                // Freeform_Text_Line4__c,
+                // Freeform_Text_Line5__c,
+                Freeform_RichText_Line1__c,
+				Freeform_RichText_Line2__c,
+				Freeform_RichText_Line3__c,
+				Freeform_RichText_Line4__c,
+				Freeform_RichText_Line5__c,
+                DWP_Callback_Request__c,
                 Current_Address_Abroad__Street__s,
                 Current_Address_Abroad__City__s,
                 Current_Address_Abroad__CountryCode__s,
@@ -293,7 +301,9 @@ public without sharing class DocumentsContentController {
                                                                                             title.contains('NINO reply') ? 'NINO reply' :
                                                                                                 title.contains('Private Pensions') ? 'Private Pensions' :
                                                                                                     title.contains('CURRENT JOB reply') ? 'CURRENT JOB' :
-                                                                                                        title.contains('EU Residency Appeal') ? 'EU Residency Appeal' : null;
+                                                                                                        title.contains('EU Residency Appeal') ? 'EU Residency Appeal' :
+                                                                                                            title.contains('PENALTY') ? 'PENALTY' :
+                                                                                                                title.contains('2024ANNUAL') ? '2024ANNUAL' : null;
             if (titleByDocumentInfo.get(docTitle) != null) {
                 continue;
             }
@@ -350,6 +360,8 @@ public without sharing class DocumentsContentController {
         if(titleByDocumentInfo.get('NINO reply') != null) data.replyDocs.add(titleByDocumentInfo.get('NINO reply'));
         if(titleByDocumentInfo.get('CURRENT JOB') != null) data.replyDocs.add(titleByDocumentInfo.get('CURRENT JOB'));
         if(titleByDocumentInfo.get('EU Residency Appeal') != null) data.replyDocs.add(titleByDocumentInfo.get('EU Residency Appeal'));
+        if(titleByDocumentInfo.get('PENALTY') != null) data.replyDocs.add(titleByDocumentInfo.get('PENALTY'));
+        if(titleByDocumentInfo.get('2024ANNUAL') != null) data.replyDocs.add(titleByDocumentInfo.get('2024ANNUAL'));
 
         data.application = app;
         PreviousUKAddressData latestAddress = new PreviousUKAddressData();
@@ -454,11 +466,16 @@ public without sharing class DocumentsContentController {
         try {
             Application__c updateApplication = new Application__c(
                 Id = letterData?.applicationId,
-                Freeform_Text_Line1__c = letterData?.freeformTextLine1,
-                Freeform_Text_Line2__c = letterData?.freeformTextLine2,
-                Freeform_Text_Line3__c = letterData?.freeformTextLine3,
-                Freeform_Text_Line4__c = letterData?.freeformTextLine4,
-                Freeform_Text_Line5__c = letterData?.freeformTextLine5,
+                Freeform_RichText_Line1__c = letterData?.freeformTextLine1,
+                Freeform_RichText_Line2__c = letterData?.freeformTextLine2,
+                Freeform_RichText_Line3__c = letterData?.freeformTextLine3,
+                Freeform_RichText_Line4__c = letterData?.freeformTextLine4,
+                Freeform_RichText_Line5__c = letterData?.freeformTextLine5,
+                // Freeform_Text_Line1__c = letterData?.freeformTextLine1,
+                // Freeform_Text_Line2__c = letterData?.freeformTextLine2,
+                // Freeform_Text_Line3__c = letterData?.freeformTextLine3,
+                // Freeform_Text_Line4__c = letterData?.freeformTextLine4,
+                // Freeform_Text_Line5__c = letterData?.freeformTextLine5,
                 Custom_Letter_Date__c  = letterData?.customLetterDate
             );
             if (!letterData.newEmployerData.isEmpty()) {

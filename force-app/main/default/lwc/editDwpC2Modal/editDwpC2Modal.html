@@ -19,9 +19,14 @@
                     WV98 1LW<br />
                     United Kingdom<br />
                 </div>
-                <br />
-                <div><b>Date: </b>{dateToday}</div>
-                <br />
+                <div style="date-container">
+                    <div class="date-label">
+                        <b>Date: </b>
+                    </div>
+                    <lightning-input type="date" class="date-input" date-style="short" value={currDate}
+                        onchange={saveCurrDate}>
+                    </lightning-input>
+                </div>
                 <div><b>National Insurance No: </b>{nino}</div>
                 <div><b>Name: </b>{firstName} {secondName}</div>
                 <br />
@@ -104,7 +109,8 @@
                     </table>
                 </template>
                 <br />
-                <lightning-input-rich-text value={bottomData} onchange={handleChangeBottomArea} formats={allowedFormats}>
+                <lightning-input-rich-text value={bottomData} onchange={handleChangeBottomArea}
+                    formats={allowedFormats}>
                 </lightning-input-rich-text>
                 <br />
             </div>

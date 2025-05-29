@@ -71,7 +71,7 @@
                 </div>
                 <br/>
                 <apex:outputText value="{0, date,dd MMMM yyyy}">
-                    <b>Date:</b>&nbsp;<apex:param value="{!TODAY()}" />
+                    <b>Date:</b><apex:param value="{!appObj.HMRC_Reply_Doc_Generate_Date__c}"/>
                 </apex:outputText>
                 <br/>
                 <br/>

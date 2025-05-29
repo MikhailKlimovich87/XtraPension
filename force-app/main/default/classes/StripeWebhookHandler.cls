@@ -5,6 +5,10 @@ global class StripeWebhookHandler {
     private static final List<String> ORDER_OF_PRODUCT_NAME = new List<String> {
         'Deposit', 'Application', 'Success'
     };
+	private static final List<String> ORDER_OF_APPEAL_PRODUCT = new List<String> {
+        'Deposit', 'Appeal'
+    };
+
 	private static final String DESCRIPTION = 'Deposit MOTO';
 	private static final String ACOUNT_RECORD_TYPE_NAME = 'Business_Account';
 	private static final String PERSON_ACCOUNT_RECORD_TYPE_ID = XtraPension_Data__c.getInstance().Person_Account_Record_Type_Id__c;
@@ -152,8 +156,8 @@ global class StripeWebhookHandler {
 					Appeal_Application__c                 = paymentIntent?.metadata?.class3Appeal != null?
 																Boolean.valueOf(paymentIntent?.metadata?.class3Appeal) :
 																false,
-					Freeform_Text_Line1__c                = XtraPensionConstants.FREEFORM_CLASS2_FIELD_DEFAULT_VALUE,
-					Freeform_Text_Line5__c                = XtraPensionConstants.FREEFORM_FIELD_DEFAULT_VALUE,
+					Freeform_RichText_Line1__c            = XtraPensionConstants.FREEFORM_CLASS2_FIELD_DEFAULT_VALUE,
+					Freeform_RichText_Line5__c            = XtraPensionConstants.FREEFORM_FIELD_DEFAULT_VALUE,
 					Current_Address_Abroad__City__s       = paymentIntent?.shipping?.address?.city,
                     Current_Address_Abroad__Street__s     = streetData,
                     Current_Address_Abroad__StateCode__s  = stateName,
@@ -194,6 +198,7 @@ global class StripeWebhookHandler {
 						FROM PriceBookEntry
 						WHERE Pricebook2.IsStandard = true AND
                               CurrencyIsoCode = :currencyCode
+						ORDER BY UnitPrice
 					];
 				} else {
 					priceBookEntries = [
@@ -224,7 +229,11 @@ global class StripeWebhookHandler {
 				);
 				insert newOrder;
                 List<Sobject> newSobjects = new List<Sobject>();
-     			for (String productName : ORDER_OF_PRODUCT_NAME) {
+				List<String> paymentOrder = new List<String>();
+				if (application.Appeal_Application__c == true) {
+					paymentOrder.addAll(ORDER_OF_APPEAL_PRODUCT);
+				} else paymentOrder.addAll(ORDER_OF_PRODUCT_NAME);
+     			for (String productName : paymentOrder) {
 					PriceBookEntry entry = productNameByPricebookEntry.get(productName);
 					newSobjects.add(
 					    new OrderItem(

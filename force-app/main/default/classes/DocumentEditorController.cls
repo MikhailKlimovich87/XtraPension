@@ -21,6 +21,8 @@ public class DocumentEditorController {
         public String fieldValue{get; set;}
         @AuraEnabled
         public String typeOfTemplate{get; set;}
+        @AuraEnabled
+        public Date dateOfReply{get; set;}
     }
 
     public class EmployerData {
@@ -223,7 +225,8 @@ public class DocumentEditorController {
                 Certified_Doc_Template__c,
                 EU_Residency_Appeal_Template__c,
                 Maiden_Name_Template__c,
-                DWP_C2_Request_Template__c
+                DWP_C2_Request_Template__c,
+                HMRC_Reply_Doc_Generate_Date__c
             FROM Application__c
             WHERE Id = :messageData.applicationId
         ];
@@ -233,6 +236,7 @@ public class DocumentEditorController {
         Application__c currentApp = applicaitons[0];
         String fieldName = TEMPLATE_NAME_TO_APPLICATION_FIELD.get(messageData.typeOfTemplate.toUpperCase('en'));
         currentApp.put(fieldName, messageData.fieldValue);
+        currentApp.put('HMRC_Reply_Doc_Generate_Date__c', messageData.dateOfReply);
         Database.update(currentApp);
 
         Id jobID = System.enqueueJob(new HMRCRepliesDocsGenerator(currentApp.Id, fieldName));

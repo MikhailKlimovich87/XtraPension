@@ -50,6 +50,15 @@
 				.breakPageAfter{
       				page-break-after:always;
    				}
+				.output-data {
+					text-align: justify;
+				}
+				.free-form p {
+					margin: 0px;
+				}
+				.free-form {
+					text-align: justify;
+				}
             </style>
         </head>
         <body>
@@ -80,21 +89,15 @@
 				Where available, we also enclose social insurance/social security etc records.<br/></p>
 			</div>
 			<div>Please use OUR REFERENCE of ‘{!appObj.Name}’ in all correspondence.</div>
-			<!-- <div style="text-align: justify;">
-				We would appreciate it if you could ensure your assessment of their eligibility to pay Class 2 contributions, a statement of their National Insurance Contributions to date and the Class 2 Table of Voluntary National Insurance Shortfall is sent directly to us at "Suite 1/31, Pure Offices, 1 Ainslie Road, Hillington, Glasgow, G52 4RU" as the enclosed 64-8 authorises us to act as their agent. Our client's work history is below.
-			</div> -->
-			<div style="{!IF(OR(ISBLANK(appObj.Freeform_Text_Line1__c), ISBLANK(appObj.National_Insurance_Number__c)), 'display:none', 'text-align: justify;')};">
-				<br/>
-				<apex:outputText styleClass="output-data" escape="false" value="{!appObj.Freeform_Text_Line1__c}" style="margin-top:0px;text-align: justify; bottom-border-width: 0px"></apex:outputText>
+			<br/>
+			<div style="{!IF(OR(ISBLANK(appObj.Freeform_RichText_Line1__c), ISBLANK(appObj.National_Insurance_Number__c)), 'display:none',null)};" class="free-form">
+				<apex:outputText styleClass="output-data" escape="false" value="{!appObj.Freeform_RichText_Line1__c}"></apex:outputText>
     		</div>
 			<div style="{!IF(ISBLANK(appObj.National_Insurance_Number__c), null, 'display:none')}">
-				<div style="{!IF(ISBLANK(appObj.Freeform_Text_Line1__c), 'display:none', 'text-align: justify;')};">
-					<br/>
-					<apex:outputText styleClass="output-data" escape="false" value="{!appObj.Freeform_Text_Line1__c}" style="margin-top:0px;text-align: justify; bottom-border-width: 0px"></apex:outputText>
+				<div style="{!IF(ISBLANK(appObj.Freeform_RichText_Line1__c), 'display:none', '')};" class="free-form">
+					<apex:outputText styleClass="output-data" escape="false" value="{!appObj.Freeform_RichText_Line1__c}"></apex:outputText>
 				</div>
-				<br/>
 				<div>They do not know their National Insurance Number but as best they can recall, they lived at / near:</div>
-				<br/>
 				<table style="-fs-table-paginate: paginate; border-style: solid; border-collapse: collapse;" border="1" cellspacing="0">
 					<tr>
 						<th>
@@ -159,10 +162,11 @@
 			<div style="{!IF(ISBLANK(empUKObj), 'display:none', null)};">
 				<br/>
 				<div><b>Last UK Work</b></div>
-				<div style="{!IF(ISBLANK(appObj.Freeform_Text_Line2__c), 'display:none', null)}; white-space: pre-line">
-					{!appObj.Freeform_Text_Line2__c}
-				</div>
 				<br/>
+				<div style="{!IF(ISBLANK(appObj.Freeform_RichText_Line2__c), 'display:none', null)};" class="free-form">
+					<apex:outputText styleClass="output-data" escape="false" value="{!appObj.Freeform_RichText_Line2__c}" style="margin-top:0px;text-align: justify; bottom-border-width: 0px"></apex:outputText>
+					<br/>
+				</div>
 				<table style="-fs-table-paginate: paginate; border-style: solid; border-collapse: collapse;" border="1" cellspacing="0">
 					<tr>
 						<th>
@@ -200,10 +204,11 @@
 			<div style="{!IF(ISBLANK(empAfterUKObjList), 'display:none', null)};">
 				<br/>
 				<div><b>After Leaving the UK</b></div>
-				<div style="{!IF(ISBLANK(appObj.Freeform_Text_Line3__c), 'display:none', null)}; white-space: pre-line">
-					{!appObj.Freeform_Text_Line3__c}
-				</div>
 				<br/>
+				<div style="{!IF(ISBLANK(appObj.Freeform_RichText_Line3__c), 'display:none', null)};" class="free-form">
+					<apex:outputText styleClass="output-data" escape="false" value="{!appObj.Freeform_RichText_Line3__c}"></apex:outputText>
+					<br/>
+				</div>
 				<table style="-fs-table-paginate: paginate; border-style: solid; border-collapse: collapse;" border="1" cellspacing="0">
 					<tr>
 						<th>
@@ -249,12 +254,17 @@
 				</table>
 			</div>
 			<div>
-				<div style="{!IF(ISBLANK(appObj.Freeform_Text_Line4__c), 'display:none', null)}; white-space: pre-line">
-					{!appObj.Freeform_Text_Line4__c}
-				</div>
 				<br/>
+				<div style="{!IF(ISBLANK(appObj.Freeform_RichText_Line4__c), 'display:none', null)};" class="free-form">
+					<apex:outputText styleClass="output-data" escape="false" value="{!appObj.Freeform_RichText_Line4__c}"></apex:outputText>
+					<br/>
+				</div>
 				<div>=========================</div>
-				<apex:outputText escape="false" value="{!appObj.Freeform_Text_Line5__c}" style="margin-top:0px;text-align: justify;"></apex:outputText>
+				<br/>
+				<div class="free-form">
+					<apex:outputText escape="false" value="{!appObj.Freeform_RichText_Line5__c}"></apex:outputText>
+					<br/>
+				</div>
 				Yours sincerely<br/>
 				JGBA Ltd
 			</div>

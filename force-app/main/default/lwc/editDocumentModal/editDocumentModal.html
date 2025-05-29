@@ -32,6 +32,14 @@
                 <div>
                     <p>Dear Sir / Madam</p>
                     <br />
+                    <template lwc:if={isExistDWPCallbackRequest}>
+                        <p style="text-align:justify">
+                            {app.DWP_Callback_Request__c} is when our client registered on the DWP Callback facility to
+                            allow submission of this CF83 application after 5 April 2025 deadline as per official
+                            guidance.
+                        </p>
+                        <br />
+                    </template>
                     <p>Please find enclosed completed CF83, 64-8 and our client's post-UK work abroad.<br />
                         Where available, we also enclose social insurance/social security etc records.<br />
                     </p>
@@ -47,8 +55,10 @@
                     work history is below.
                 </div>
                 <br />-->
-                <lightning-textarea class="start-letter" onchange={saveStartLetter} value={app.Freeform_Text_Line1__c}>
-                </lightning-textarea>
+                <!-- <lightning-textarea class="start-letter" onchange={saveStartLetter} value={app.Freeform_Text_Line1__c}>
+                </lightning-textarea> -->
+                <lightning-input-rich-text value={app.Freeform_RichText_Line1__c} onchange={saveStartLetter}>
+                </lightning-input-rich-text>
                 <template if:false={app.Is_Know_National_Insurance_Number__c}>
                     <br />
                     <div>
@@ -125,9 +135,9 @@
                 <template lwc:if={isExistUKEmployers}>
                     <br>
                     <h3><b>Last UK Work</b></h3>
-                    <lightning-textarea class="section-B" onchange={saveSectionAData}
-                        value={app.Freeform_Text_Line2__c}>
-                    </lightning-textarea>
+                    <lightning-input-rich-text class="section-B" onchange={saveSectionAData}
+                        value={app.Freeform_RichText_Line2__c}>
+                    </lightning-input-rich-text>
                     <br>
                     <table>
                         <tr>
@@ -154,9 +164,9 @@
                 <template lwc:if={isExistAfterUKEmployers}>
                     <br>
                     <h3><b>After Leaving the UK</b></h3>
-                    <lightning-textarea class="section-C" onchange={saveSectionBData}
-                        value={app.Freeform_Text_Line3__c}>
-                    </lightning-textarea>
+                    <lightning-input-rich-text class="section-C" onchange={saveSectionBData}
+                        value={app.Freeform_RichText_Line3__c}>
+                    </lightning-input-rich-text>
                     <br>
                     <table>
                         <tr>
@@ -203,14 +213,15 @@
                     </table>
 
                     <br>
-                    <lightning-textarea class="end-letter" onchange={saveEndLetter} value={app.Freeform_Text_Line4__c}>
-                    </lightning-textarea>
+                    <lightning-input-rich-text class="end-letter" onchange={saveEndLetter}
+                        value={app.Freeform_RichText_Line4__c}>
+                    </lightning-input-rich-text>
                     <br />
                 </template>
                 <div>=========================</div>
                 <br />
                 <lightning-input-rich-text onchange={saveExtraInfo}
-                    value={app.Freeform_Text_Line5__c}></lightning-input-rich-text>
+                    value={app.Freeform_RichText_Line5__c}></lightning-input-rich-text>
                 <br />
                 Yours sincerely<br />
                 JGBA Ltd

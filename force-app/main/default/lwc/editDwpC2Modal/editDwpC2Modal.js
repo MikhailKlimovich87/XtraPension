@@ -13,6 +13,7 @@ export default class EditDwpC2Modal extends LightningElement {
     choseValue;
     topData;
     bottomData;
+    currDate;
 
     allowedFormats = [
         'font',
@@ -46,6 +47,7 @@ export default class EditDwpC2Modal extends LightningElement {
             this.topData = splitResult[0];
             this.bottomData = splitResult[1];
         };
+        this.currDate  = new Date().toISOString();
     }
 
     closeAction() {
@@ -59,10 +61,17 @@ export default class EditDwpC2Modal extends LightningElement {
         this.bottomData = event.target.value;
     }
 
+    saveCurrDate(event) {
+        this.currDate = event.target.value;
+    }
+
     handleCreatePDF() {
         this.dispatchEvent(new CustomEvent(
             'generatepdf', {
-                detail: this.topData + 'SPLIT=============' + this.bottomData
+                detail: {
+                    body:this.topData + 'SPLIT=============' + this.bottomData,
+                    dateData: this.currDate
+                }
            })
         );
         this.closeAction();

@@ -1,0 +1,201 @@
+<apex:page readOnly="true" standardController="Application__c" extensions="AgentAuthLetterPdf" id="AgentAuthLetter" sidebar="false" renderAs="advanced_pdf" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+
+                @page {
+                    size: 210mm 297mm;
+					margin-top: 30px;
+					margin-bottom: 30px;
+					@bottom-left {
+                        content: element(footer);
+                    }
+                }
+
+				div.footer {
+            		position: running(footer);
+                    width: 100%;
+                    margin-right: 1px;
+                    text-align: center;
+				}
+
+				body {
+					font-family: "Roboto", sans-serif;
+					font-size: 14px;
+				}
+
+				table {
+                    border-color:black;
+					width:100%;
+				}
+
+				.main-table{
+					border-collapse: collapse;
+					width:100%;
+                    -fs-table-paginate: paginate;
+                    border: 1px solid black;
+				}
+                .main-table tr td{
+                    border-width: 1px;
+                    border-style: solid;
+                    border-color: ⌗000000;
+                }
+
+                h3 {
+					text-align: center;
+                }
+
+				.date-col {
+					text-align: center;
+				}
+				.breakPageAfter{
+      				page-break-after:always;
+   				}
+				p {
+					margin-bottom: 0px;
+					margin-top: 0px;
+				}
+				.team-address {
+					font-size: 14px;
+				}
+                .item-body {
+                    margin-bottom: 20px
+                }
+                .body-data{
+                    text-align: justify;
+                }
+                .main-table {
+                    border-color:black;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="footer" style="widht:100%; color:#808080; font-size:8pt; height:20%">
+                <div>JGBA Ltd, Suite 2/11, 1 Ainslie Road, Glasgow, G52 4RU – Co Reg No: SC349713</div>
+                <div>Tel: 0141 301 1480 - Directors: G CRAWFORD, J MCLACHLAN</div>
+    		</div>
+			<table border="0">
+				<tr>
+					<td width="20%"></td>
+					<td width="20%"></td>
+					<td width="20%"></td>
+					<td width="20%"></td>
+					<td style="font-size: 14px;">JGBA LTD<br/>
+						SUITE 2/11<br/>
+						1 AINSLIE ROAD<br/>
+						GLASGOW<br/>
+						G52 4RU
+					</td>
+				</tr>
+			</table>
+			<div class="team-address">
+				CAAT SESA<br/>
+				NICs &#38; EO Office<br/>
+				HMRC<br/>
+				BX9 1AN<br/>
+			</div>
+			<br/>
+            <apex:outputText value="{0, date, d MMMMMMMMMMM yyyy}">
+                <apex:param value="{!NOW()}"/>
+            </apex:outputText>
+			<br/>
+            <h3>64-8 Agent Authorisation Request</h3>
+            <div class="body-data">
+                <div class="item-body">Dear Sir / Madam</div>
+                <div class="item-body">We have been requested by HMRC online advisors to write to you in this way so that you may update your records to note that our client as detailed below has authorised us to act on their behalf. Feel free to contact our client directly to confirm this with them.</div>
+                <table style="main-table" border="1" cellspacing="0">
+					<tr>
+						<td width="50%">
+							<b>National Insurance No</b>
+						</td>
+						<td>
+							{!appObj.National_Insurance_Number__c}
+						</td>
+					</tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <b>Client Date of Birth</b>
+                        </td>
+                        <td>
+                            <apex:outputText value="{0, date, d MMMMMMMMMMM yyyy}">
+                                <apex:param value="{!appObj.Date_Of_Birth__c}"/>
+                            </apex:outputText>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+						<td>
+							<b>Client Tel No</b>
+						</td>
+						<td>
+							{!appObj.Related_Contact_Phone__c}
+						</td>
+					</tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+						<td>
+							<b>Client Name</b>
+						</td>
+						<td>
+							{!appObj.First_Name__c} {!appObj.Second_Name__c}
+						</td>
+					</tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+						<td>
+							<b>Maiden / Previous Name(s)</b>
+						</td>
+						<td>
+							{!appObj.Full_Maiden_Previous_Name__c}
+						</td>
+					</tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+					    <td style="vertical-align:top">
+						    <b>Client’s Current non-UK Addr:</b>
+						</td>
+						<td style="text-align:left">
+							<apex:outputText escape="false" value="{!appObj.Full_Current_Address_Abroad__c}"/>
+						</td>
+					</tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+					    <td style="vertical-align:top">
+						    <b>Client’s Previous UK Addr:</b>
+						</td>
+						<td style="text-align:left">
+							<apex:outputText escape="false" value="{!appObj.Full_UK_Home_Address__c}"/>
+						</td>
+					</tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+				</table>
+                <br/>
+                <div class="item-body">In line with HMRC guidance (originally in Agent Update 82, Feb 2021), our client has digitally signed the attached 64-8 agent authorisation form.</div>
+            </div>
+			<div>Yours sincerely</div>
+			<div>JGBA Ltd</div>
+		</body>
+    </html>
+</apex:page>
