@@ -40,7 +40,7 @@ public with sharing class DocumentEditorControllerTest {
         DocumentEditorController.EditModalWrapper templates = DocumentEditorController.getEmailTemplateData(testApps[0].Id);
         Test.stopTest();
         System.assertNotEquals(true, templates.htmlInfo.isEmpty());
-        System.assertEquals(9, templates.htmlInfo.size());
+        System.assertEquals(11, templates.htmlInfo.size());
     }
 
     @IsTest

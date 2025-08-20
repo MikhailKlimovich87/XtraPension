@@ -34,138 +34,6 @@ public with sharing class ApplicationTriggerTest {
         System.assertEquals('GB', app.Last_UK_Home_Address__CountryCode__s, 'CountryCode must be GB');
     }
 
-    // @IsTest
-    // static void updateApplicationDocumentStatusTest() {
-    //     List<Product2> products = TestDataFactory.createProductsWithPrices();
-    //     TestDataFactory.createTestCountry(true);
-    //     Account account = TestDataFactory.createAccount(true);
-    //     List<Contact> currentContact = [
-    //         SELECT
-    //             Id,
-    //             AccountId
-    //         FROM Contact
-    //         WHERE AccountId = :account.Id
-    //         LIMIT 1
-    //     ];
-    //     Id personContactId = currentContact[0].Id;
-    //     Application__c testApplication = TestDataFactory.createApplication(personContactId, false);
-    //     testApplication.Agent_Making_Sale__c = 'None';
-    //     insert testApplication;
-
-    //     TestDataFactory.createApplicationDocument(testApplication.Id, true);
-    //     TestDataFactory.createCF083ApplicationDocument(testApplication.Id, true);
-    //     TestDataFactory.createAgentApplicationDocument(testApplication.Id, true);
-
-    //     List<Application__c> testApps = [
-    //         SELECT
-    //             Status__c
-    //         FROM Application__c
-    //     ];
-    //     testApps[0].Status__c = 'Printing House';
-    //     update testApps;
-
-    //     List<Application_Document__c> testAppDocs = [
-    //         SELECT
-    //             Status__c
-    //         FROM Application_Document__c
-    //         WHERE Application__c = :testApps[0].Id
-    //     ];
-    //     for (Application_Document__c doc : testAppDocs) {
-    //         System.assertEquals('Ready For PH', doc.Status__c);
-    //     }
-    // }
-
-    // @IsTest
-    // static void generateZipArchiveTest() {
-    //     List<Product2> products = TestDataFactory.createProductsWithPrices();
-    //     TestDataFactory.createTestCountry(true);
-    //     Account account = TestDataFactory.createAccount(true);
-    //     List<Contact> currentContact = [
-    //         SELECT
-    //             Id,
-    //             AccountId
-    //         FROM Contact
-    //         WHERE AccountId = :account.Id
-    //         LIMIT 1
-    //     ];
-    //     Id personContactId = currentContact[0].Id;
-    //     Application__c testApplication = TestDataFactory.createApplication(personContactId, false);
-    //     testApplication.Agent_Making_Sale__c = 'None';
-    //     insert testApplication;
-
-    //     List<ContentVersion> testContVers = new List<ContentVersion>();
-    //     ContentVersion cvCF = new ContentVersion();
-    //     cvCF.Title = 'Test_CF083_ForSignature_completed';
-    //     cvCF.PathOnClient = 'Test_CF083_ForSignature_completed.pdf';
-    //     cvCF.VersionData = EncodingUtil.base64Decode(EncodingUtil.urlEncode('Unit Test ForSignature Body','UTF-8'));
-    //     testContVers.add(cvCF);
-
-    //     ContentVersion cv64_8 = new ContentVersion();
-    //     cv64_8.Title = 'Test_64-8_ForSignature_completed';
-    //     cv64_8.PathOnClient = 'Test_64-8_ForSignature_completed.pdf';
-    //     cv64_8.VersionData = EncodingUtil.base64Decode(EncodingUtil.urlEncode('Unit Test ForSignature Body','UTF-8'));
-    //     testContVers.add(cv64_8);
-
-    //     ContentVersion cvCustLett = new ContentVersion();
-    //     cvCustLett.Title = 'Test_CustomLetter_ForSignature';
-    //     cvCustLett.PathOnClient = 'Test_CustomLetter_ForSignature.pdf';
-    //     cvCustLett.VersionData = EncodingUtil.base64Decode(EncodingUtil.urlEncode('Unit Test ForSignature Body','UTF-8'));
-    //     testContVers.add(cvCustLett);
-
-    //     insert testContVers;
-
-    //     Test.startTest();
-
-    //     ContentDocumentLink cdl1 = new ContentDocumentLink(
-    //         LinkedEntityId = testApplication.Id,
-    //         ContentDocumentId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cvCF.Id].ContentDocumentId,
-    //         ShareType = 'V',
-    //         Visibility = 'AllUsers'
-    //     );
-    //     insert cdl1;
-
-    //     ContentDocumentLink cdl2 = new ContentDocumentLink(
-    //         LinkedEntityId = testApplication.Id,
-    //         ContentDocumentId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv64_8.Id].ContentDocumentId,
-    //         ShareType = 'V',
-    //         Visibility = 'AllUsers'
-    //     );
-    //     insert cdl2;
-
-    //     ContentDocumentLink cdl3 = new ContentDocumentLink(
-    //         LinkedEntityId = testApplication.Id,
-    //         ContentDocumentId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cvCustLett.Id].ContentDocumentId,
-    //         ShareType = 'V',
-    //         Visibility = 'AllUsers'
-    //     );
-    //     insert cdl3;
-
-    //     //List<ContentDocumentLink> testCDL = new List<ContentDocumentLink>();
-
-    //     // for (ContentVersion version : [SELECT ContentDocumentId FROM ContentVersion WHERE Id IN :testContVers]) {
-    //     //     testCDL.add(
-    //     //         new ContentDocumentLink(
-    //     //             LinkedEntityId = testApplication.Id,
-    //     //             ContentDocumentId = version.ContentDocumentId
-    //     //         )
-    //     //     );
-    //     // }
-
-    //     // insert testCDL;
-
-    //     update new Application__c(Id = testApplication.Id, Status__c = 'Printing House');
-    //     Test.stopTest();
-
-    //     List<ContentDocumentLink> zipLink = [
-    //         SELECT
-    //             ContentDocumentId
-    //         FROM ContentDocumentLink
-    //         WHERE LinkedEntityId = :testApplication.Id AND
-    //               ContentDocument.Title LIKE '%ZIP%'
-    //     ];
-    //     Assert.areNotEqual(0, zipLink.size());
-    // }
-
     @IsTest
     static void updateSelfemployedAbroadFieldTestCase1() {
         List<Product2> products = TestDataFactory.createProductsWithPrices();
@@ -297,14 +165,6 @@ public with sharing class ApplicationTriggerTest {
         testApplication.Agent_Making_Sale__c = 'None';
         insert testApplication;
 
-        // EmailTemplate validEmailTemplate = new EmailTemplate();
-        //     validEmailTemplate.isActive = true;
-        //     validEmailTemplate.Name = 'Registration Data Information';
-        //     validEmailTemplate.DeveloperName = 'Registration_Data_Information';
-        //     validEmailTemplate.TemplateType = 'text';
-        //     validEmailTemplate.FolderId = UserInfo.getUserId();
-        // insert validEmailTemplate;
-
         Employer__c selfEmployedEmployer = TestDataFactory.createEmployer(testApplication.Id, 'Work After UK', 'Self-Employed', true);
         Employer__c employedEmployer     = TestDataFactory.createEmployer(testApplication.Id, 'Work After UK', 'Employed', false);
         employedEmployer.Employers_Address__City__s        = 'Test';
@@ -360,14 +220,6 @@ public with sharing class ApplicationTriggerTest {
         Application__c testApplication = TestDataFactory.createApplication(personContactId, false);
         testApplication.Agent_Making_Sale__c = 'None';
         insert testApplication;
-
-        // EmailTemplate validEmailTemplate = new EmailTemplate();
-        //     validEmailTemplate.isActive = true;
-        //     validEmailTemplate.Name = 'Registration Data Information';
-        //     validEmailTemplate.DeveloperName = 'Registration_Data_Information';
-        //     validEmailTemplate.TemplateType = 'text';
-        //     validEmailTemplate.FolderId = UserInfo.getUserId();
-        // insert validEmailTemplate;
 
         Employer__c selfEmployedEmployer = TestDataFactory.createEmployer(testApplication.Id, 'Work After UK', 'Self-Employed', true);
         Employer__c employedEmployer     = TestDataFactory.createEmployer(testApplication.Id, 'Work After UK', 'Employed', false);
@@ -1146,7 +998,149 @@ public with sharing class ApplicationTriggerTest {
         }
     }
 
-    // static testMethod void fakeTest(){
-    //     ApplicationTriggerHandler.fakeMethod();
-    // }
+    @IsTest
+    static void generateReSubLetterCase1() {
+        List<Product2> products = TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        List<Contact> currentContact = [
+            SELECT
+                Id,
+                AccountId
+            FROM Contact
+            WHERE AccountId = :account.Id
+            LIMIT 1
+        ];
+        Id personContactId = currentContact[0].Id;
+        Application__c testApplication = TestDataFactory.createApplication(personContactId, true);
+        List<ContentDocumentLink> cdlsBeforeTest = [
+            SELECT
+                ContentDocumentId,
+                ContentDocument.Title
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId = :testApplication.Id AND
+                  ContentDocument.Title LIKE '%ReSubLetter%'
+            ORDER BY ContentDocument.CreatedDate DESC
+        ];
+        Test.startTest();
+        testApplication.Status__c = 'REPEAT(NO edits)';
+        update testApplication;
+        Test.stopTest();
+        List<ContentDocumentLink> cdlsAfterTest = [
+            SELECT
+                ContentDocumentId,
+                ContentDocument.Title
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId = :testApplication.Id AND
+                  ContentDocument.Title LIKE '%ReSubLetter%'
+            ORDER BY ContentDocument.CreatedDate DESC
+        ];
+        Assert.areNotEqual(cdlsAfterTest.size(), cdlsBeforeTest.size());
+        Assert.areEqual(0, cdlsBeforeTest.size());
+        Assert.areEqual(1, cdlsAfterTest.size());
+    }
+
+    @IsTest
+    static void generateReSubLetterCase2() {
+        List<Product2> products = TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        List<Contact> currentContact = [
+            SELECT
+                Id,
+                AccountId
+            FROM Contact
+            WHERE AccountId = :account.Id
+            LIMIT 1
+        ];
+        Id personContactId = currentContact[0].Id;
+        Application__c testApplication = TestDataFactory.createApplication(personContactId, true);
+        ContentVersion cv = new ContentVersion();
+        cv.Title = 'ReSubLetter_ForSignature';
+        cv.PathOnClient = 'ReSubLetter_ForSignature.pdf';
+        cv.VersionData = EncodingUtil.base64Decode(EncodingUtil.urlEncode('Unit Test ReSubLetter Body','UTF-8'));
+        insert cv;
+        ContentVersion conDoc = [SELECT ContentDocumentId, ContentSize FROM ContentVersion WHERE Id =:cv.Id][0];
+        ContentDocumentLink conDocLink = New ContentDocumentLink();
+		conDocLink.LinkedEntityId = testApplication.Id;
+		conDocLink.ContentDocumentId = conDoc.ContentDocumentId;
+		conDocLink.shareType = 'V';
+        conDocLink.Visibility = 'AllUsers';
+		insert conDocLink;
+        Test.startTest();
+        testApplication.Status__c = 'REPEAT(NO edits)';
+        update testApplication;
+        Test.stopTest();
+    }
+
+    @IsTest
+    static void createSplitPaymentsTest() {
+        List<Product2> products = TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        List<Contact> currentContact = [
+            SELECT
+                Id,
+                AccountId
+            FROM Contact
+            WHERE AccountId = :account.Id
+            LIMIT 1
+        ];
+        Id personContactId = currentContact[0].Id;
+        Application__c testApplication = TestDataFactory.createApplication(personContactId, false);
+        testApplication.Current_Address_Abroad__CountryCode__s = 'ZA';
+        insert testApplication;
+        List<Application__c> testAppBeforeUpdate = [
+            SELECT
+                Id,
+                Split__c,
+                Split_Date__c
+            FROM Application__c
+            WHERE Id = :testApplication.Id
+        ];
+        Order order = TestDataFactory.createOrder(testApplication.Id, account.Id, true);
+        Map<Id, Payment__c> testPayments = new Map<Id, Payment__c>(TestDataFactory.createRelatedPaymentToApplication(products, testApplication, order.Id, true));
+        List<Payment__c> paymentsBeforeUpdate = [
+            SELECT
+                Product_Name__c,
+                Amount__c
+            FROM Payment__c
+            WHERE Application__c = :testApplication.Id AND
+                  Product_Name__c  = 'Application'
+        ];
+        for (Payment__c payment : paymentsBeforeUpdate) {
+            System.debug(payment);
+        }
+        Test.startTest();
+        testApplication.Split__c = true;
+        update testApplication;
+        Test.stopTest();
+        System.debug('=============================');
+        List<Payment__c> paymentsAfterUpdate = [
+            SELECT
+                Product_Name__c,
+                Amount__c
+            FROM Payment__c
+            WHERE Application__c = :testApplication.Id AND
+                  Product_Name__c  = 'Application'
+        ];
+        for (Payment__c payment : paymentsAfterUpdate) {
+            System.debug(payment);
+        }
+        System.debug('=============================');
+
+        List<Application__c> testAppAfterUpdate = [
+            SELECT
+                Id,
+                Split__c,
+                Split_Date__c
+            FROM Application__c
+            WHERE Id = :testApplication.Id
+        ];
+        Assert.areNotEqual(0,paymentsAfterUpdate.size());
+        Assert.isNull(testAppBeforeUpdate[0].Split_Date__c);
+        Assert.areNotEqual(testAppBeforeUpdate[0].Split_Date__c,testAppAfterUpdate[0].Split_Date__c);
+        Assert.isNotNull(testAppAfterUpdate[0].Split_Date__c);
+        Assert.areEqual(paymentsAfterUpdate[0].Amount__c, paymentsBeforeUpdate[0].Amount__c/5);
+    }
 }

@@ -24,6 +24,7 @@ public class SFTPZipFileUploaderBatch implements Database.Batchable<SObject>, Da
                 First_Name__c,
                 Second_Name__c,
                 Name,
+                Repeat_App__c,
             (
                 SELECT
                     ContentDocument.LatestPublishedVersion.VersionData,
@@ -35,7 +36,7 @@ public class SFTPZipFileUploaderBatch implements Database.Batchable<SObject>, Da
                 LIMIT 1
             )
             FROM Application__c
-            WHERE (Status__c = 'Printing House' OR 
+            WHERE (Status__c = 'Printing House' OR
                    Status__c = 'REPEAT(NO edits)') AND
                    FTP_Send_Date__c = NULL
         ]);
@@ -61,7 +62,9 @@ public class SFTPZipFileUploaderBatch implements Database.Batchable<SObject>, Da
         sftpWrapper.sftpPort     = PRINTING_HOUSE_SFTP.Port__c;
         sftpWrapper.sftpUserName = PRINTING_HOUSE_SFTP.UserName__c;
         sftpWrapper.sftpPassword = PRINTING_HOUSE_SFTP.Password__c;
-        sftpWrapper.folderName   = PRINTING_HOUSE_SFTP.FolderName__c;
+        sftpWrapper.folderName   = currApp.Repeat_App__c == true ?
+                                        PRINTING_HOUSE_SFTP.RepostAppsFolderName__c :
+                                        PRINTING_HOUSE_SFTP.FolderName__c;
         sftpWrapper.files        = new List<SFTPFile>{sftpFile};
 
         HttpResponse response = uploadFileToSFTP(sftpWrapper);

@@ -275,136 +275,116 @@ public without sharing class GeneratePdfFileController {
         ApplicationDocsWrapper docsWrapper = new ApplicationDocsWrapper();
         update new Application__c(Id = recordId, Request_Data__c = JSON.serialize(requestData));
 	    // Parse the JSON response
-	    if (response.getStatusCode() != 201) {
+	    if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
     	    System.debug('The status code returned was not expected: ' +
     	    response.getStatusCode() + ' ' + response.getStatus());
+            System.debug('Body: ' + response.getBody());
             ResponseWrapper wrapper = (ResponseWrapper) System.JSON.deserialize(response.getBody(), ResponseWrapper.class);
 
-            List<ContentDocumentLink> oldDocuments = [
-                SELECT 
+            List<ContentVersion> newContVersions = new List<ContentVersion>();
+            List<ContentVersion> updatedContVers = new List<ContentVersion>();
+            Map<String, ContentDocumentLink> fileLabelByLink = new Map<String, ContentDocumentLink>();
+            for (ContentDocumentLink link : [
+                SELECT
                     ContentDocument.Title,
-                    LinkedEntityId 
-                FROM ContentDocumentLink 
-                WHERE (ContentDocument.Title LIKE '%CF083%' OR 
-                       ContentDocument.Title LIKE '%64-8%') AND 
-                       LinkedEntityId = :app.Id
-            ];
-
-            if (!oldDocuments.isEmpty()) {
-                List<ContentDocumentLink> cf083Docs = new List<ContentDocumentLink>();
-                List<ContentDocumentLink> agentDocs = new List<ContentDocumentLink>();
-                ContentDocument forSignatureCF083Doc = new ContentDocument();
-                ContentDocument forSignatureAgentDoc = new ContentDocument();
-                Set<SObject> updateDocs = new Set<SObject>();
-                for (ContentDocumentLink doc : oldDocuments) {
-                    if (doc.ContentDocument.Title.contains('CF083')) {
-                        cf083Docs.add(doc);
-                        if (doc.ContentDocument.Title.contains('ForSignature') && !doc.ContentDocument.Title.contains('completed') && forSignatureCF083Doc.Title == null) {
-                            forSignatureCF083Doc.Id    = doc.ContentDocument.Id;
-                            forSignatureCF083Doc.Title = doc.ContentDocument.Title.replace('ForSignature', 'v' + oldDocuments.size() / 2 + '.0');
-                            updateDocs.add(forSignatureCF083Doc);
-                        }
-                    } else if (doc.ContentDocument.Title.contains('64-8')) {
-                        agentDocs.add(doc);
-                        if (doc.ContentDocument.Title.contains('ForSignature') && !doc.ContentDocument.Title.contains('completed') && forSignatureAgentDoc.Title == null) {
-                            forSignatureAgentDoc.Id    = doc.ContentDocument.Id;
-                            forSignatureAgentDoc.Title = doc.ContentDocument.Title.replace('ForSignature', 'v' + oldDocuments.size() / 2 + '.0');
-                            updateDocs.add(forSignatureAgentDoc);
-                        }
-                    }
-                }
-                if (!updateDocs.isEmpty()) {
-                    update new List<SObject>(updateDocs);
-                }
-            }
-            List<ContentVersion> newContentVersions = new List<ContentVersion>();
-            ContentVersion conVerCF83 = new ContentVersion();
-            conVerCF83.ContentLocation = 'S';
-            conVerCF83.PathOnClient = app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CF083_ForSignature.pdf';
-            conVerCF83.Title = app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CF083_ForSignature';
-            conVerCF83.VersionData = EncodingUtil.base64Decode(wrapper?.result?.application);
-            newContentVersions.add(conVerCF83);
-            ContentVersion conVer64_8 = new ContentVersion();
-            conVer64_8.ContentLocation = 'S';
-            conVer64_8.PathOnClient = app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_64-8_ForSignature.pdf';
-            conVer64_8.Title = app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_64-8_ForSignature';
-            conVer64_8.VersionData = EncodingUtil.base64Decode(wrapper?.result?.agent);
-            newContentVersions.add(conVer64_8);
-            insert newContentVersions;
-
-            List<Id> conVersIds = new List<Id>();
-            conVersIds.add(conVerCF83.Id);
-            conVersIds.add(conVer64_8.Id);
-
-            Map<Id, ContentVersion> conDocs = new Map<Id, ContentVersion>([
-                SELECT
                     ContentDocumentId,
-                    ContentSize
-                FROM ContentVersion
-                WHERE Id IN :conVersIds
-            ]);
-
-            List<ContentDocumentLink> conDocLinks = new List<ContentDocumentLink>();
-            ContentDocumentLink conDocLinkCF83 = new ContentDocumentLink();
-            conDocLinkCF83.LinkedEntityId = app.Id;
-            conDocLinkCF83.ContentDocumentId = conDocs.get(conVerCF83.Id).ContentDocumentId;
-            conDocLinkCF83.shareType = 'V';
-            conDocLinkCF83.Visibility = 'AllUsers';
-            conDocLinks.add(conDocLinkCF83);
-            ContentDocumentLink conDocLink64_8 = new ContentDocumentLink();
-            conDocLink64_8.LinkedEntityId = app.Id;
-            conDocLink64_8.ContentDocumentId = conDocs.get(conVer64_8.Id).ContentDocumentId;
-            conDocLink64_8.shareType = 'V';
-            conDocLink64_8.Visibility = 'AllUsers';
-            conDocLinks.add(conDocLink64_8);
-            insert conDocLinks;
-
-            List<Application_Document__c> relatedApplicationDocuments = [
-                SELECT
-                    File_Name__c
-                FROM Application_Document__c
-                WHERE Application__c = :app.Id AND
-                      (File_Name__c LIKE '%CF083%' OR
-                       File_Name__c LIKE '%64-8%')
-            ];
-            if (!relatedApplicationDocuments.isEmpty()) {
-                List<ContentDocumentLink> conDocLinksAppDocs = new List<ContentDocumentLink>();
-                Application_Document__c cf083AppDocum;
-                Application_Document__c agentAppDocum;
-                for (Application_Document__c addDoc : relatedApplicationDocuments) {
-                    if (addDoc.File_Name__c.contains('CF083')) {
-                        cf083AppDocum = addDoc;
-                    } else if (addDoc.File_Name__c.contains('64-8')) {
-                        agentAppDocum = addDoc;
-                    }
+                    LinkedEntityId
+                FROM ContentDocumentLink
+                WHERE (ContentDocument.Title LIKE '%CF083%' OR
+                       ContentDocument.Title LIKE '%64-8%') AND
+                       LinkedEntityId = :app.Id
+            ]) {
+                ContentVersion conVer = new ContentVersion();
+                if (link.ContentDocument.Title.contains('CF083_ForSignature')) {
+                    conVer = createContentVerison(
+                        EncodingUtil.base64Decode(wrapper?.result?.application),
+                        app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CF083_ForSignature'
+                    );
+                    fileLabelByLink.put('CF083_ForSignature', link);
+                    docsWrapper.cf83DocLink  = URL.getOrgDomainUrl().toExternalForm() + '/sfc/servlet.shepherd/document/download/' + link.ContentDocumentId;
                 }
-                if (cf083AppDocum != null) {
-                    ContentDocumentLink conDocLinkCF83AppDoc = new ContentDocumentLink();
-                    conDocLinkCF83AppDoc.LinkedEntityId = cf083AppDocum.Id;
-                    conDocLinkCF83AppDoc.ContentDocumentId =  conDocs.get(conVerCF83.Id).ContentDocumentId;
-                    conDocLinkCF83AppDoc.shareType = 'V';
-                    conDocLinkCF83AppDoc.Visibility = 'AllUsers';
-                    conDocLinksAppDocs.add(conDocLinkCF83AppDoc);
+                if (link.ContentDocument.Title.contains('64-8_ForSignature')) {
+                    conVer = createContentVerison(
+                        EncodingUtil.base64Decode(wrapper?.result?.agent),
+                        app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_64-8_ForSignature'
+                    );
+                    fileLabelByLink.put('64-8_ForSignature', link);
+                    docsWrapper.agentDocLink  = URL.getOrgDomainUrl().toExternalForm() + '/sfc/servlet.shepherd/document/download/' + link.ContentDocumentId;
                 }
-                if (agentAppDocum != null) {
-                    ContentDocumentLink conDocLinkAgentAppDoc = new ContentDocumentLink();
-                    conDocLinkAgentAppDoc.LinkedEntityId = agentAppDocum.Id;
-                    conDocLinkAgentAppDoc.ContentDocumentId =  conDocs.get(conVer64_8.Id).ContentDocumentId;
-                    conDocLinkAgentAppDoc.shareType = 'V';
-                    conDocLinkAgentAppDoc.Visibility = 'AllUsers';
-                    conDocLinksAppDocs.add(conDocLinkAgentAppDoc);
-                }
-                if (!conDocLinksAppDocs.isEmpty()) {
-                    Database.insert(conDocLinksAppDocs, false);
-                }
+                conVer.ContentDocumentId = link.ContentDocumentId;
+                updatedContVers.add(conVer);
             }
-            docsWrapper.cf83DocLink  = URL.getOrgDomainUrl().toExternalForm() + '/sfc/servlet.shepherd/document/download/' + conDocs.get(conVerCF83.Id).ContentDocumentId;
-            docsWrapper.agentDocLink = URL.getOrgDomainUrl().toExternalForm() + '/sfc/servlet.shepherd/document/download/' + conDocs.get(conVer64_8.Id).ContentDocumentId;
+            if (updatedContVers.size() != 0) {
+                Database.SaveResult[] results = Database.insert(updatedContVers, false);
+            }
+            if(fileLabelByLink.get('CF083_ForSignature') == null) {
+                newContVersions.add(
+                    createContentVerison(
+                        EncodingUtil.base64Decode(wrapper?.result?.application),
+                        app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CF083_ForSignature'
+                    )
+                );
+            }
+            if(fileLabelByLink.get('64-8_ForSignature') == null) {
+                newContVersions.add(
+                    createContentVerison(
+                        EncodingUtil.base64Decode(wrapper?.result?.agent),
+                        app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_64-8_ForSignature'
+                    )
+                );
+            }
+
+            if (newContVersions.size() != 0) {
+                Database.insert(newContVersions, false);
+                createContentLinks(newContVersions, docsWrapper, app);
+            }
             docsWrapper.status = 'Success';
 	    } else {
+            update new Application__c(Id = recordId, Request_Data__c = JSON.serialize(requestData),Heroku_Request__c = JSON.serialize(requestData));
             docsWrapper.status = 'Error: ' + response.getBody();
+            docsWrapper.status = 'Error';
 	    }
         return docsWrapper;
+    }
+
+    private static void createContentLinks(List<ContentVersion> newDocuments, ApplicationDocsWrapper docsWrapper, Application__c app) {
+        Map<Id, ContentVersion> newContVersMap = new Map<Id, ContentVersion>(newDocuments);
+        List<ContentVersion> conDocs = [
+            SELECT
+                ContentDocumentId,
+                Title
+            FROM ContentVersion
+            WHERE Id IN :newContVersMap.keySet()
+        ];
+        if (conDocs.size() != 0) {
+            List<ContentDocumentLink> contentDocLinks = new List<ContentDocumentLink>();
+            for (ContentVersion version : conDocs) {
+                contentDocLinks.add(
+                    new ContentDocumentLink(
+                        LinkedEntityId = app.Id,
+                        ContentDocumentId = version.ContentDocumentId,
+                        shareType = 'V',
+                        Visibility = 'AllUsers'
+                    )
+                );
+                if(version.Title.contains('CF083_ForSignature')) {
+                    docsWrapper.cf83DocLink  = URL.getOrgDomainUrl().toExternalForm() + '/sfc/servlet.shepherd/document/download/' + version.ContentDocumentId;
+                }
+                if(version.Title.contains('64-8_ForSignature')) {
+                    docsWrapper.agentDocLink  = URL.getOrgDomainUrl().toExternalForm() + '/sfc/servlet.shepherd/document/download/' + version.ContentDocumentId;
+                }
+            }
+            insert contentDocLinks;
+        }
+    }
+
+    private static ContentVersion createContentVerison(Blob pdfBlob, String title) {
+        return new ContentVersion(
+            VersionData = pdfBlob,
+            ContentLocation = 'S',
+            PathOnClient = title +'.pdf',
+            Title = title
+        );
     }
 
     public class ResponseWrapper {

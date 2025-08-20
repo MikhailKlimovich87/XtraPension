@@ -303,10 +303,10 @@ public class DwpEmailController {
             twilioMessage.TwilioSF__Date_Sent__c = DateTime.now();
 
             // Insert the record
-            insert twilioMessage;
-            if(response.getHtttpStatusCode() >= 201 && response.getHtttpStatusCode() < 300) {
-                app.is_Sent_DWP_SMS_Message__c = true;
-            }
+            Database.insert(twilioMessage, false);
+            // if(response.getHtttpStatusCode() >= 201 && response.getHtttpStatusCode() < 300) {
+            //     app.is_Sent_DWP_SMS_Message__c = true;
+            // }
             app.Status__c = 'DWP Shortfall Pending';
             update app;
         } else {

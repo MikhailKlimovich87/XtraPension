@@ -1,0 +1,38 @@
+.main-space {
+    font-family: "Roboto", sans-serif;
+    font-size: 1.0rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.header-data {
+    padding-left: 70%;
+}
+
+.caseworker-address {
+    font-size: 1.2rem
+}
+
+.date-col {
+    text-align: center;
+}
+
+.date-container{
+    display: table;
+    width:100%;
+}
+.date-input {
+    display: table-cell;
+    width: 150px;
+}
+
+table {
+    border-collapse: collapse;
+    width:100%;
+    border: 1.5px solid;
+}
+
+td {
+    border: 1.5px solid;
+    padding: 0.5rem;
+}

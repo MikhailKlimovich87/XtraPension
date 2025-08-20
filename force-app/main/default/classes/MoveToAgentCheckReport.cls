@@ -20,6 +20,8 @@ public without sharing class MoveToAgentCheckReport {
                         Name != 'Edryl Ranido' AND
                         Name != 'Daniel Gatdula' AND
                         Name != 'Maria Marmeto' AND
+                        Name != 'Niamh' AND
+                        Name != 'Monica Lorica' AND
                         Name != 'Stripe Webhooks Site Guest User'
                 ];
                 if (!activeUsers.isEmpty()) {
@@ -53,6 +55,8 @@ public without sharing class MoveToAgentCheckReport {
                   CreatedBy.Name!= 'Maria Marmeto' AND
                   CreatedBy.Name!= 'Camille Gittbao' AND
                   CreatedBy.Name!= 'Rob Landy' AND
+                  CreatedBy.Name!= 'Niamh' AND
+                  CreatedBy.Name!= 'Monica Lorica' AND
                   CreatedBy.Name!= 'Stripe Webhooks Site Guest User'
             ORDER BY CreatedDate DESC];
         if (historyData.size() == 0) {

@@ -60,7 +60,9 @@ public class DocumentEditorController {
         'CERTIFIED DOC'       => 'Certified_Doc_Template__c',
         'EU RESIDENCY APPEAL' => 'EU_Residency_Appeal_Template__c',
         'MAIDEN NAME'         => 'Maiden_Name_Template__c',
-        'DWP C2 REQUEST'      => 'DWP_C2_Request_Template__c'
+        'DWP C2 REQUEST'      => 'DWP_C2_Request_Template__c',
+        'BOUNCE LETTER'       => 'Bounce_Letter_Template__c',
+        '64-8 UPDATE LETTER'  => 'Update_Letter_Template__c'
     };
     public static final Map<String, String> TEMPLATE_NAME_TO_BODY_DATA = new Map<String, String> {
         'NINO'                => XtraPensionConstants.NINO_TEMPLATE,
@@ -71,7 +73,9 @@ public class DocumentEditorController {
         'CERTIFIED DOC'       => XtraPensionConstants.CERTIFIED_DOC_TEMPLATE,
         'EU RESIDENCY APPEAL' => XtraPensionConstants.EU_RESIDENCY_APPEAL_TEMPLATE,
         'MAIDEN NAME'         => XtraPensionConstants.MAIDEN_NAME,
-        'DWP C2 REQUEST'      => XtraPensionConstants.DWP_C2_REQUEST
+        'DWP C2 REQUEST'      => XtraPensionConstants.DWP_C2_REQUEST,
+        'BOUNCE LETTER'       => XtraPensionConstants.BOUNCE_LETTER,
+        '64-8 UPDATE LETTER'  => XtraPensionConstants.UPDATE_LETTER
     };
 
     @AuraEnabled(cacheable='true')
@@ -91,10 +95,12 @@ public class DocumentEditorController {
                 Full_Maiden_Previous_Name__c,
                 Current_Job_Reply_Template__c,
                 DWP_Status_Check_Template__c,
+                Bounce_Letter_Template__c,
                 Certified_Doc_Template__c,
                 EU_Residency_Appeal_Template__c,
                 Maiden_Name_Template__c,
                 DWP_C2_Request_Template__c,
+                Update_Letter_Template__c,
                 Date_Of_Marriage_Or_Civil_Partnership__c,
                 Date_Of_Leaving_Last_UK__c,
                 First_Name__c,
@@ -212,6 +218,7 @@ public class DocumentEditorController {
 
     @AuraEnabled
     public static Id generateHMRCReplyFile(MessageData messageData) {
+        System.debug('messageData === ' + messageData);
         if (messageData == null) {
             return 'Didn\'t get data';
         }
@@ -226,7 +233,9 @@ public class DocumentEditorController {
                 EU_Residency_Appeal_Template__c,
                 Maiden_Name_Template__c,
                 DWP_C2_Request_Template__c,
-                HMRC_Reply_Doc_Generate_Date__c
+                HMRC_Reply_Doc_Generate_Date__c,
+                Bounce_Letter_Template__c,
+                Update_Letter_Template__c
             FROM Application__c
             WHERE Id = :messageData.applicationId
         ];

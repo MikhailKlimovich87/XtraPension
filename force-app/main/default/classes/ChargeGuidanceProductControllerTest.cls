@@ -62,6 +62,7 @@ public class ChargeGuidanceProductControllerTest {
         ChargeGuidanceProductController.ChargeData testData = new ChargeGuidanceProductController.ChargeData();
         testData.recordId = currentApplcation.Id;
         testData.amount   = '10000';
+
         Test.startTest();
         ChargeGuidanceProductController.ChargeResult result = ChargeGuidanceProductController.chargeProduct(testData);
         Test.stopTest();
@@ -69,5 +70,23 @@ public class ChargeGuidanceProductControllerTest {
         System.assertEquals('Success', result.title, 'Result\'s Title is wrong');
         System.assertEquals('You\'ve charged Success Product', result.message, 'Result\'s Message is wrong');
         System.assertEquals('success', result.variant, 'Result\'s Variant is wrong');
+    }
+
+    @IsTest static void getApplicationTestCase2() {
+        List<Application__c> testApps = [
+            SELECT
+                Id,
+                Current_Address_Abroad__CountryCode__s
+            FROM Application__c
+            LIMIT 1
+        ];
+        testApps[0].Current_Address_Abroad__CountryCode__s = 'ZA';
+        update testApps;
+        Test.startTest();
+        ChargeGuidanceProductController.ApplicationData resultData = ChargeGuidanceProductController.getApplication(testApps[0].Id);
+        Test.stopTest();
+        System.assertNotEquals(null, resultData.application, 'Don\'t exist new Application');
+        System.assertEquals(false, resultData.allRelatedPayments.isEmpty(), 'Don\'t exist required Payments');
+        System.assertEquals(4, resultData.allRelatedPayments.size(), 'Don\'t contains all nessasary Payments');
     }
 }

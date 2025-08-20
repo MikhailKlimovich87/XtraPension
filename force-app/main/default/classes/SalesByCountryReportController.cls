@@ -34,7 +34,6 @@ public without sharing class SalesByCountryReportController {
                 toLabel(Current_Address_Abroad__CountryCode__s),
                 CreatedDate
             FROM Application__c
-            WHERE CreatedDate >= :lastQtrStartDate
         ];
 
         Map<String, List<Application__c>> countryNameByApps = new Map<String, List<Application__c>>();
@@ -65,6 +64,7 @@ public without sharing class SalesByCountryReportController {
             countryData.lastMonthCount = 0;
             countryData.thisQtrCount = 0;
             countryData.lastQtrCount = 0;
+            countryData.allPeriod = 0;
             if (currentCountryApps != null) {
                 for (Application__c app : currentCountryApps) {
                     Date createdDate = app.CreatedDate.date();
@@ -92,6 +92,7 @@ public without sharing class SalesByCountryReportController {
                     if (createdDate <= lastQtrEndDate && createdDate >= lastQtrStartDate) {
                         countryData.lastQtrCount+=1;
                     }
+                    countryData.allPeriod+=1;
                 }
             }
             countryInfo.add(countryData);
@@ -112,6 +113,8 @@ public without sharing class SalesByCountryReportController {
         thisQtrWrapper.name = 'This Qtr';
         DateDifferenceWrapper lastQtrWrapper = new DateDifferenceWrapper();
         lastQtrWrapper.name = 'Last Qtr';
+        DateDifferenceWrapper allTimeWrapper = new DateDifferenceWrapper();
+        allTimeWrapper.name = 'All Time';
         for (CountryWrapper wrapper : countryInfo) {
             todayWrapper.countData.add(wrapper.todayCount);
             todayWrapper.fullCount += wrapper.todayCount;
@@ -129,6 +132,8 @@ public without sharing class SalesByCountryReportController {
             thisQtrWrapper.fullCount += wrapper.thisQtrCount;
             lastQtrWrapper.countData.add(wrapper.lastQtrCount);
             lastQtrWrapper.fullCount += wrapper.lastQtrCount;
+            allTimeWrapper.countData.add(wrapper.allPeriod);
+            allTimeWrapper.fullCount += wrapper.allPeriod;
         }
         result.dateData.add(todayWrapper);
         result.dateData.add(yesterdayWrapper);
@@ -138,33 +143,8 @@ public without sharing class SalesByCountryReportController {
         result.dateData.add(lastMonthWrapper);
         result.dateData.add(thisQtrWrapper);
         result.dateData.add(lastQtrWrapper);
+        result.dateData.add(allTimeWrapper);
 
-        Date last3MonthDate = todayDate.addMonths(-3);
-        List<Application__c> last3MonthsApps = [
-            SELECT
-                Name,
-                CreatedDate
-            FROM Application__c
-            WHERE CreatedDate >= :last3MonthDate
-            ORDER BY CreatedDate DESC
-        ];
-        Map<String, List<String>> createdAppDateByListAppNames = new Map<String, List<String>>();
-        for (Application__c app : last3MonthsApps) {
-            List<String> appNames = createdAppDateByListAppNames.get(app.CreatedDate.format('dd MMM'));
-            if(appNames == null) {
-                appNames = new List<String>();
-            }
-            appNames.add(app.Name);
-            createdAppDateByListAppNames.put(app.CreatedDate.format('dd MMM'),appNames);
-        }
-        if (createdAppDateByListAppNames.size() != 0) {
-            for (String dayOfDate : createdAppDateByListAppNames.keySet()) {
-                DateAmountWrapper dayWrapper = new DateAmountWrapper();
-                dayWrapper.dateName = dayOfDate;
-                dayWrapper.amount = createdAppDateByListAppNames.get(dayOfDate).size();
-                result.amountByDay.add(dayWrapper);
-            }
-        }
         return result;
     }
 
@@ -196,6 +176,7 @@ public without sharing class SalesByCountryReportController {
         public Integer lastMonthCount;
         public Integer thisQtrCount;
         public Integer lastQtrCount;
+        public Integer allPeriod;
     }
 
     public class DateAmountWrapper {

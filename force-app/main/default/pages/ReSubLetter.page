@@ -1,0 +1,249 @@
+<apex:page readOnly="true" standardController="Application__c" extensions="ReSubLetterPdf" id="ReSubLetter" sidebar="false" renderAs="advanced_pdf" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+
+                @page {
+                    size: 210mm 297mm;
+					margin-top: 30px;
+					margin-bottom: 32px;
+					@bottom-left {
+                        content: element(footer);
+                    }
+                }
+				div.footer {
+            		position: running(footer);
+                    width: 100%;
+                    margin-right: 1px;
+                    text-align: center;
+					color:#808080;
+					font-size:8pt;
+					height:20%
+				}
+
+				body {
+					font-family: "Roboto", sans-serif;
+					font-size: 14px;
+				}
+
+				table {
+                    border-color:black;
+					width:100%;
+				}
+
+				.main-table{
+					border-collapse: collapse;
+					width:100%;
+                    -fs-table-paginate: paginate;
+                    border: 1px solid black;
+				}
+                .main-table tr td{
+                    border-width: 1px;
+                    border-style: solid;
+                    border-color: ⌗000000;
+                }
+
+                h3 {
+					text-align: center;
+                }
+
+				.date-col {
+					text-align: center;
+				}
+				.breakPageAfter{
+      				page-break-after:always;
+   				}
+				p {
+					margin-bottom: 0px;
+					margin-top: 0px;
+				}
+				.team-address {
+					font-size: 14px;
+				}
+                .item-body {
+                    margin-bottom: 14px
+                }
+                .body-data{
+                    text-align: justify;
+                }
+                .main-table {
+                    border-color:black;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="footer">
+				<div>JGBA Ltd, Suite 2/11, 1 Ainslie Road, Glasgow, G52 4RU – Co Reg No: SC349713</div>
+                <div>Tel: 0141 301 1480 - Directors: G CRAWFORD, J MCLACHLAN</div>
+    		</div>
+            <table border="0">
+				<tr>
+					<td width="20%"></td>
+					<td width="20%"></td>
+					<td width="20%"></td>
+					<td width="20%"></td>
+					<td style="font-size: 14px;">JGBA LTD<br/>
+						SUITE 2/11<br/>
+						1 AINSLIE ROAD<br/>
+						GLASGOW<br/>
+						G52 4RU
+					</td>
+				</tr>
+			</table>
+            <div>International Case Worker</div>
+			<div>PT Operations North East England</div>
+			<div>HM Revenue &amp; Customs</div>
+			<div>BX9 1AN, United Kingdom</div>
+            <apex:outputText value="{0, date, d MMMMMMMMMMM yyyy}">
+                <apex:param value="{!NOW()}"/>
+            </apex:outputText>
+            <br/>
+            <h3>Resubmission of Voluntary National Insurance Application</h3>
+            <div class="body-data">
+                <div class="item-body">Dear Sir / Madam</div>
+                <div class="item-body">We are resubmitting the attached application for Voluntary National Insurance contributions on behalf of our client, {!appObj.First_Name__c} {!appObj.Second_Name__c}.</div>
+                <div class="item-body">
+                    This application was originally submitted on {!appObj.Tracking_No_Rx_d_by_XP__c} via <span style="{!IF(appObj.DHL_Repeat__c = true, 'display:none', null)};" class="free-form">Royal Mail,</span>
+                    <span style="{!IF(appObj.DHL_Repeat__c = false, 'display:none', null)};" class="free-form">DHL,</span> under tracking number {!appObj.Tracking_Number__c}. We have since been advised by HMRC that the original application has not been received.
+                </div>
+                <div class="item-body">
+                    To avoid any further delays, we are enclosing all original documents again, including:
+                    <ul>
+                        <li>CF83 form (signed)</li>
+                        <li>64-8 form (signed)</li>
+                        <li>Cover letter outlining work history and request for Class 2 or Class 3 contributions</li>
+                    </ul>
+                </div>
+                <div class="item-body">
+                <table style="main-table" border="1" cellspacing="0">
+                    <tr>
+						<td width="50%">
+							<b>Callback Request Register</b>
+						</td>
+						<td>
+							{!appObj.DWP_Callback_Request__c}
+						</td>
+					</tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+						<td width="50%">
+							<b>Full Name</b>
+						</td>
+						<td>
+							{!appObj.First_Name__c} {!appObj.Second_Name__c}
+						</td>
+					</tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+						<td width="50%">
+							<b>Maiden / Previous Name(s)</b>
+						</td>
+						<td>
+                            {!appObj.Full_Maiden_Previous_Name__c}
+						</td>
+					</tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+						<td width="50%">
+							<b>Date of Birth</b>
+						</td>
+						<td>
+                            <apex:outputText value="{0, date, d MMMMMMMMMMM yyyy}">
+                                <apex:param value="{!appObj.Date_Of_Birth__c}"/>
+                            </apex:outputText>
+						</td>
+					</tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+						<td width="50%">
+							<b>National Insurance Number</b>
+						</td>
+						<td>
+                            {!appObj.National_Insurance_Number__c}
+						</td>
+					</tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+						<td width="50%">
+							<b>Telephone Number</b>
+						</td>
+						<td>
+                            {!appObj.Related_Contact_Phone__c}
+						</td>
+					</tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+						<td width="50%">
+							<b>Email Address</b>
+						</td>
+						<td>
+                            {!appObj.Email__c}
+						</td>
+					</tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+						<td width="50%">
+							<b>Original Submission Date</b>
+						</td>
+						<td>
+                            {!appObj.Tracking_No_Rx_d_by_XP__c}
+						</td>
+					</tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+					    <td width="50%">
+							<b>Original Submission Tracking Number</b>
+						</td>
+						<td>
+                            {!appObj.Tracking_Number__c}
+						</td>
+					</tr>
+                    <tr>
+                        <td><br/></td>
+                        <td></td>
+                    </tr>
+                </table>
+                </div>
+                <div class="item-body">
+                    <div><b>Important Note Regarding Application Period</b></div>
+                    <br/>
+                    Please note that the original application was submitted within the special concession period allowed by HMRC, enabling voluntary National Insurance contributions for all years from 2006 through 2025. This period was extended until 5 April 2025 to facilitate backdated contributions beyond the usual 6-year limit. We kindly ask that you consider this when processing the resubmission to ensure our client’s eligibility for the full range of available years is preserved.
+                </div>
+                <div class="item-body">
+                    Please process this application as a resubmission due to non-receipt of the original.
+                </div>
+                <div class="item-body">
+                    Thank you for your assistance.
+                </div>
+                <div class="item-body">
+                    <div>Yours sincerely</div>
+                    <div>JGBA Ltd</div>
+                </div>
+            </div>
+        </body>
+    </html>
+</apex:page>

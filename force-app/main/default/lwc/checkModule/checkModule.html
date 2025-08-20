@@ -1,0 +1,17 @@
+<template>
+    <div class="main-block">
+        <div class="title">
+            <b>
+                HMRC Checks
+            </b>
+        </div>
+        <div class="title-description">Two-pane prototype: left from and right request check</div>
+
+        <div class="tab-section">
+            <c-left-block-check-module class="item-block" search-apps={appNames} onsavecheckreply={handleInsertReply}>
+            </c-left-block-check-module>
+            <c-right-block-check-module class="item-block" search-apps={appNames}>
+            </c-right-block-check-module>
+        </div>
+    </div>
+</template>

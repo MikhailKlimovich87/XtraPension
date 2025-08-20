@@ -148,9 +148,9 @@ public class ApexToolkit {
                 ContentDocument.LatestPublishedVersionId,
                 LinkedEntityId
             FROM ContentDocumentLink
-            WHERE (ContentDocument.Title LIKE '%64-8_ForSignature%' OR 
-                  ContentDocument.Title LIKE '%CF083_ForSignature%') AND 
-                  (NOT ContentDocument.Title LIKE '%completed%') AND 
+            WHERE (ContentDocument.Title LIKE '%64-8_ForSignature%' OR
+                  ContentDocument.Title LIKE '%CF083_ForSignature%') AND
+                  (NOT ContentDocument.Title LIKE '%completed%') AND
                   LinkedEntityId = :applicationId
         ];
         if (!contentDocumentLinks.isEmpty()) {
@@ -162,6 +162,16 @@ public class ApexToolkit {
             }
         }
         return documents;
+    }
+
+    @future(callout=true)
+    public static void voidEnvelope(List<String> envelopsIds) {
+        if (envelopsIds.size() == 0) return;
+        String reason = 'Deposit Refund';
+        for (Integer i = 0; i < envelopsIds.size() && i <= 100; i++) {
+            dfsle.UUID docusignId = dfsle.UUID.parse(envelopsIds[i]);
+            dfsle.StatusService.voidEnvelope(docusignId, reason);
+        }
     }
 
     public class DocumentWrapper {

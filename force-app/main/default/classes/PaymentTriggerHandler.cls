@@ -2,24 +2,25 @@ public class PaymentTriggerHandler {
     public static final String ORG_WIDE_EMAIL_ADDRESS = 'clients@xtrapension.com';
     public static final String EU_CLIENT_EMAIL_TEMPLATE_NAME = 'Client EU Receipt';
     public static final String NONE_EU_EMAIL_TEMPLATE_NAME = 'Client None EU Receipt';
-    // public static final String[] ADMIN_EMAIL_ADDRESS  = new String[] {
-    //     'jr@xtrapension.com',
-    //     'tomas.xtrapension@gmail.com',
-    //     'megan@xtrapension.com',
-    //     'fernando@xtrapension.com',
-    //     'sean@xtrapension.com',
-    //     'gerard@xtrapension.com',
-    //     'amy@xtrapension.com',
-    //     'georges@xtrapension.com',
-    //     'patrick@xtrapension.com',
-    //     'adrian@xtrapension.com'
-    // };
-
-    public static final String[] ADMIN_EMAIL_ADDRESS  = new String[] {
-        'mishaklimovich87@gmail.com'
-    };
-    //public static final String ADMIN_FAIL_REMINDER_EMAIL_ADDRESS = 'jr@xtrapension.com';
-    public static final String ADMIN_FAIL_REMINDER_EMAIL_ADDRESS = 'mishaklimovich87@gmail.com';
+    private static final XtraPension_Settings__mdt XP_SETTINGS {
+        get {
+            if (XP_SETTINGS == null) {
+                List<XtraPension_Settings__mdt> setts = [
+    				SELECT
+                    	Admin_Email_Addresses__c,
+                    	Admin_Fail_Reminder_Email_Addresses__c
+    				FROM XtraPension_Settings__mdt
+    				WHERE DeveloperName = 'Configuration'
+                    LIMIT 1
+                ];
+                if (!setts.isEmpty()) {
+                    XP_SETTINGS = setts[0];
+                }
+            }
+            return XP_SETTINGS;
+        }
+        private set;
+    }
     public static final String FAIL_PAYMENT_SMS_MESSAGE = 'Hi - We got an error when trying to charge your credit card. Please see our email (check spam folder). Thanks. XtraPension Ltd';
     public static final String ACCOUNT_ID = XtraPension_Data__c.getInstance().Twilio_Account__c;
     public static final String TOKEN_ID   = XtraPension_Data__c.getInstance().Twilio_Token__c;
@@ -64,10 +65,16 @@ public class PaymentTriggerHandler {
 
     public static void sendEmailAfterChangeStatus(Map<Id, Payment__c> newPayments, Map<Id, Payment__c> oldPayments) {
         List<Payment__c> paidPayments = new List<Payment__c>();
+        Map<Id, Payment__c> splitAppIdByPayment = new Map<Id, Payment__c>();
         Set<Id> failPaymentIds = new Set<Id>();
         for (Payment__c payment : newPayments.values()) {
             if (payment.Status__c == 'Paid' && payment.Status__c != oldPayments.get(payment.Id).Status__c) {
                 paidPayments.add(payment);
+            }
+            if (payment.Status__c == 'Paid' && payment.Status__c != oldPayments.get(payment.Id).Status__c &&
+                payment.Product_Name__c == 'Success' &&
+                payment.CurrencyIsoCode == 'ZAR') {
+                splitAppIdByPayment.put(payment.Application__c, payment);
             }
             if (payment.Status__c == 'Fail' && payment.Status__c != oldPayments.get(payment.Id).Status__c) {
                 failPaymentIds.add(payment.Id);
@@ -78,6 +85,9 @@ public class PaymentTriggerHandler {
         }
         if (!failPaymentIds.isEmpty()) {
             sendFailNotification(failPaymentIds);
+        }
+        if (splitAppIdByPayment.size() != 0) {
+            scheduleSplitSuccessPayment(splitAppIdByPayment);
         }
     }
 
@@ -128,6 +138,41 @@ public class PaymentTriggerHandler {
             if(receipt.Id != null) {
                 sendEmail(receipt);
             }
+        }
+    }
+
+    private static void scheduleSplitSuccessPayment(Map<Id, Payment__c> applicationIdBySuccessPayment) {
+        if (applicationIdBySuccessPayment.size() == 0) return;
+        List<Payment__c> updatedPayment = new List<Payment__c>();
+        Date dateInMonth = Date.today().addMonths(1);
+        for(Payment__c payment : [
+            SELECT
+                Id,
+                Status__c,
+                Application__c,
+                Amount__c,
+                CurrencyIsoCode
+            FROM Payment__c
+            WHERE Product_Name__c = 'Success' AND
+                  Application__c IN :applicationIdBySuccessPayment.keySet() AND
+                  Status__c = 'Draft'
+        ]) {
+            Payment__c paidPayment = applicationIdBySuccessPayment.get(payment.Application__c);
+            System.debug('paidPayment == ' + paidPayment);
+            System.debug('payment ==== ' + payment);
+
+            if (paidPayment != null && paidPayment.Amount__c == payment.Amount__c) {
+                updatedPayment.add(
+                    new Payment__c(
+                        Id = payment.Id,
+                        Status__c = 'Schedule',
+                        Payment_Date__c = dateInMonth
+                    )
+                );
+            }
+        }
+        if (updatedPayment.size() != 0) {
+            Database.update(updatedPayment, false);
         }
     }
 
@@ -221,8 +266,9 @@ public class PaymentTriggerHandler {
             '<div>Tel  '+ currentApplication.Related_Contact_Phone__c +'</div>';
         String noninoData = currentApplication.Has_NINO_Now__c == false ? 'NONINO - ' : '';
         String currencyData = currentApplication.CurrencyIsoCode == 'EUR' ?
-                                '€ ' :
-                                currentApplication.CurrencyIsoCode + '$ ';
+                                '€ ' : currentApplication.CurrencyIsoCode == 'ZAR' ?
+                                    currentApplication.CurrencyIsoCode + ' ' :
+                                    currentApplication.CurrencyIsoCode + '$ ';
         String subject = CountryCodeHelper.getCountryNameByIsoCode(currentApplication.Contact__r.MailingCountry) + ' - ' +
                             currentApplication.Agent_Making_Sale__c + ' - ' + noninoData +
                             '(' + currentApplication.First_Name__c + ' ' +
@@ -248,7 +294,7 @@ public class PaymentTriggerHandler {
         if ( owea.size() > 0 ) {
             message.setOrgWideEmailAddressId(owea.get(0).Id);
         }
-        message.toAddresses = ADMIN_EMAIL_ADDRESS;
+        message.setToAddresses((List<String>)JSON.deserialize(XP_SETTINGS.Admin_Email_Addresses__c, List<String>.class));
         Messaging.SingleEmailMessage[] messages = new List<Messaging.SingleEmailMessage> {message};
         Messaging.SendEmailResult[] results = Messaging.sendEmail(messages);
     }
@@ -282,7 +328,7 @@ public class PaymentTriggerHandler {
             Messaging.SingleEmailMessage singleAdminReminderMessage = generateSingleEmailMessage(payment);
             singleAdminReminderMessage.setPlainTextBody('Stripe Reason: ' + payment.Error_Message__c);
             singleAdminReminderMessage.setSubject('XP - CC FAILURE - ' + payment.Application__r.Name + ' - ' + payment.Application__r.First_Name__c + ' ' + payment.Application__r.Second_Name__c);
-            singleAdminReminderMessage.setToAddresses(new String[] {ADMIN_FAIL_REMINDER_EMAIL_ADDRESS});
+            singleAdminReminderMessage.setToAddresses((List<String>)JSON.deserialize(XP_SETTINGS.Admin_Fail_Reminder_Email_Addresses__c, List<String>.class));
             messages.add(singleAdminReminderMessage);
 
             phones.add(payment.Application__r.Related_Contact_Phone__c);
@@ -312,7 +358,6 @@ public class PaymentTriggerHandler {
                     Http http = new Http();
                     //if (Test.isRunningTest()) return;
                     HTTPResponse res = http.send(req);
-                    System.debug(res.getBody());
                     if(res.getStatusCode() == 201) System.debug('@@@Twilio Success' + phone);
                     else {
                         System.debug('@@@Twilio failed' + phone);

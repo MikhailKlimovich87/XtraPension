@@ -50,9 +50,9 @@ public class DWPWorkHistoryPdf {
 			ORDER BY Start_Date__c ASC
 		];
 		empAfterUKObjList = afterUKEmployers.size() == 0 ? null : afterUKEmployers;
-		if (appObj.Type_Of_Employment__c == 'Not employed') {
-			empAfterUKObjList = null;
-			empUKObj = null;
-		}
+		// if (appObj.Type_Of_Employment__c == 'Not employed') {
+		// 	empAfterUKObjList = null;
+		// 	empUKObj = null;
+		// }
     }
 }

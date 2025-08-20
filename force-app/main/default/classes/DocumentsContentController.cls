@@ -13,7 +13,7 @@ public without sharing class DocumentsContentController {
                 ContentDocumentId,
                 ContentDocument.Title,
                 LinkedEntityId,
-                ContentDocument.CreatedDate
+                ContentDocument.LatestPublishedVersion.CreatedDate
             FROM ContentDocumentLink
             WHERE
                 LinkedEntityId = :recordId AND
@@ -38,9 +38,11 @@ public without sharing class DocumentsContentController {
                 ContentDocument.Title LIKE 'NINO reply' OR
                 ContentDocument.Title LIKE 'EU Residency Appeal' OR
                 ContentDocument.Title LIKE '%PENALTY%' OR
-                ContentDocument.Title LIKE '%2024ANNUAL'
+                ContentDocument.Title LIKE '%2024ANNUAL' OR
+                ContentDocument.Title LIKE '%64-8 Update Letter' OR
+                ContentDocument.Title LIKE '%Bounce Letter'
                 )
-            ORDER BY ContentDocument.CreatedDate DESC
+            ORDER BY ContentDocument.LatestPublishedVersion.CreatedDate DESC
         ];
 
         List<ContentDocumentLink> hmrcAssessmentContentDocs = [
@@ -48,23 +50,18 @@ public without sharing class DocumentsContentController {
                 ContentDocumentId,
                 ContentDocument.Title,
                 LinkedEntityId,
-                ContentDocument.CreatedDate
+                ContentDocument.LatestPublishedVersion.CreatedDate
             FROM ContentDocumentLink
             WHERE
                 LinkedEntityId = :recordId AND
                 ContentDocument.Title LIKE '%HMRC Assessment%'
-            ORDER BY ContentDocument.CreatedDate DESC
+            ORDER BY ContentDocument.LatestPublishedVersion.CreatedDate DESC
             LIMIT 1
         ];
         List<Application__c> currentApplication = [
             SELECT
                 Name,
                 Type_Of_Employment__c,
-                // Freeform_Text_Line1__c,
-                // Freeform_Text_Line2__c,
-                // Freeform_Text_Line3__c,
-                // Freeform_Text_Line4__c,
-                // Freeform_Text_Line5__c,
                 Freeform_RichText_Line1__c,
 				Freeform_RichText_Line2__c,
 				Freeform_RichText_Line3__c,
@@ -262,25 +259,10 @@ public without sharing class DocumentsContentController {
         List<String> notCompletedFiles = new List<String>();
         if(app.Status__c == 'Send to Client') data.isSendToClientAppStatus = true;
         else data.isSendToClientAppStatus = false;
-        /*Map<String, ContentDocumentLink> titleByContentDocumentLink = new Map<String, ContentDocumentLink>();
-        for (ContentDocumentLink link : forSignatureContentDocs) {
-            String title = link.ContentDocument.Title;
-            if (title.contains('completed')) {
-                notCompletedFiles.add(title.substringBefore('_completed'));
-            }
-            titleByContentDocumentLink.put(title, link);
-        }
-        if (!notCompletedFiles.isEmpty()) {
-            for (String name : notCompletedFiles) {
-                if (titleByContentDocumentLink.get(name) != null) {
-                    titleByContentDocumentLink.remove(name);
-                }
-            }
-        }*/
 
         for (ContentDocumentLink link : forSignatureContentDocs) {
             String title = link.ContentDocument.Title;
-            String docTitle = title.contains('64-8') ? 'Agent Authorisation':
+            String docTitle = title.contains('64-8_') ? 'Agent Authorisation':
                                 title.contains('CF083') ? 'Application Form' :
                                     title.contains('CustomLetter') ? 'Custom Letter' :
                                         title.contains('UPLOAD') ? 'Client Uploaded Doc' :
@@ -303,14 +285,16 @@ public without sharing class DocumentsContentController {
                                                                                                     title.contains('CURRENT JOB reply') ? 'CURRENT JOB' :
                                                                                                         title.contains('EU Residency Appeal') ? 'EU Residency Appeal' :
                                                                                                             title.contains('PENALTY') ? 'PENALTY' :
-                                                                                                                title.contains('2024ANNUAL') ? '2024ANNUAL' : null;
+                                                                                                                title.contains('2024ANNUAL') ? '2024ANNUAL' :
+                                                                                                                    title.contains('64-8 Update Letter') ? '64-8 Update Letter' :
+                                                                                                                        title.contains('Bounce Letter') ? 'Bounce Letter' : null;
             if (titleByDocumentInfo.get(docTitle) != null) {
                 continue;
             }
             DocumentInfo latestInfo = new DocumentInfo();
             latestInfo.title = docTitle;
             latestInfo.documentId  = link.ContentDocumentId;
-            Datetime docCreatedDate = link.ContentDocument.CreatedDate;
+            Datetime docCreatedDate = link.ContentDocument.LatestPublishedVersion.CreatedDate;
             latestInfo.createdDate = docCreatedDate != null ? docCreatedDate.format('EEE dd MMM yyyy') : '';
             if (latestInfo.title == 'Custom Letter') {
                 latestInfo.isCustomLetter = true;
@@ -331,7 +315,7 @@ public without sharing class DocumentsContentController {
             latestInfo.isHMRCReply = true;
             latestInfo.hmrcReplyStatus = app.HMRC_Reply_Status__c;
             latestInfo.documentId  = hmrcAssessmentContentDocs[0].ContentDocumentId;
-            Datetime docCreatedDate = hmrcAssessmentContentDocs[0].ContentDocument.CreatedDate;
+            Datetime docCreatedDate = hmrcAssessmentContentDocs[0].ContentDocument.LatestPublishedVersion.CreatedDate;
             latestInfo.createdDate = docCreatedDate != null ? docCreatedDate.format('EEE dd MMM yyyy') : '';
             titleByDocumentInfo.put(latestInfo.title, latestInfo);
         }
@@ -362,6 +346,8 @@ public without sharing class DocumentsContentController {
         if(titleByDocumentInfo.get('EU Residency Appeal') != null) data.replyDocs.add(titleByDocumentInfo.get('EU Residency Appeal'));
         if(titleByDocumentInfo.get('PENALTY') != null) data.replyDocs.add(titleByDocumentInfo.get('PENALTY'));
         if(titleByDocumentInfo.get('2024ANNUAL') != null) data.replyDocs.add(titleByDocumentInfo.get('2024ANNUAL'));
+        if(titleByDocumentInfo.get('64-8 Update Letter') != null) data.replyDocs.add(titleByDocumentInfo.get('64-8 Update Letter'));
+        if(titleByDocumentInfo.get('Bounce Letter') != null) data.replyDocs.add(titleByDocumentInfo.get('Bounce Letter'));
 
         data.application = app;
         PreviousUKAddressData latestAddress = new PreviousUKAddressData();
@@ -471,11 +457,6 @@ public without sharing class DocumentsContentController {
                 Freeform_RichText_Line3__c = letterData?.freeformTextLine3,
                 Freeform_RichText_Line4__c = letterData?.freeformTextLine4,
                 Freeform_RichText_Line5__c = letterData?.freeformTextLine5,
-                // Freeform_Text_Line1__c = letterData?.freeformTextLine1,
-                // Freeform_Text_Line2__c = letterData?.freeformTextLine2,
-                // Freeform_Text_Line3__c = letterData?.freeformTextLine3,
-                // Freeform_Text_Line4__c = letterData?.freeformTextLine4,
-                // Freeform_Text_Line5__c = letterData?.freeformTextLine5,
                 Custom_Letter_Date__c  = letterData?.customLetterDate
             );
             if (!letterData.newEmployerData.isEmpty()) {
@@ -524,53 +505,15 @@ public without sharing class DocumentsContentController {
                         ContentDocument.CreatedDate,
                         LinkedEntityId
                     FROM ContentDocumentLinks
-                    WHERE ContentDocument.Title LIKE '%CustomLetter%')
+                    WHERE ContentDocument.Title LIKE '%CustomLetter_ForSignature%'
+                    LIMIT 1)
             FROM Application__c
             WHERE Id = :applicationId
         ];
+        if (currentApplication.size() == 0) {
+            return 'Didn\'t find any apps';
+        }
         Application__c app = currentApplication[0];
-        String forSignatureContDocument;
-        if (app.ContentDocumentLinks.isEmpty()) {
-            return 'Error';
-        }
-        for (ContentDocumentLink link : app.ContentDocumentLinks) {
-            if (link.ContentDocument.Title.contains('ForSignature')) {
-                forSignatureContDocument = link.ContentDocumentId;
-                break;
-            }
-        }
-        if (forSignatureContDocument != null) {
-            List<ContentDocument> contentDocument = [
-                SELECT
-                    Id,
-                    Title,
-                    OwnerId
-                FROM ContentDocument
-                WHERE Id = :forSignatureContDocument
-            ];
-            ContentDocument currentDocument = contentDocument[0];
-            Id currentUserId = UserInfo.getUserId();
-            List<ContentDocumentLink> relatedLinks = [
-                SELECT
-                    LinkedEntityId
-                FROM ContentDocumentLink
-                WHERE
-                    ContentDocumentId = :currentDocument.Id AND 
-                    LinkedEntityId = :currentUserId
-            ];
-            if (relatedLinks.isEmpty() && currentUserId != currentDocument.OwnerId) {
-                ContentDocumentLink currentUserContentDocumentLink = new ContentDocumentLink();
-                currentUserContentDocumentLink.LinkedEntityId = currentUserId;
-                currentUserContentDocumentLink.ContentDocumentId = currentDocument.Id;
-                currentUserContentDocumentLink.shareType = 'V';
-                currentUserContentDocumentLink.Visibility = 'AllUsers';
-                insert currentUserContentDocumentLink;
-            }
-            if (!contentDocument.isEmpty()) {
-                currentDocument.Title = currentDocument.Title.replace('ForSignature', 'v' + app.ContentDocumentLinks.size() + '.0');
-                update contentDocument;
-            }
-        }
         PageReference savepage ;
         savepage = Page.CustomLetter;
         savepage.getParameters().put('id', applicationId);
@@ -580,42 +523,71 @@ public without sharing class DocumentsContentController {
         } else {
             pdfBlob = Blob.valueOf('Test');
         }
-
-        String FinalTitle = app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name +'_CustomLetter_ForSignature';
-
-		ContentVersion conVer = new ContentVersion();
-		conVer.ContentLocation = 'S';
-		conVer.PathOnClient = FinalTitle+'.pdf';
-		conVer.Title = FinalTitle;
-		conVer.VersionData = pdfBlob;
-		system.debug('conVer@@ ' + conVer);
-		insert conVer;
-
-		ContentVersion conDoc = [SELECT ContentDocumentId, ContentSize FROM ContentVersion WHERE Id =:conVer.Id][0];
-
-		ContentDocumentLink conDocLink = New ContentDocumentLink();
-		conDocLink.LinkedEntityId = applicationId;
-		conDocLink.ContentDocumentId = conDoc.ContentDocumentId;
-		conDocLink.shareType = 'V';
-        conDocLink.Visibility = 'AllUsers';
-		insert conDocLink;
-
-        List<Application_Document__c> relatedAppDocs = [
-            SELECT Id
-            FROM Application_Document__c
-            WHERE Application__c = :app.Id AND
-                  File_Name__c LIKE '%CustomLetter%'
-        ];
-        if (relatedAppDocs.isEmpty()) {
-            return 'Error';
+        ContentVersion conVer = createContentVerison(
+            pdfBlob,
+            app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CustomLetter_ForSignature'
+        );
+        if(app.ContentDocumentLinks.size() != 0) {
+            conVer.ContentDocumentId = app.ContentDocumentLinks[0].ContentDocumentId;
         }
-        Database.insert(new ContentDocumentLink(
-            ContentDocumentId = conDoc.ContentDocumentId,
-            LinkedEntityId    = relatedAppDocs[0].Id,
-            ShareType = 'V',
-            Visibility = 'AllUsers'
-        ), false);
+        insert conVer;
+        if(app.ContentDocumentLinks.size() == 0) {
+            List<ContentVersion> conDocs = [
+                SELECT ContentDocumentId
+                FROM ContentVersion
+                WHERE Id = :conVer.Id
+            ];
+            if (conDocs.size() > 0) {
+                insert new ContentDocumentLink(
+                        LinkedEntityId = app.Id,
+                        ContentDocumentId = conDocs[0].ContentDocumentId,
+                        shareType = 'V',
+                        Visibility = 'AllUsers'
+                );
+            }
+        }
         return 'Success';
+        // if (forSignatureContDocument != null) {
+        //     List<ContentDocument> contentDocument = [
+        //         SELECT
+        //             Id,
+        //             Title,
+        //             OwnerId
+        //         FROM ContentDocument
+        //         WHERE Id = :forSignatureContDocument
+        //     ];
+        //     ContentDocument currentDocument = contentDocument[0];
+        //     Id currentUserId = UserInfo.getUserId();
+        //     List<ContentDocumentLink> relatedLinks = [
+        //         SELECT
+        //             LinkedEntityId
+        //         FROM ContentDocumentLink
+        //         WHERE
+        //             ContentDocumentId = :currentDocument.Id AND
+        //             LinkedEntityId = :currentUserId
+        //     ];
+        //     if (relatedLinks.isEmpty() && currentUserId != currentDocument.OwnerId) {
+        //         ContentDocumentLink currentUserContentDocumentLink = new ContentDocumentLink();
+        //         currentUserContentDocumentLink.LinkedEntityId = currentUserId;
+        //         currentUserContentDocumentLink.ContentDocumentId = currentDocument.Id;
+        //         currentUserContentDocumentLink.shareType = 'V';
+        //         currentUserContentDocumentLink.Visibility = 'AllUsers';
+        //         insert currentUserContentDocumentLink;
+        //     }
+        //     if (!contentDocument.isEmpty()) {
+        //         currentDocument.Title = currentDocument.Title.replace('ForSignature', 'v' + app.ContentDocumentLinks.size() + '.0');
+        //         update contentDocument;
+        //     }
+        // }
+    }
+
+    private static ContentVersion createContentVerison(Blob pdfBlob, String title) {
+        return new ContentVersion(
+            VersionData = pdfBlob,
+            ContentLocation = 'S',
+            PathOnClient = title +'.pdf',
+            Title = title
+        );
     }
 
     @AuraEnabled

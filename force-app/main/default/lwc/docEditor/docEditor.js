@@ -11,6 +11,9 @@ import HMRC_REF_FIELD from "@salesforce/schema/Application__c.HMRC_Ref__c";
 import DATE_OF_BIRTH_FIELD from "@salesforce/schema/Application__c.Date_Of_Birth__c";
 import EMAIL_FIELD from "@salesforce/schema/Application__c.Email__c";
 import FULL_ADDRESS_FIELD from "@salesforce/schema/Application__c.Full_Current_Address_Abroad__c";
+import PHONE_FIELD from "@salesforce/schema/Application__c.Related_Contact_Phone__c";
+import FORMER_NAME_FIELD from "@salesforce/schema/Application__c.Full_Maiden_Previous_Name__c";
+import UK_HOME_ADDRESS_FIELD from "@salesforce/schema/Application__c.Full_UK_Home_Address__c";
 
 const fields = [
     FIRST_NAME_FIELD,
@@ -20,7 +23,10 @@ const fields = [
     HMRC_REF_FIELD,
     DATE_OF_BIRTH_FIELD,
     EMAIL_FIELD,
-    FULL_ADDRESS_FIELD
+    FULL_ADDRESS_FIELD,
+    PHONE_FIELD,
+    FORMER_NAME_FIELD,
+    UK_HOME_ADDRESS_FIELD
 ];
 
 export default class DocEditor extends LightningElement {
@@ -31,6 +37,8 @@ export default class DocEditor extends LightningElement {
     isOpenDWPStatusModal = false;
     isCertifiedDocModal = false;
     isDWP2RequestModal = false;
+    isBounceLetterModal = false;
+    isUpdateLetterModal = false;
     currentData;
     ninoTemplate;
     customTemplate;
@@ -39,8 +47,10 @@ export default class DocEditor extends LightningElement {
     dwpStatusCheckTemplate;
     certifiedDocTemplate;
     euResidencyAppealTemplate;
+    updateLetterTemplate;
     maidenNameTemplate;
     dwp2RequestTemplate;
+    bounceLetterTemplate;
     bodyValue;
     error;
     errorData;
@@ -84,6 +94,18 @@ export default class DocEditor extends LightningElement {
         return this.application.data.fields.Full_Current_Address_Abroad__c.value;
     }
 
+    get phone() {
+        return this.application.data.fields.Related_Contact_Phone__c.value;
+    }
+
+    get formerName() {
+        return this.application.data.fields.Full_Maiden_Previous_Name__c.value;
+    }
+
+    get homeAddress() {
+        return this.application.data.fields.Full_UK_Home_Address__c.value;
+    }
+
     connectedCallback(){
         this.getMessageData();
     }
@@ -115,6 +137,10 @@ export default class DocEditor extends LightningElement {
                         this.maidenNameTemplate = data.htmlValue;
                     } else if(data.templateName === 'DWP C2 REQUEST') {
                         this.dwp2RequestTemplate = data.htmlValue;
+                    } else if(data.templateName === 'BOUNCE LETTER') {
+                        this.bounceLetterTemplate = data.htmlValue;
+                    } else if(data.templateName === '64-8 UPDATE LETTER') {
+                        this.updateLetterTemplate = data.htmlValue;
                     }
                 });
             }
@@ -134,7 +160,9 @@ export default class DocEditor extends LightningElement {
             { label: 'DWP Status Check', value: this.dwpStatusCheckTemplate},
             { label: 'Certified Doc', value: this.certifiedDocTemplate},
             { label: 'Maiden Name', value: this.maidenNameTemplate},
-            { label: 'DWP C2 Request', value: this.dwp2RequestTemplate}
+            { label: 'DWP C2 Request', value: this.dwp2RequestTemplate},
+            { label: 'Bounce Letter', value: this.bounceLetterTemplate},
+            { label: '64-8 Update Letter', value: this.updateLetterTemplate},
         ];
     }
 
@@ -159,6 +187,10 @@ export default class DocEditor extends LightningElement {
             this.isCertifiedDocModal = !this.isCertifiedDocModal;
         } else if(this.currentLabel === 'DWP C2 Request') {
             this.isDWP2RequestModal = !this.isDWP2RequestModal;
+        } else if(this.currentLabel === 'Bounce Letter') {
+            this.isBounceLetterModal = !this.isBounceLetterModal;
+        } else if(this.currentLabel === '64-8 Update Letter') {
+            this.isUpdateLetterModal = !this.isUpdateLetterModal;
         }
     }
 
@@ -167,6 +199,8 @@ export default class DocEditor extends LightningElement {
         this.isOpenDWPStatusModal = false;
         this.isCertifiedDocModal = false;
         this.isDWP2RequestModal = false;
+        this.isBounceLetterModal = false;
+        this.isUpdateLetterModal = false;
     }
 
     handleGeneratePdf(event) {
@@ -183,7 +217,6 @@ export default class DocEditor extends LightningElement {
             "typeOfTemplate":this.currentLabel,
             "dateOfReply":replyDate
         }
-        console.log('fileData ==== ', fileData);
         await generateHMRCReplyFile({
             messageData: fileData
         }).then(result => {

@@ -110,7 +110,7 @@ export default class GetNINOForClient extends LightningElement {
                         'Hi ' + data?.application?.First_Name__c + '.\n\n' +
                         'Your UK State Pension TopUp application has been awaiting your approval for some time.\n\n' +
                         'If you\'re delaying approving it for some reason, please let us know.\n\n' +
-                        'Otherwise, we\'ll shortly be CANCELLING your application & giving you a full REFUND of the intial deposit you paid us over the next 7 days.\n\n' +
+                        'Otherwise, we\'ll shortly be CANCELLING your application.\n\n' +
                         'More importantly, this means you will LOSE OUT on the UK Pension opportunity which is worth many thousands to you.\n\n' +
                         'Next steps are explained in this short video:https://xpen.uk/approve\n\n' +
                         'Thanks\n\n' +

@@ -1,0 +1,55 @@
+.card-body{
+    margin: 1rem;
+}
+
+p {
+    margin: 0.5rem;
+}
+
+.input-data{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.5rem;
+}
+.checkbox-block{
+    width: 60%;
+}
+
+.picklist-block{
+    width: 40%;
+    text-align:left;
+}
+
+.custom-combobox-label {
+  font-weight: bold;
+}
+
+span {
+    color:grey;
+}
+
+.checkbox-info {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+.button-area{
+    margin-top: 1rem;
+}
+
+.request-sign{
+    color: red !important;
+}
+
+.slds-grid_align-end {
+    align-items: flex-end;
+}
+.slds-align_absolute-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 0;
+}

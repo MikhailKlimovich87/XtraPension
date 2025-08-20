@@ -14,8 +14,11 @@ export default class SalesByCountryReport extends LightningElement {
                     this.salesByCountry = result.dateData;
                     this.countries = result.countryNames;
                     this.amountByDay = JSON.parse(JSON.stringify(result.amountByDay));
+                    console.log(result.amountByDay);
+                    console.log(result.countryNames);
+                    console.log(result.dateData);
                     let appDate = result.dateData.find(item =>{
-                        return item.name == 'This Qtr';
+                        return item.name == 'Last Qtr';
                     });
                     if (appDate != null) {
                         this.countryCount = appDate.countData;

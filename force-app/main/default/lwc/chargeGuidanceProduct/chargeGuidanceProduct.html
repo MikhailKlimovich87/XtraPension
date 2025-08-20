@@ -28,7 +28,7 @@
                 </thead>
                 <tbody>
                     <template iterator:it={filetabledata}>
-                        <tr class="slds-hint-parent" key={it.value.Id}>
+                        <tr class="slds-hint-parent" key={it.value.Id} style={it.value.splitStyle}>
                             <td data-label="Spec File">
                                 <template lwc:if={it.value.isPaid}>
                                     <div class="slds-cell-wrap">

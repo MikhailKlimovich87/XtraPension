@@ -87,7 +87,8 @@
 							</apex:outputtext>
 						</td>
 						<td style="{!IF(OR(empUKObj.Type_Of_UK_Employment__c=='Unemployed',
-										   empUKObj.Type_Of_UK_Employment__c=='Self-Employed'),'','display:none')};">
+										   empUKObj.Type_Of_UK_Employment__c=='Self-Employed',
+										   empUKObj.Type_Of_UK_Employment__c=='Not employed'),'','display:none')};">
 						    {!empUKObj.Type_Of_UK_Employment__c}
 						</td>
 						<td style="{!IF(empUKObj.Type_Of_UK_Employment__c=='Employed','','display:none')};">

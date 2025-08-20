@@ -26,6 +26,7 @@ public without sharing class AgentSalesReportController {
                 Name,
                 Agent_Making_Sale__c,
                 Install_from_Website__c,
+                Appeal_Application__c,
                 CreatedDate
             FROM Application__c
             WHERE
@@ -44,6 +45,11 @@ public without sharing class AgentSalesReportController {
                 Agent_Making_Sale__c != 'Ciaran' AND
                 Agent_Making_Sale__c != 'Amy' AND
                 Agent_Making_Sale__c != 'Christina' AND
+                Agent_Making_Sale__c != 'Jamie' AND
+                Agent_Making_Sale__c != 'Brett' AND
+                Agent_Making_Sale__c != 'George' AND
+                Agent_Making_Sale__c != 'John R' AND
+                Agent_Making_Sale__c != 'Mike' AND
                 CreatedDate >= :lastQtrStartDate
         ];
         Schema.SObjectType objSobjectType = Schema.getGlobalDescribe().get(OBJECT_NAME);
@@ -54,7 +60,25 @@ public without sharing class AgentSalesReportController {
         List<String> agentsName = new List<String>();
         for( Schema.PicklistEntry pickListVal : ple) {
             String name = pickListVal.getValue();
-            if (name == 'Christina' || name == 'Carmel' || name == 'Kitty' || name == 'Ann-Louise' || name == 'John H' || name == 'Ciara' || name == 'Emma' || name == 'Elaine' || name == 'Barry' || name == 'Paul' || name == 'George (Irish)' || name == 'George (Aussie)' || name == 'Ciaran' || name == 'Amy') {
+            if (name == 'Christina' ||
+                name == 'Carmel' ||
+                name == 'Kitty' ||
+                name == 'Ann-Louise' ||
+                name == 'John H' ||
+                name == 'Ciara' ||
+                name == 'Emma' ||
+                name == 'Elaine' ||
+                name == 'Barry' ||
+                name == 'Paul' ||
+                name == 'George (Irish)' ||
+                name == 'George (Aussie)' ||
+                name == 'Ciaran' ||
+                name == 'Amy' ||
+                name == 'Jamie' ||
+                name == 'George' ||
+                name == 'Brett' ||
+                name == 'John R' ||
+                name == 'Mike') {
                 continue;
             }
             agentsName.add(name);
@@ -85,30 +109,31 @@ public without sharing class AgentSalesReportController {
             agentData.lastQtrCount = 0;
             if (currentAgentApps != null) {
                 for (Application__c app : currentAgentApps) {
+                    Integer count = app.Appeal_Application__c == true ? 2 : 1;
                     Date createdDate = app.CreatedDate.date();
                     if (createdDate == todayDate) {
-                        agentData.todayCount+=1;
+                        agentData.todayCount+=count;
                     }
                     if (createdDate == yesterdayDate) {
-                        agentData.yesterdayCount+=1;
+                        agentData.yesterdayCount+=count;
                     }
                     if (createdDate <= todayDate && createdDate >= currentWeekStartDate) {
-                        agentData.thisWeekCount+=1;
+                        agentData.thisWeekCount+=count;
                     }
                     if (createdDate < lastWeekEndDate && createdDate >= lastWeekStartDate) {
-                        agentData.lastWeekCount+=1;
+                        agentData.lastWeekCount+=count;
                     }
                     if (createdDate <= todayDate && createdDate >= currentMonthStartDate) {
-                        agentData.thisMonthCount+=1;
+                        agentData.thisMonthCount+=count;
                     }
                     if (createdDate < lastMonthEndDate && createdDate >= lastMonthStartDate) {
-                        agentData.lastMonthCount+=1;
+                        agentData.lastMonthCount+=count;
                     }
                     if (createdDate <= currentQtrEndDate && createdDate >= currentQtrStartDate) {
-                        agentData.thisQtrCount+=1;
+                        agentData.thisQtrCount+=count;
                     }
                     if (createdDate <= lastQtrEndDate && createdDate >= lastQtrStartDate) {
-                        agentData.lastQtrCount+=1;
+                        agentData.lastQtrCount+=count;
                     }
                 }
             }

@@ -1,0 +1,28 @@
+<template>
+    <lightning-card class="slds-p-around_medium">
+        <div slot="title">
+            REQUEST CHECK <br />
+            <span class="comment-data">Generate a message to ask the assigned agent to check an application.</span>
+        </div>
+        <div class="card-body">
+            <p>
+                <label class="custom-combobox-label ">App No<span class="request-sign"> *</span></label>
+                <lightning-input type="search" placeholder="e.g. A13845" name="appNo" variant="label-hidden"
+                    onchange={handleSearchChange} value={appName}></lightning-input>
+            </p>
+            <template lwc:if={isExistSearchValue}>
+                <p>
+                    <label class="custom-combobox-label">Message</label>
+                    <lightning-textarea variant="label-hidden" maxlength="255" onchange={handleChange}
+                        data-id="message-body" value={messageBody}></lightning-textarea>
+                </p>
+            </template>
+            <div class="button-area">
+                <lightning-button variant="brand" label="REQUEST CHECK" class="slds-m-left_x-small"
+                    disabled={isBlockButton} onclick={handleCopy}></lightning-button>
+            </div>
+            <div class="comment-data">Agent will copy this message and send on the slack channel <a
+                    href="https://xtrapensionworkspace.slack.com/archives/C08D48XMJBT">#15-hmrc-check</a></div>
+        </div>
+    </lightning-card>
+</template>

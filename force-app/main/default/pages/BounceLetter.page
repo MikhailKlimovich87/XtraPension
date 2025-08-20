@@ -1,0 +1,70 @@
+<apex:page readOnly="true" standardController="Application__c" extensions="BounceLetterPdf" id="BounceLetter" sidebar="false" renderAs="advanced_pdf" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+
+                @page {
+                    size: 210mm 297mm;
+					margin-top: 50px;
+					margin-bottom: 20px;
+					@bottom-left {
+                        content: element(footer);
+                    }
+                }
+
+				div.footer {
+            		position: running(footer);
+                    width: 100%;
+                    margin-right: 1px;
+                    text-align: center;
+				}
+
+				body {
+					font-family: "Roboto", sans-serif;
+					font-size: 14px;
+				}
+
+                h3 {
+					text-align: center;
+                }
+
+				.date-col {
+					text-align: center;
+				}
+				.breakPageAfter{
+      				page-break-after:always;
+   				}
+				p {
+					margin-bottom: 0px;
+					margin-top: 0px;
+				}
+				.output-data {
+					table {border:0px;}
+				}
+				.team-address {
+					font-size: 16px;
+				}
+            </style>
+        </head>
+        <body>
+            <div class="team-address">
+                <b>XtraPension</b><br/>
+                Gray Office Park<br/>
+                Headford Road<br/>
+                Galway, H91 WC1P<br/>
+                Ireland
+			</div>
+			<br/>
+            <apex:outputText value="{0, date, d'/'M'/'yy}">
+				<b><apex:param value="{!appObj.HMRC_Reply_Doc_Generate_Date__c}"/></b>
+			</apex:outputText>
+            <br/>
+            <br/>
+            <br/>
+			<apex:outputText styleClass="output-data" escape="false" value="{!appObj.Bounce_Letter_Template__c}" style="margin-top:0px;text-align: justify; bottom-border-width: 0px"></apex:outputText>
+			<br/>
+			<div>Sincerely,</div>
+			<div><b>XtraPension</b></div>
+        </body>
+    </html>
+</apex:page>

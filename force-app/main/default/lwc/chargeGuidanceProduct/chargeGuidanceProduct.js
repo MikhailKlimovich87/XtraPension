@@ -22,24 +22,29 @@ export default class ChargeGuidanceProduct extends LightningElement  {
     chargeProductName;
     errorData;
     tableData;
+    isSaApp = false;
     @track filetabledata=[];
     @track remainingAmount;
     amount;
     currencyCode;
+    splitPayment;
 
     @wire(getApplication, {recordId: '$recordId'})
     retrievedApplication({error, data}) {
         if(data) {
             this.applicationData = data;
             this.currencyCode = data.currencyCode;
+            this.isSaApp = data.isSplit_SA_App;
+            this.splitPayment = data.splitPaymentId;
             this.tableData = data.allRelatedPayments.map( item =>{
                 var temData = {
                     'prodName':item['Product_Name__c'],
                     'amount':item['Amount__c'],
                     'status':item['Status__c'],
                     'paymentDate': item['Payment_Date__c'],
-                    'isPaid' : item['Status__c'] == 'Paid' ? true : false
-                }
+                    'isPaid' : item['Status__c'] == 'Paid' ? true : false,
+                    'splitStyle' : item['Id'] == data.splitPaymentId ? 'color:darkgrey' : '',
+                    'isSplitPayment' : item['Id'] == data.splitPaymentId ? true : false                }
                 this.filetabledata.push(temData);
                 this.chargeAmount();
                 return{...item}
@@ -77,8 +82,9 @@ export default class ChargeGuidanceProduct extends LightningElement  {
         this.showSpinner = !this.showSpinner;
         if (!this.amount) this.amount = this.remainingAmount;
         let successProductData = {
-            "recordId" : this.recordId,
-            "amount"   : this.amount
+            "recordId"       : this.recordId,
+            "amount"         : this.amount,
+            "splitPaymentId" : this.splitPayment
         };
         chargeGuidanceProduct({
             productInfo : successProductData
@@ -129,7 +135,9 @@ export default class ChargeGuidanceProduct extends LightningElement  {
         let amount = 0;
         this.filetabledata.map(
             item => {
-                amount += item.amount;
+                if (!item.isSplitPayment) {
+                    amount += item.amount;
+                }
             });
         this.remainingAmount = amount - this.totalAmount;
     }
@@ -137,5 +145,4 @@ export default class ChargeGuidanceProduct extends LightningElement  {
     changeAmount(event) {
         this.amount = event.target.value;
     }
-
 }

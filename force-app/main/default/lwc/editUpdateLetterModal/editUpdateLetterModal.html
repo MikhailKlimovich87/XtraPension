@@ -1,0 +1,131 @@
+<template>
+    <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01"
+        class="slds-modal slds-fade-in-open slds-modal_medium">
+        <div class="slds-modal__container main-space">
+            <div class="slds-modal__header">
+                <h1 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Edit HMRC Reply</h1>
+            </div>
+            <div class="slds-modal__content slds-p-around_xx-large" id="modal-content-id-1">
+                <div class="header-data">
+                    <div>{firstName} {secondName}</div>
+                    <lightning-formatted-rich-text value={fullAddress}>
+                    </lightning-formatted-rich-text>
+                </div>
+                <div class="caseworker-address">
+                    CAAT SESA<br />
+                    NICs &amp; EO Office<br />
+                    HMRC<br />
+                    BX9 1AN
+                </div>
+                <div style="date-container">
+                    <lightning-input type="date" class="date-input" date-style="short" value={currDate}
+                        onchange={saveCurrDate}>
+                    </lightning-input>
+                </div>
+                <br />
+                <lightning-input-rich-text value={choseValue} onchange={handleChange} formats={allowedFormats}>
+                </lightning-input-rich-text>
+                <br />
+                <table>
+                    <tr>
+                        <td width="40%">
+                            <b>National Insurance No</b>
+                        </td>
+                        <td>
+                            {nino}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            &emsp;
+                        </td>
+                        <td>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><b>Date of Birth</b></td>
+                        <td>
+                            <lightning-formatted-date-time value={dateOfBitrh} year="numeric" month="numeric"
+                                day="numeric">
+                            </lightning-formatted-date-time>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            &emsp;
+                        </td>
+                        <td>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><b>Tel No</b></td>
+                        <td>{phone}</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            &emsp;
+                        </td>
+                        <td>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><b>Current Name</b></td>
+                        <td>{firstName} {secondName}</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            &emsp;
+                        </td>
+                        <td>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><b>Former Name</b></td>
+                        <td>{formerName}</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            &emsp;
+                        </td>
+                        <td>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><b>Current non-UK Addr:</b></td>
+                        <td>
+                            <lightning-formatted-rich-text value={fullAddress}>
+                            </lightning-formatted-rich-text>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            &emsp;
+                        </td>
+                        <td>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><b>Previous UK Addr:</b></td>
+                        <td>
+                            <lightning-formatted-rich-text value={homeAddress}>
+                            </lightning-formatted-rich-text>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            &emsp;
+                        </td>
+                        <td>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="slds-modal__footer">
+                <button class="slds-button slds-button_neutral" aria-label="Cancel and close"
+                    onclick={closeAction}>Cancel</button>
+                <button class="slds-button slds-button_brand" onclick={handleCreatePDF}>Save</button>
+            </div>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+</template>

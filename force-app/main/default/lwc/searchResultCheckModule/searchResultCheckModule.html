@@ -1,0 +1,56 @@
+<template>
+    <div class="main-block slds-p-around_medium" style={searchBlockColours}>
+        <p>Last check for {currApp.Name}</p>
+        <p><span>Name:</span> {currApp.First_Name__c} {currApp.Second_Name__c}</p>
+        <p><span>Current App Status: </span> {currApp.Status__c}</p>
+        <p><span>Last Posted: </span>
+            <lightning-formatted-date-time value={currApp.CreatedDate} year="numeric" month="numeric" day="numeric">
+            </lightning-formatted-date-time>
+        </p>
+        <template lwc:if={isOnDWPStage}>
+            <p><span>Age: </span> {currApp.Age__c}</p>
+        </template>
+        <template lwc:if={isHMRCChecks}>
+            <hr class="slds-var-m-vertical_medium" />
+            <p><span>Check Agent: </span> {checkRequest.Check_Agents__c}</p>
+            <p><span>Check Date: </span>
+                <lightning-formatted-date-time value={checkRequest.CreatedDate} year="numeric" month="numeric"
+                    day="numeric">
+                </lightning-formatted-date-time>
+            </p>
+            <p><span>HMRC Reply Sent Date: </span>
+                <lightning-formatted-date-time value={checkRequest.HMRC_Reply_Sent_Date__c} year="numeric"
+                    month="numeric" day="numeric">
+                </lightning-formatted-date-time>
+            </p>
+            <p><span>Notes: </span> {checkRequest.Notes__c}</p>
+            <p><span>PDF: </span> <a href={checkRequest.PDF_GDrive_Link__c} style={linkColour}>
+                    {checkRequest.PDF_GDrive_Link__c}</a></p>
+        </template>
+        <template lwc:if={isNotifiactionSentTo}>
+            <hr class="slds-var-m-vertical_medium" />
+            <p>Notification Sent to Grace</p>
+            <template lwc:if={isActionYet}>
+                <p>NOT ACTIONED YET</p>
+                <p><span>Recheck date: </span>
+                    <lightning-formatted-date-time value={checkRequest.Recheck_Date__c} year="numeric" month="numeric"
+                        day="numeric">
+                    </lightning-formatted-date-time>
+                </p>
+            </template>
+            <template lwc:else>
+                <p><span>Actioned on </span>
+                    <lightning-formatted-date-time value={checkRequest.Actioned_Date__c} year="numeric" month="numeric"
+                        day="numeric">
+                    </lightning-formatted-date-time>
+                </p>
+            </template>
+        </template>
+        <template lwc:if={isShowDWPemptyMessage}>
+            <hr class="slds-var-m-vertical_medium" />
+            <p>Never checked before</p>
+            <p><span>HMRC might not have this application as it's OVER STATE PENSION AGE</span></p>
+            <p><span>This application appears to be on a DWP stage.</span></p>
+        </template>
+    </div>
+</template>

@@ -1,0 +1,157 @@
+<apex:page readOnly="true" standardController="Application__c" extensions="UpdateLetterPdf" id="UpdateLetter" sidebar="false" renderAs="advanced_pdf" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+                @page {
+                    size: 210mm 297mm;
+					margin-top: 30px;
+					margin-bottom: 32px;
+                }
+                body {
+					font-family: "Roboto", sans-serif;
+					font-size: 14px;
+				}
+                table {
+                    border-color:black;
+					width:100%;
+				}
+				.main-table{
+					border-collapse: collapse;
+					width:100%;
+                    -fs-table-paginate: paginate;
+                    border: 1px solid black;
+				}
+                .main-table tr td{
+                    border-width: 1px;
+                    border-style: solid;
+                    border-color: ⌗000000;
+                }
+                .body-data{
+                    text-align: justify;
+                }
+                .item-body {
+                    margin-bottom: 14px
+                }
+            </style>
+            <body>
+                <table border="0">
+				    <tr>
+					    <td width="20%"></td>
+					    <td width="20%"></td>
+					    <td width="20%"></td>
+					    <td width="20%"></td>
+					    <td style="font-size: 14px;">
+                            {!appObj.First_Name__c} {!appObj.Second_Name__c}<br/>
+                            <span style="text-align:right">
+                                <apex:outputText escape="false" value="{!appObj.Full_Current_Address_Abroad__c}"/>
+                            </span>
+					    </td>
+				    </tr>
+			    </table>
+                <div>CAAT SESA</div>
+			    <div>NICs &amp; EO Office</div>
+			    <div>HMRC</div>
+			    <div>BX9 1AN</div>
+                <br/>
+                <apex:outputText value="{0, date, d MMMMMMMMMMM yyyy}">
+                    <apex:param value="{!NOW()}"/>
+                </apex:outputText>
+                <br/>
+                <br/>
+                <br/>
+                <div class="body-data">
+                    <div class="item-body">Dear Sir/Madam</div>
+                    <div class="item-body">You recently rejected the attached signed 64-8 authorisation form our agent sent to you. Can you please update and confirm by return that HMRC's records have now been updated with the following correct details:</div>
+                    <div class="item-body">
+                        <table style="main-table" border="1" cellspacing="0">
+                            <tr>
+						        <td width="40%">
+							        <b>National Insurance No</b>
+						        </td>
+						        <td>
+							        {!appObj.National_Insurance_Number__c}
+						        </td>
+					        </tr>
+                            <tr>
+                                <td><br/></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+						        <td>
+							        <b>Date of Birth</b>
+						        </td>
+						        <td>
+                                    <apex:outputText value="{0, date, d MMMMMMMMMMM yyyy}">
+                                        <apex:param value="{!appObj.Date_Of_Birth__c}"/>
+                                    </apex:outputText>
+    					        </td>
+					        </tr>
+                            <tr>
+                                <td><br/></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+						        <td>
+							        <b>Current Name</b>
+						        </td>
+						        <td>
+                                    {!appObj.First_Name__c} {!appObj.Second_Name__c}
+						        </td>
+					        </tr>
+                            <tr>
+                                <td><br/></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+						        <td>
+							        <b>Former Name</b>
+						        </td>
+						        <td>
+                                    {!appObj.Full_Maiden_Previous_Name__c}
+						        </td>
+					        </tr>
+                            <tr>
+                                <td><br/></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+						        <td>
+							        <b>Current non-UK Addr:</b>
+						        </td>
+						        <td>
+                                    <span style="text-align:right">
+                                        <apex:outputText escape="false" value="{!appObj.Full_Current_Address_Abroad__c}"/>
+                                     </span>
+						        </td>
+					        </tr>
+                            <tr>
+                                <td><br/></td>
+                                <td>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Previous UK Addr:</b></td>
+                                <td>
+                                    <span style="text-align:right">
+                                        <apex:outputText escape="false" value="{!appObj.Full_UK_Home_Address__c}"/>
+                                     </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><br/></td>
+                                <td>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <br/>
+                    <br/>
+                    <div class="item-body">
+                        <p>_________________</p>
+                        <p>{!appObj.First_Name__c} {!appObj.Second_Name__c}</p>
+                    </div>
+                </div>
+            </body>
+        </head>
+    </html>
+</apex:page>

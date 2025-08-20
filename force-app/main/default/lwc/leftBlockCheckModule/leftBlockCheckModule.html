@@ -1,0 +1,114 @@
+<template>
+    <lightning-card class="slds-p-around_medium">
+        <div class="card-body">
+            <p>
+                <label class="custom-combobox-label">Check Agent<span class="request-sign"> *</span></label>
+                <lightning-combobox data-id="agent" label="Check Agent" variant="label-hidden" options={checkAgents}
+                    onchange={handleChange}></lightning-combobox>
+            </p>
+            <div>
+                <label class="custom-combobox-label" style="margin-left:0.5rem">App No<span class="request-sign">
+                        *</span></label>
+                <p class="slds-grid slds-grid_align-end slds-align_absolute-center">
+                    <lightning-input type="search" placeholder="e.g. A13845" name="appNo" variant="label-hidden"
+                        style="width:100%" onchange={handleSearchChange} value={appName} data-id="app_number">
+                    </lightning-input>
+                    <lightning-button label="INITIAL" disabled={isDisabledCheckAgent} data-id="initial_button"
+                        onclick={handleCopy}></lightning-button>
+                    <lightning-button label="CLIENT" disabled={isDisabledClientButton} data-id="client_button"
+                        onclick={handleCopy}></lightning-button>
+                    <lightning-button label="AGENT" data-id="agent_button" onclick={handleCopy}></lightning-button>
+                </p>
+            </div>
+            <template lwc:if={isExistSearchValue}>
+                <div class="slds-p-horizontal_x-small">
+                    <c-search-result-check-module curr-app={searchValue}></c-search-result-check-module>
+                </div>
+            </template>
+            <div class="input-data">
+                <div class="checkbox-block">
+                    <div><b>Status</b> <span> (select at least one)</span></div>
+                    <div class="checkbox-info">
+                        <div>
+                            <template lwc:if={isAppealAppUndersXPLetterSent}>
+
+                            </template>
+                            <p>
+                                <lightning-input type="checkbox" label="Not Received" onchange={handleChange}
+                                    data-id="not_received"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="C2" onchange={handleChange}
+                                    data-id="c2"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="Work Item" onchange={handleChange}
+                                    data-id="work_item"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="BadNINO" onchange={handleChange}
+                                    data-id="bad_nino"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="BadInfo" onchange={handleChange}
+                                    data-id="bad_info"></lightning-input>
+                            </p>
+                        </div>
+                        <div>
+                            <p>
+                                <lightning-input type="checkbox" label="Processing (Received)" onchange={handleChange}
+                                    data-id="processing"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="C3" onchange={handleChange}
+                                    data-id="c3"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="DWP" onchange={handleChange}
+                                    data-id="dwp"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="64-8" onchange={handleChange}
+                                    data-id="X64_8"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="Reject" onchange={handleChange}
+                                    data-id="reject"></lightning-input>
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="picklist-block">
+                    <p>
+                        <label class="custom-combobox-label">HMRC Reply Sent to</label>
+                        <lightning-combobox name="replySentTo" label="HMRC Reply Sent to" class="custom-combobox"
+                            variant="label-hidden" options={sentToValues} onchange={handleChange} data-id="sent_to"
+                            disabled={isNotReceivedRequest}></lightning-combobox>
+                    </p>
+                    <p>
+                        <label class="custom-combobox-label">HMRC Reply Sent Date</label>
+                        <lightning-input type="date" name="sentDate" label="HMRC Reply Sent Date" variant="label-hidden"
+                            onchange={handleChange} data-id="sent_date"
+                            disabled={isNotReceivedRequest}></lightning-input>
+                    </p>
+                </div>
+            </div>
+            <p>
+                <label class="custom-combobox-label">Notes<span class="request-sign"> *</span></label>
+                <lightning-textarea variant="label-hidden" maxlength="255"
+                    placeholder="Add relevant comments about the HMRC webchat..." onchange={handleChange}
+                    data-id="notes"></lightning-textarea>
+            </p>
+            <p>
+                <label class="custom-combobox-label">PDF GDrive Link<span class="request-sign"> *</span></label>
+                <lightning-input type="url" placeholder="https://drive.google.com/..." variant="label-hidden"
+                    onchange={handleChange} data-id="pdf_link"></lightning-input>
+            </p>
+            <div class="button-area">
+                <lightning-button variant="brand" label="SAVE" class="slds-m-left_x-small"
+                    onclick={handleSave}></lightning-button>
+            </div>
+        </div>
+    </lightning-card>
+</template>

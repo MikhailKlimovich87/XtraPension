@@ -40,4 +40,15 @@
             abroad-empl={abroadEmployers} last-empl={lastUkEmployer}>
         </c-edit-dwp-c2-modal>
     </template>
+    <template if:true={isBounceLetterModal}>
+        <c-edit-bounce-letter-reply-modal onhidepopup={closePopup} chose-value={currentValue}
+            ongeneratepdf={handleGeneratePdf}>
+        </c-edit-bounce-letter-reply-modal>
+    </template>
+    <template if:true={isUpdateLetterModal}>
+        <c-edit-update-letter-modal onhidepopup={closePopup} ongeneratepdf={handleGeneratePdf}
+            full-address={addressInfo} chose-value={currentValue} first-name={firstName} second-name={secondName}
+            nino={nino} date-of-bitrh={dateOfBirth} phone={phone} former-name={formerName} home-address={homeAddress}>
+        </c-edit-update-letter-modal>
+    </template>
 </template>

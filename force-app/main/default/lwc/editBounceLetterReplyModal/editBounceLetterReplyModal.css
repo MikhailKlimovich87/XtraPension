@@ -1,0 +1,15 @@
+.main-space {
+    font-family: "Roboto", sans-serif;
+    font-size: 1.0rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.xtrapension-address {
+    font-size: 1.2rem
+}
+
+.date-input {
+    display: table-cell;
+    width: 150px;
+}

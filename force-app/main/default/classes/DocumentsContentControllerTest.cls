@@ -153,6 +153,27 @@ public class DocumentsContentControllerTest {
         Test.stopTest();
     }
 
+    @isTest
+    static void pdfActionCase2Test() {
+        List<ContentDocument> customLetterDoc = [
+            SELECT Id
+            FROM ContentDocument
+            WHERE Title LIKE '%CustomLetter%'
+        ];
+        delete customLetterDoc;
+        List<Application__c> apps = [
+            SELECT
+                Id
+            FROM Application__c
+        ];
+        Application__c testApp = apps[0];
+        Test.startTest();
+        String result = DocumentsContentController.pdfAction(testApp.Id);
+        System.assertNotEquals(null, result, 'Result must be not empty');
+        System.assertEquals('Success', result, 'Result must be true');
+        Test.stopTest();
+    }
+
     @IsTest
     static void sendHMRCResultTest(){
         List<Application__c> apps = [

@@ -16,8 +16,10 @@ public class HMRC_SMS_ScheduleDateTriggerTest {
         Id personContactId = currentContact[0].Id;
         Application__c testApplication = TestDataFactory.createApplication(personContactId, false);
         testApplication.Status__c = 'Posted';
+        testApplication.Related_Contact_Phone__c = '+11111111111111';
+        testApplication.Current_Address_Abroad__CountryCode__s = 'US';
         insert testApplication;
-        TestDataFactory.createHMRCSMSScheduleDate(true);
+        HMRC_SMS_Schedule_Date__c testSmsScheduler = TestDataFactory.createHMRCSMSScheduleDate(true);
     }
 
     @IsTest

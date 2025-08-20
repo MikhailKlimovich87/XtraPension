@@ -376,4 +376,28 @@ public class XtraPensionConstants {
         '<p>As I was habitually resident in an EU country and was previously compulsorily insured in the UK, I believe I therefore qualify for voluntary Class 2 contributions under Article 14 of EC Regulation 883/2004, the shared ‘EU Residency’ rule.</p>' +
         '<br/>' +
         '<p>Yours sincerely</p>';
+    public static final String BOUNCE_LETTER =
+        '<p><b>Hi {First Name},</b></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We kindly ask that you review, sign, and post the enclosed letter to HMRC to ensure that your personal details on their records are accurate, particularly in light of any recent changes to your name, address, or other personal information.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Although we have already submitted your updated information to HMRC, they have advised us that your details <b><i>"do not match their records."</i></b> This may be the case even if everything appears to be correct on our end.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Unfortunately, we are unable to proceed with following up on your voluntary contributions application until HMRC has verified and updated your information. Having a signed letter directly from you will help expedite this process.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We apologise for any inconvenience and appreciate your cooperation.</p>';
+    public static final String UPDATE_LETTER =
+        '<p>Dear Sir/Madam</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>You recently rejected the attached signed 64-8 authorisation form our agent sent to you. Can you please update and confirm by return that HMRC\'s records have now been updated with the following correct details:</p>';
 }

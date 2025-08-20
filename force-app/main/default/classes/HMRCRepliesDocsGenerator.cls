@@ -10,7 +10,9 @@ public class HMRCRepliesDocsGenerator implements Queueable, Database.AllowsCallo
         'Certified_Doc_Template__c'       => 'CerifiedDoc',
         'EU_Residency_Appeal_Template__c' => 'EU Residency Appeal',
         'Maiden_Name_Template__c'         => 'Maiden Name',
-        'DWP_C2_Request_Template__c'      => 'DWP_C2_Request'
+        'DWP_C2_Request_Template__c'      => 'DWP_C2_Request',
+        'Bounce_Letter_Template__c'       => 'Bounce Letter',
+        'Update_Letter_Template__c'       => '64-8 Update Letter'
     };
 
     private final static String ORG_WIDE = 'clients@xtrapension.com';
@@ -92,7 +94,55 @@ public class HMRCRepliesDocsGenerator implements Queueable, Database.AllowsCallo
             String finalTitle = currentApplication.First_Name__c + '_' + currentApplication.Second_Name__c + '_' +
                                 currentApplication.Name + '_' +  + FIELD_BODY_TO_FILE_NAME.get(typeOfTemplate);
             saveFile(pdfBlob, finalTitle);
-        } else {
+        } else if (typeOfTemplate == 'Bounce_Letter_Template__c') {
+            List<Application__c> apps = [
+			    SELECT
+                    Id,
+                    First_Name__c,
+                    Second_Name__c,
+                    Name
+			    FROM Application__c
+			    WHERE Id = :applicationId
+		    ];
+		    if(apps.isEmpty()) return;
+		    Application__c currentApplication = apps[0];
+            PageReference savepage ;
+            savepage = Page.BounceLetter;
+            savepage.getParameters().put('id', currentApplication.Id);
+            blob pdfBlob;
+            if (!Test.isRunningTest()) {
+                pdfBlob = savepage.getContent();
+            } else {
+                pdfBlob = Blob.valueOf('Test');
+            }
+            String finalTitle = currentApplication.First_Name__c + '_' + currentApplication.Second_Name__c + '_' +
+                                currentApplication.Name + '_' +  + FIELD_BODY_TO_FILE_NAME.get(typeOfTemplate);
+            saveFile(pdfBlob, finalTitle);
+        } else if (typeOfTemplate == 'Update_Letter_Template__c') {
+            List<Application__c> apps = [
+			    SELECT
+                    Id,
+                    First_Name__c,
+                    Second_Name__c,
+                    Name
+			    FROM Application__c
+			    WHERE Id = :applicationId
+		    ];
+		    if(apps.isEmpty()) return;
+		    Application__c currentApplication = apps[0];
+            PageReference savepage ;
+            savepage = Page.UpdateLetter;
+            savepage.getParameters().put('id', currentApplication.Id);
+            blob pdfBlob;
+            if (!Test.isRunningTest()) {
+                pdfBlob = savepage.getContent();
+            } else {
+                pdfBlob = Blob.valueOf('Test');
+            }
+            String finalTitle = currentApplication.First_Name__c + '_' + currentApplication.Second_Name__c + '_' +
+                                currentApplication.Name + '_' +  + FIELD_BODY_TO_FILE_NAME.get(typeOfTemplate);
+            saveFile(pdfBlob, finalTitle);
+        }else {
             PageReference savepage ;
             savepage = Page.HRMCReply;
             savepage.getParameters().put('id', applicationId);
