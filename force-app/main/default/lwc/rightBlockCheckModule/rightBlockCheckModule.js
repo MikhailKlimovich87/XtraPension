@@ -7,18 +7,28 @@ export default class RightBlockCheckModule extends LightningElement {
     appName;
     isExistSearchValue =false;
     isBlockButton = true;
-    messageBody = 'Hi @CheckAgent, please check ';
+    messageBody;
+    searchValue;
 
     handleSearchChange(event) {
         this.appName = event.target.value;
-        let currApp = this.searchApps.find(app => app.Name == this.appName);
-        if(currApp) {
+        let currApp = this.searchApps.find(app => {
+            let searchValue = app.Name.includes("A0") ?
+                app.Name.replace("A0", "") :
+                app.Name.includes("A") ?
+                    app.Name.replace("A", ""):
+                    null;
+                return searchValue == this.appName;
+        } );
+        if(currApp && currApp.HMRC_Check_Requests__r) {
             this.searchValue = currApp;
             this.isExistSearchValue = true;
             this.isBlockButton  = false;
-            this.messageBody = 'Hi @CheckAgent, please check ' + currApp.Name;
+        } else if(currApp) {
+            this.searchValue = currApp;
+            this.isExistSearchValue = true;
+            this.isBlockButton  = true;
         } else {
-            this.searchValue = event.target.value;
             this.isExistSearchValue = false;
             this.isBlockButton  = true;
         }
@@ -28,7 +38,16 @@ export default class RightBlockCheckModule extends LightningElement {
         this.messageBody = event.target.value;
     }
 
-    handleCopy() {
+    handleRquestCheck() {
+        if (!this.isBlockButton) {
+            this.dispatchEvent(
+                new CustomEvent('handlerequestcheck', {
+                    "detail" :  this.searchValue.Id
+                }
+            )
+        );
+        }
+        this.messageBody = 'Hi @check-team, please check ' + this.searchValue.Name;
         const input = document.createElement("textarea");
         document.body.appendChild(input);
         input.select();
@@ -55,6 +74,13 @@ export default class RightBlockCheckModule extends LightningElement {
             message: messageInfo,
             variant: toastVariant,
         }));
+    }
+
+    get isEmptyAppList() {
+        return this.searchApps == null ? true : false;
+    }
+    get isEmptySearchApp() {
+        return this.searchValue == null ? true : false;
     }
 }
 

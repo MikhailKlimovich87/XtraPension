@@ -140,6 +140,7 @@ global class StripeWebhookHandler {
 						Stripe_Customer_Id__c                 = paymentIntent?.customer,
 						Status__c                             = 'Form In Progress',
 						Is_Payment_Completed__c               = true,
+						Last_Payment_Date__c                  = Date.today(),
 						Step__c                               = 'Personal Details',
 						Stripe_Transaction_Id__c              = paymentIntent?.id,
 						Contact__c                            = personContactId,

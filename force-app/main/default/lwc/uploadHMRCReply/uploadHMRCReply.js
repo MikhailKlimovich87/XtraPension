@@ -25,6 +25,7 @@ export default class UploadHMRCReply extends LightningElement {
     currentShortfall;
     currentCaseworker;
     fileName;
+    moveToStatus = 'Not Move';
 
     typesOfHMRCReply = [];
 
@@ -32,6 +33,16 @@ export default class UploadHMRCReply extends LightningElement {
         return [
             { label: 'Yes', value: 'Yes' },
             { label: 'No', value: 'No' }
+        ];
+    }
+
+    get moveToStatusData() {
+        return [
+            { label: 'Not Move', value: 'Not Move' },
+            { label: '64-8 Bounce', value: '64-8 Bounce' },
+            { label: 'HMRC Reply 1', value: 'HMRC Reply 1' },
+            { label: 'HMRC Reply 2', value: 'HMRC Reply 2' },
+            { label: 'Send to Client', value: 'Send to Client'}
         ];
     }
 
@@ -46,6 +57,7 @@ export default class UploadHMRCReply extends LightningElement {
     replyTypes({ error, data }) {
         if (data) {
             this.typesOfHMRCReply = [...data.values];
+            this.typesOfHMRCReply.push({value:'VOLUNTARY NI PAYMENT RECEIPT', label:'VOLUNTARY NI PAYMENT RECEIPT'});
         }
         if(error) {
             console.log('Error uploading picklist values');
@@ -97,6 +109,10 @@ export default class UploadHMRCReply extends LightningElement {
         this.currentCaseworker = event.detail.value;
     }
 
+    handleChangeStatus(event) {
+        this.moveToStatus = event.detail.value;
+    }
+
     handleFilesSelected(event) {
         this.currentFiles = event.target.files[0];
         let reader = new FileReader();
@@ -126,7 +142,8 @@ export default class UploadHMRCReply extends LightningElement {
                 "years"       : this.currentYears ? this.currentYears : this.ukWork,
                 "fileName"    : this.fileName,
                 "shortfall"   : this.currentShortfall ? this.currentShortfall : this.shortfall,
-                "caseworker"  : this.currentCaseworker ? this.currentCaseworker : this.caseworker
+                "caseworker"  : this.currentCaseworker ? this.currentCaseworker : this.caseworker,
+                "status"      : this.moveToStatus == 'Not Move' ? null : this.moveToStatus
             };
             await uploadFile({
                 request : requestData

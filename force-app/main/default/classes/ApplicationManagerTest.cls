@@ -2,7 +2,6 @@
 public class ApplicationManagerTest {
     @TestSetup
     static void makeData() {
-        //TestDataFactory.createProductsWithPrices();
         List<String> productNames = new List<String>{'Deposit', 'Application', 'Monthly Updates', 'Success'};
         List<Product2> newProducts = new List<Product2>();
         for (String name : productNames) {
@@ -13,11 +12,6 @@ public class ApplicationManagerTest {
         }
         insert newProducts;
         Id pricebookId = Test.getStandardPricebookId();
-        // Pricebook2 standardPricebook = new Pricebook2(
-	    //     Id = pricebookId,
-	    //     IsActive = true
-        // );
-        // update standardPricebook;
         List<PriceBookEntry> testPriceBookEntries = new List<PriceBookEntry>();
         Integer counter = 100000;
         for (Product2 product : newProducts) {
@@ -540,6 +534,16 @@ public class ApplicationManagerTest {
                     '"startDate": "2016-03-08",' +
                     '"nameOfYourEmployerAbroad": null' +
                 '},' +
+                '{  "afterLeftTheUK": "Illness",' +
+                    '"country": null,' +
+                    '"street": null,' +
+                    '"city": null,' +
+                    '"state": null,' +
+                    '"postcode": null,' +
+                    '"endDate": "2016-02-09",' +
+                    '"startDate": "2017-03-08",' +
+                    '"nameOfYourEmployerAbroad": null' +
+                '},' +
                 '{  "afterLeftTheUK": "Homemaker",' +
                 '"country": null,' +
                 '"street": null,' +
@@ -576,7 +580,7 @@ public class ApplicationManagerTest {
             WHERE Application__c = :newApplication.Id AND
                   Type__c = 'Work After UK'
         ];
-        System.assertEquals(8, relatedEmployers.size(), 'Don\'t create related employers');
+        System.assertEquals(9, relatedEmployers.size(), 'Don\'t create related employers');
     }
 
     @IsTest static void addDocumentsDetails() {
@@ -639,7 +643,7 @@ public class ApplicationManagerTest {
             FROM Application_Document__c
             WHERE Application__c = :newApplication.Id
         ];
-        System.assertEquals(4, relatedDocuments.size(), 'Didn\'t create all related Application Documents');
+        System.assertEquals(1, relatedDocuments.size(), 'Didn\'t create all related Application Documents');
     }
 
     @IsTest static void addDocumentsDetailsCase2() {
@@ -1448,7 +1452,8 @@ public class ApplicationManagerTest {
                     '"applicationId":"' + currentApplication.Id + '",' +
                     '"applicationName":"' + currentApplication.Name + '",' +
                     '"statements": null,'+
-                    '"youCV": null'+
+                    '"youCV": null,'+
+                    '"notes": "test"'+
                 '},'+
                 '"personal": {' +
                     '"salutation": "Mr",' +

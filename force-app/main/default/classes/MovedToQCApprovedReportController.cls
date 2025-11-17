@@ -7,7 +7,6 @@ public without sharing class MovedToQCApprovedReportController {
                     FROM User
                     WHERE IsActive = true AND
                         (Name = 'Edryl Ranido' OR
-                        Name = 'Daniel Gatdula' OR
                         Name = 'Camille Gittbao'  OR
                         Name = 'Maria Marmeto')
                 ];
@@ -34,7 +33,6 @@ public without sharing class MovedToQCApprovedReportController {
             WHERE CreatedDate = LAST_N_DAYS:180 AND
                   Field = 'Status__c' AND (
                   CreatedBy.Name = 'Edryl Ranido' OR
-                  CreatedBy.Name = 'Daniel Gatdula' OR
                   CreatedBy.Name = 'Camille Gittbao' OR
                   CreatedBy.Name = 'Maria Marmeto')
             ORDER BY CreatedDate DESC];

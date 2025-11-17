@@ -101,7 +101,10 @@ export default class GetNINOForClient extends LightningElement {
                         (data?.application?.Current_Address_Abroad__PostalCode__s ? '\n' + data?.application?.Current_Address_Abroad__PostalCode__s : '') +
                         (data?.application?.Current_Address_Abroad_Country__c ? '\n' + data?.application?.Current_Address_Abroad_Country__c : '')
                     this.getNINOData = 'Hi ' + data?.application?.First_Name__c +
-                                       ' - How was XtraPension\'s UK State Pension Topup Service? Please tell us on this link: https://xpen.uk/google - Thanks!';
+                                       '  - How was XtraPension\'s UK State Pension Topup Service? Please tell us on this link: https://xpen.uk/google\n\n'+
+                                       'and/or .... Send us a quick Selfie Video like this eg and we\'ll pay you €100! https://xpen.uk/sample\n\n' +
+                                       'Thanks!\n'+
+                                       'XtraPension Ltd';
                     this.getFollowUpAgentCallMessage =
                         'Hi ' + data?.application?.First_Name__c + ' - ' + this.userName + ' here from XtraPension just following up re UK State Pension next steps for you.\n\n' +
                         'Do you want to give me a call please whenever suits & I\'ll come back to you if I miss you?\n\n' +

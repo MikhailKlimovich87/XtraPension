@@ -62,7 +62,7 @@ global class XtraPensionEmailServiceHandler implements Messaging.InboundEmailHan
             app.Tracking_No_Rx_d_by_XP__c = trackingNoSendDate;
             app.Amount_PH_Responses__c = amount == null ? 1 : ++amount;
             if (app.Appeal_Application__c == true) {
-                app.Status__c = 'XP Letter Sent';
+                app.Status__c = 'HMRC Appeal';
             } else app.Status__c = 'Posted';
             update app;
             EmailMessage emailMessage = new EmailMessage();

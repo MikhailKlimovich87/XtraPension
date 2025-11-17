@@ -82,6 +82,7 @@ public class PaymentTriggerHandler {
         }
         if (!paidPayments.isEmpty()) {
             sendReceipt(paidPayments);
+            calculateCurrentTotalAmount(paidPayments);
         }
         if (!failPaymentIds.isEmpty()) {
             sendFailNotification(failPaymentIds);
@@ -141,6 +142,35 @@ public class PaymentTriggerHandler {
         }
     }
 
+    public static void calculateCurrentTotalAmount(List<Payment__c> paidPayments) {
+        if (paidPayments.size() == 0) return;
+        Map<Id, Payment__c> paymentIdByPaidPayments = new Map<Id, Payment__c>(paidPayments);
+        List<Application__c> updatedApps = new List<Application__c>();
+        for (Payment__c payment : [
+            SELECT Application__c,
+                   Application__r.Amount__c,
+                   Amount__c
+            FROM Payment__c
+            WHERE Id IN : paymentIdByPaidPayments.keySet()
+        ]) {
+            if (payment.Amount__c != null) {
+                updatedApps.add(
+                    new Application__c(
+                        Id = payment.Application__c,
+                        Amount__c = payment.Application__r.Amount__c == null ?
+                                        payment.Amount__c :
+                                        payment.Application__r.Amount__c + payment.Amount__c,
+                        Last_Payment_Date__c = Date.today()
+                    )
+                );
+            }
+        }
+        if(updatedApps.size() != 0) {
+            Database.update(updatedApps, false);
+        }
+    }
+
+
     private static void scheduleSplitSuccessPayment(Map<Id, Payment__c> applicationIdBySuccessPayment) {
         if (applicationIdBySuccessPayment.size() == 0) return;
         List<Payment__c> updatedPayment = new List<Payment__c>();
@@ -158,8 +188,6 @@ public class PaymentTriggerHandler {
                   Status__c = 'Draft'
         ]) {
             Payment__c paidPayment = applicationIdBySuccessPayment.get(payment.Application__c);
-            System.debug('paidPayment == ' + paidPayment);
-            System.debug('payment ==== ' + payment);
 
             if (paidPayment != null && paidPayment.Amount__c == payment.Amount__c) {
                 updatedPayment.add(

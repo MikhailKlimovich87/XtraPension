@@ -104,6 +104,7 @@ public with sharing class ApplicationManagerHandler {
                     Stripe_Customer_Id__c                 = applicationData?.customer,
                     Status__c                             = 'Form In Progress',
                     Is_Payment_Completed__c               = true,
+                    Last_Payment_Date__c                  = Date.today(),
                     Step__c                               = 'Personal Details',
                     Stripe_Transaction_Id__c              = applicationData?.id,
                     Contact__c                            = personContactId,
@@ -271,7 +272,8 @@ public with sharing class ApplicationManagerHandler {
                                 'Last_UK_Home_Address__StateCode__s, ' +
                                 'Last_UK_Home_Address__PostalCode__s, ' +
                                 'Step__c, ' +
-                                'Is_Know_National_Insurance_Number__c ' +
+                                'Is_Know_National_Insurance_Number__c, ' +
+                                'Getting_UK_Pension_Now__c ' +
                             'FROM Application__c ' +
                             'WHERE Stripe_Transaction_Id__c = :stripeId' +
                                 ' AND Expiry_Date__c > :todayDateTime' +
@@ -311,6 +313,7 @@ public with sharing class ApplicationManagerHandler {
             if (isFullForm == false) {
                 app.Step__c                                = 'Relationship';
             }
+            app.Getting_UK_Pension_Now__c              = applicationData?.currentlyGettingUKPension; 
             app.Is_Know_National_Insurance_Number__c   = applicationData?.insuranceNumber == null ? false : true;
             app.Previous_UK_Address_1__City__s         = applicationData?.lastUKHomeAddress?.city;
             app.Previous_UK_Address_1__CountryCode__s  = applicationData?.lastUKHomeAddress?.country;
@@ -345,27 +348,6 @@ public with sharing class ApplicationManagerHandler {
             app.Previous_UK_Address3_State__c          = CountryCodeHelper.getCountryStateNameByIsoCode(
                                                             applicationData?.lastUKHomeAddress3?.country,
                                                             applicationData?.lastUKHomeAddress3?.state);
-            // for (Integer i = 1; i <= 5; i++) {
-            //     if (applicationData?.previousUKAddress.size() >= i) {
-            //         app.put('Previous_UK_Address_' + i + '__City__s', applicationData?.previousUKAddress[i-1].city);
-            //         app.put('Previous_UK_Address_' + i + '__CountryCode__s', applicationData?.previousUKAddress[i-1].country);
-            //         app.put('Previous_UK_Address_' + i + '__PostalCode__s', applicationData?.previousUKAddress[i-1].postcode);
-            //         app.put('Previous_UK_Address_' + i + '__StateCode__s', applicationData?.previousUKAddress[i-1].state);
-            //         app.put('Previous_UK_Address_' + i + '__Street__s', applicationData?.previousUKAddress[i-1].street);
-            //         app.put('Previous_UK_Address_' + i + '_Country__c', CountryCodeHelper.getCountryNameByIsoCode(applicationData?.previousUKAddress[i-1].country));
-            //         app.put('Previous_UK_Address' + i + '_State__c', CountryCodeHelper.getCountryStateNameByIsoCode(
-            //                                                             applicationData?.previousUKAddress[i-1].country,
-            //                                                             applicationData?.previousUKAddress[i-1].state));
-            //     } else {
-            //         app.put('Previous_UK_Address_' + i + '__City__s', null);
-            //         app.put('Previous_UK_Address_' + i + '__CountryCode__s', null);
-            //         app.put('Previous_UK_Address_' + i + '__PostalCode__s', null);
-            //         app.put('Previous_UK_Address_' + i + '__StateCode__s', null);
-            //         app.put('Previous_UK_Address_' + i + '__Street__s', null);
-            //         app.put('Previous_UK_Address_' + i + '_Country__c', null);
-            //         app.put('Previous_UK_Address' + i + '_State__c', null);
-            //     }
-            // }
             update app;
             result.put('status', 'Success');
         } catch (Exception ex) {
@@ -663,7 +645,6 @@ public with sharing class ApplicationManagerHandler {
                             Type_Of_After_UK_Employment__c    = 'Career Break',
                             Current_Work__c                   = employer?.isCurrently == true ? 'Yes' : 'No'
                         );
-                        System.debug('employer?.country ==== ' + employer?.country);
                         if (app.Career_Break_Employer_Start_Date1__c == null) {
                             app.put('Career_Break_Employer_Start_Date1__c', Date.valueOf(employer?.startDate));
                             app.put('Career_Break_Employer_End_Date1__c', Date.valueOf(employer?.endDate));
@@ -773,6 +754,44 @@ public with sharing class ApplicationManagerHandler {
         return result;
     }
 
+    public static Map<String, Object> setNotesInfo(ApplicationManager.DocumentsStepWrapper requestData, String stripeId) {
+        Map<String, Object> result = new Map<String, Object>();
+
+        List<Application__c> apps = [
+            SELECT Id
+            FROM Application__c
+            WHERE Stripe_Transaction_Id__c = :stripeId
+                AND Expiry_Date__c > :Datetime.now()
+            LIMIT 1
+        ];
+
+        if(apps.size() == 0) {
+            result.put('status', 'Error');
+            result.put('message', 'Didn\'t find any application');
+        } else if( requestData?.notes != null){
+            try {
+                ContentNote cnt = new ContentNote();
+                cnt.Content = Blob.valueof(requestData?.notes);
+                cnt.Title = 'Notes from Full Form';
+                insert cnt;
+
+                ContentDocumentLink clnk = new ContentDocumentLink();
+                clnk.LinkedEntityId = apps[0].Id;
+                clnk.ContentDocumentId = cnt.Id;
+                clnk.ShareType = 'V';
+                insert clnk;
+
+                result.put('status', 'Success');
+            } catch (Exception ex) {
+                result.put('status', 'Error');
+                result.put('message', ex.getLineNumber() + '-' + ex.getMessage());
+            }
+        } else {
+            result.put('status', 'Success');
+        }
+        return result;
+    }
+
     public static Map<String, Object> setMissingInfo(ApplicationManager.MissingInfoWrapper requestData, String stripeId) {
         Map<String, Object> result = new Map<String, Object>();
         Application__c app = [
@@ -786,6 +805,7 @@ public with sharing class ApplicationManagerHandler {
                 Is_Contains_Relationship_Details__c,
                 Is_Contains_Work_After_UK_Details__c,
                 Is_Generate_Client_Summary_PDF__c,
+                Is_Contains_C3_Appeal_Letter__c,
                 Missing_Info_Send_Date__c
             FROM Application__c
             WHERE Stripe_Transaction_Id__c = :stripeId
@@ -808,6 +828,7 @@ public with sharing class ApplicationManagerHandler {
             app.put('Is_Contains_PRSI__c', requestData?.prsi);
             app.put('Is_Contains_Relationship_Details__c', requestData?.relationship);
             app.put('Is_Contains_Work_After_UK_Details__c', requestData?.workAfterUK);
+            app.put('Is_Contains_C3_Appeal_Letter__c', requestData?.c3AppealLetter);
             String extraData = '';
             if (requestData?.lastUKEmpl == true) {
                 extraData += XtraPensionConstants.LAST_UK_EMPLOYERS_INFO;
@@ -824,6 +845,9 @@ public with sharing class ApplicationManagerHandler {
             if (requestData?.workAfterUK == true) {
                 extraData += XtraPensionConstants.WORK_AFTER_UK_INFO;
             }
+            if (requestData?.c3AppealLetter == true) {
+                extraData += XtraPensionConstants.C3_APPEAL_LETTER_INFO;
+            }
             if (!String.isBlank(extraData)) {
                 app.Missing_Template_Data__c = extraData;
                 update app;
@@ -832,7 +856,8 @@ public with sharing class ApplicationManagerHandler {
                 app.Is_Contains_NINO__c == true ||
                 app.Is_Contains_PRSI__c == true ||
                 app.Is_Contains_Relationship_Details__c == true ||
-                app.Is_Contains_Work_After_UK_Details__c == true) {
+                app.Is_Contains_Work_After_UK_Details__c == true ||
+                app.Is_Contains_C3_Appeal_Letter__c == true ) {
                 sendEmailWithEmptyData(app);
             }
             result.put('status', 'Success');
@@ -1117,7 +1142,11 @@ public with sharing class ApplicationManagerHandler {
                 'Is_Contains_NINO__c, ' +
                 'Is_Contains_PRSI__c, ' +
                 'Is_Contains_Relationship_Details__c, ' +
-                'Is_Contains_Work_After_UK_Details__c ' +
+                'Is_Contains_Work_After_UK_Details__c, ' +
+                'Is_Contains_C3_Appeal_Letter__c, ' +
+                'Full_Form_Notes__c, ' +
+                'Appeal_Application__c, ' +
+                'Getting_UK_Pension_Now__c ' +
             'FROM Application__c ' +
             'WHERE Stripe_Transaction_Id__c =: stripeId ' +
                 'AND Expiry_Date__c >: todayDateTime ' +
@@ -1347,6 +1376,8 @@ public with sharing class ApplicationManagerHandler {
         ApplicationManager.WorkAfterUKStepWrapper afterUKWrapper = new ApplicationManager.WorkAfterUKStepWrapper();
         afterUKWrapper.workAfterUK = applicationData.workAfterUK;
         Map<String, Object> workAfterUKDetailResult = setApplicationWorkAfterUKDetails(afterUKWrapper, stripeId, true);
+        Map<String, Object> notesResult = setNotesInfo(applicationData.documents, stripeId);
+
         if (applicationData.isAutoUpdate == false) {
             Map<String, Object> missingInfoResult = setMissingInfo(applicationData.missingInfo, stripeId);
             if (missingInfoResult.get('status') == null || missingInfoResult.get('status') != 'Success') {
@@ -1387,6 +1418,14 @@ public with sharing class ApplicationManagerHandler {
             if (result.get('message') == null) {
                 result.put('status', 'Error');
                 result.put('message', 'Error in the `Work After UK` Step');
+            }
+            return result;
+        }
+        if (notesResult.get('status') == null || notesResult.get('status') != 'Success') {
+            result = notesResult;
+            if (result.get('message') == null) {
+                result.put('status', 'Error');
+                result.put('message', 'Error in the Notes saving');
             }
             return result;
         }

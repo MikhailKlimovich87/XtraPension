@@ -4,7 +4,7 @@ public class EmailMessagePageredirector {
             SELECT
                 Id
             FROM ListView
-            WHERE Name = 'Received Emails'
+            WHERE Name = 'All Messages'
         ];
         String url = URL.getOrgDomainUrl().toExternalForm() + '/lightning/o/EmailMessage';
 

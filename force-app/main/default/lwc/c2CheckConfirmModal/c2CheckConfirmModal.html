@@ -1,0 +1,29 @@
+<template>
+    <template if:true={isModalOpen}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <div class="slds-modal__header">
+                    <h2 class="slds-modal__title slds-hyphenate">{title}</h2>
+                </div>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-combobox label="Have you requested a copy?" options={options}
+                        onchange={handleChangeCopyRequest} value={checkData.requestedCopy}></lightning-combobox>
+                    <template lwc:if={isOpenPaymentMadeClientQuestion}>
+                        <lightning-combobox label="Was the payment made by the client?" options={options}
+                            onchange={handleChangePaymentMadeClient}
+                            value={checkData.paymentMadeByClient}></lightning-combobox>
+                        <template lwc:if={isOpenWhenQuestion}>
+                            <lightning-input type="date" label="When?" value={checkData.when}
+                                onchange={handleChangeWhenDate}></lightning-input>
+                        </template>
+                    </template>
+                </div>
+                <div class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick={handleCancel}>Cancel</button>
+                    <button class="slds-button slds-button_brand" onclick={handleConfirm}>Confirm</button>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

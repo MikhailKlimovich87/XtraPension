@@ -31,25 +31,6 @@ public without sharing class AgentSalesReportController {
             FROM Application__c
             WHERE
                 Agent_Making_Sale__c != null AND
-                Agent_Making_Sale__c != 'Carmel' AND
-                Agent_Making_Sale__c != 'Kitty' AND
-                Agent_Making_Sale__c != 'Ann-Louise' AND
-                Agent_Making_Sale__c != 'John H' AND
-                Agent_Making_Sale__c != 'Ciara' AND
-                Agent_Making_Sale__c != 'Emma' AND
-                Agent_Making_Sale__c != 'Elaine' AND
-                Agent_Making_Sale__c != 'Barry' AND
-                Agent_Making_Sale__c != 'Paul' AND
-                Agent_Making_Sale__c != 'George (Irish)' AND
-                Agent_Making_Sale__c != 'George (Aussie)' AND
-                Agent_Making_Sale__c != 'Ciaran' AND
-                Agent_Making_Sale__c != 'Amy' AND
-                Agent_Making_Sale__c != 'Christina' AND
-                Agent_Making_Sale__c != 'Jamie' AND
-                Agent_Making_Sale__c != 'Brett' AND
-                Agent_Making_Sale__c != 'George' AND
-                Agent_Making_Sale__c != 'John R' AND
-                Agent_Making_Sale__c != 'Mike' AND
                 CreatedDate >= :lastQtrStartDate
         ];
         Schema.SObjectType objSobjectType = Schema.getGlobalDescribe().get(OBJECT_NAME);
@@ -60,27 +41,6 @@ public without sharing class AgentSalesReportController {
         List<String> agentsName = new List<String>();
         for( Schema.PicklistEntry pickListVal : ple) {
             String name = pickListVal.getValue();
-            if (name == 'Christina' ||
-                name == 'Carmel' ||
-                name == 'Kitty' ||
-                name == 'Ann-Louise' ||
-                name == 'John H' ||
-                name == 'Ciara' ||
-                name == 'Emma' ||
-                name == 'Elaine' ||
-                name == 'Barry' ||
-                name == 'Paul' ||
-                name == 'George (Irish)' ||
-                name == 'George (Aussie)' ||
-                name == 'Ciaran' ||
-                name == 'Amy' ||
-                name == 'Jamie' ||
-                name == 'George' ||
-                name == 'Brett' ||
-                name == 'John R' ||
-                name == 'Mike') {
-                continue;
-            }
             agentsName.add(name);
         }
         result.agentsName = agentsName;
@@ -155,23 +115,45 @@ public without sharing class AgentSalesReportController {
         thisQtrWrapper.name = 'This Qtr';
         DateDifferenceWrapper lastQtrWrapper = new DateDifferenceWrapper();
         lastQtrWrapper.name = 'Last Qtr';
-        for (AgentWrapper wrapper : agentsInfo) {
-            todayWrapper.countData.add(wrapper.todayCount);
-            todayWrapper.fullCount += wrapper.todayCount;
-            yesterdayWrapper.countData.add(wrapper.yesterdayCount);
-            yesterdayWrapper.fullCount += wrapper.yesterdayCount;
-            thisWeekWrapper.countData.add(wrapper.thisWeekCount);
-            thisWeekWrapper.fullCount += wrapper.thisWeekCount;
-            lastWeekWrapper.countData.add(wrapper.lastWeekCount);
-            lastWeekWrapper.fullCount += wrapper.lastWeekCount;
-            thisMonthWrapper.countData.add(wrapper.thisMonthCount);
-            thisMonthWrapper.fullCount += wrapper.thisMonthCount;
-            lastMonthWrapper.countData.add(wrapper.lastMonthCount);
-            lastMonthWrapper.fullCount += wrapper.lastMonthCount;
-            thisQtrWrapper.countData.add(wrapper.thisQtrCount);
-            thisQtrWrapper.fullCount += wrapper.thisQtrCount;
-            lastQtrWrapper.countData.add(wrapper.lastQtrCount);
-            lastQtrWrapper.fullCount += wrapper.lastQtrCount;
+        for (Integer i = 0; i< agentsInfo.size(); i++) {
+            todayWrapper.fullCount += agentsInfo[i].todayCount;
+            yesterdayWrapper.fullCount += agentsInfo[i].yesterdayCount;
+            thisWeekWrapper.fullCount += agentsInfo[i].thisWeekCount;
+            lastWeekWrapper.fullCount += agentsInfo[i].lastWeekCount;
+            thisMonthWrapper.fullCount += agentsInfo[i].thisMonthCount;
+            lastMonthWrapper.fullCount += agentsInfo[i].lastMonthCount;
+            thisQtrWrapper.fullCount += agentsInfo[i].thisQtrCount;
+            lastQtrWrapper.fullCount += agentsInfo[i].lastQtrCount;
+            if (agentsInfo[i].name == 'Christina' ||
+                agentsInfo[i].name == 'Carmel' ||
+                agentsInfo[i].name == 'Kitty' ||
+                agentsInfo[i].name == 'Ann-Louise' ||
+                agentsInfo[i].name == 'John H' ||
+                agentsInfo[i].name == 'Ciara' ||
+                agentsInfo[i].name == 'Emma' ||
+                agentsInfo[i].name == 'Elaine' ||
+                agentsInfo[i].name == 'Barry' ||
+                agentsInfo[i].name == 'Paul' ||
+                agentsInfo[i].name == 'George (Irish)' ||
+                agentsInfo[i].name == 'George (Aussie)' ||
+                agentsInfo[i].name == 'Ciaran' ||
+                agentsInfo[i].name == 'Amy' ||
+                agentsInfo[i].name == 'Jamie' ||
+                agentsInfo[i].name == 'George' ||
+                agentsInfo[i].name == 'Brett' ||
+                agentsInfo[i].name == 'John R' ||
+                agentsInfo[i].name == 'Daniel' ||
+                agentsInfo[i].name == 'Mike') {
+            } else {
+                todayWrapper.countData.add(agentsInfo[i].todayCount);
+                yesterdayWrapper.countData.add(agentsInfo[i].yesterdayCount);
+                thisWeekWrapper.countData.add(agentsInfo[i].thisWeekCount);
+                lastWeekWrapper.countData.add(agentsInfo[i].lastWeekCount);
+                thisMonthWrapper.countData.add(agentsInfo[i].thisMonthCount);
+                lastMonthWrapper.countData.add(agentsInfo[i].lastMonthCount);
+                thisQtrWrapper.countData.add(agentsInfo[i].thisQtrCount);
+                lastQtrWrapper.countData.add(agentsInfo[i].lastQtrCount);
+            }
         }
         result.dateData.add(todayWrapper);
         result.dateData.add(yesterdayWrapper);
@@ -181,7 +163,34 @@ public without sharing class AgentSalesReportController {
         result.dateData.add(lastMonthWrapper);
         result.dateData.add(thisQtrWrapper);
         result.dateData.add(lastQtrWrapper);
-
+        List<String> activeAgents = new List<String>();
+        for( Schema.PicklistEntry pickListVal : ple) {
+            String name = pickListVal.getValue();
+            if (name == 'Christina' ||
+                name == 'Carmel' ||
+                name == 'Kitty' ||
+                name == 'Ann-Louise' ||
+                name == 'John H' ||
+                name == 'Ciara' ||
+                name == 'Emma' ||
+                name == 'Elaine' ||
+                name == 'Barry' ||
+                name == 'Paul' ||
+                name == 'George (Irish)' ||
+                name == 'George (Aussie)' ||
+                name == 'Ciaran' ||
+                name == 'Amy' ||
+                name == 'Jamie' ||
+                name == 'George' ||
+                name == 'Brett' ||
+                name == 'John R' ||
+                name == 'Daniel' ||
+                name == 'Mike') {
+                continue;
+            }
+            activeAgents.add(name);
+        }
+        result.agentsName = activeAgents;
         Date last3MonthDate = todayDate.addMonths(-3);
         List<Application__c> last3MonthsApps = [
             SELECT
@@ -208,7 +217,6 @@ public without sharing class AgentSalesReportController {
                 result.amountByDay.add(dayWrapper);
             }
         }
-        System.debug(result.amountByDay);
         return result;
     }
 

@@ -99,6 +99,7 @@ global with sharing class ApplicationManager {
                     personalData.approxValue                   = app.Approx_Value_Of_UK_Pension__c;
                     personalData.currentOccupation             = app.Current_Occupation__c;
                     personalData.isKnowNationalInsuranceNumber = app.Is_Know_National_Insurance_Number__c;
+                    personalData.currentlyGettingUKPension     = app.Getting_UK_Pension_Now__c;
 
                     currentAddressAbroad currentAddressAbroadData = new currentAddressAbroad();
                     if (app.Current_Address_Abroad__Street__s == null) {
@@ -281,6 +282,7 @@ global with sharing class ApplicationManager {
                     DocumentsStepWrapper documentsData = new DocumentsStepWrapper();
                     documentsData.applicationId = app.Id;
                     documentsData.applicationName = app.Name;
+                    documentsData.notes = app.Full_Form_Notes__c;
                     formData.documents = documentsData;
 
                     MissingInfoWrapper missingData = new MissingInfoWrapper();
@@ -289,6 +291,8 @@ global with sharing class ApplicationManager {
                     missingData.prsi = app.Is_Contains_PRSI__c;
                     missingData.relationship = app.Is_Contains_Relationship_Details__c;
                     missingData.workAfterUK = app.Is_Contains_Work_After_UK_Details__c;
+                    missingData.c3AppealLetter = app.Is_Contains_C3_Appeal_Letter__c;
+                    missingData.appealApplication = app.Appeal_Application__c;
                     formData.missingInfo = missingData;
 
                     result.put('formData', formData);
@@ -355,6 +359,8 @@ global with sharing class ApplicationManager {
         public Boolean prsi;
         public Boolean relationship;
         public Boolean workAfterUK;
+        public Boolean c3AppealLetter;
+        public Boolean appealApplication;
     }
 
     public class RequestDataWrapper {
@@ -405,6 +411,8 @@ global with sharing class ApplicationManager {
         public List<previousUKAddress> previousUKAddress;
         public String stepName;
         public Boolean isKnowNationalInsuranceNumber;
+        public Boolean appealApplication;
+        public Boolean currentlyGettingUKPension;
     }
 
     public class currentAddressAbroad {
@@ -492,6 +500,7 @@ global with sharing class ApplicationManager {
         public String applicationName;
         public String statements;
         public String youCV;
+        public String notes;
     }
 
     public class PaymentDataWrapper {

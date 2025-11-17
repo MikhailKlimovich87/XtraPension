@@ -98,7 +98,7 @@
                 <apex:param value="{!NOW()}"/>
             </apex:outputText>
             <br/>
-            <h3>Resubmission of Voluntary National Insurance Application</h3>
+            <h3>Resubmission of CF83 for Voluntary NICs</h3>
             <div class="body-data">
                 <div class="item-body">Dear Sir / Madam</div>
                 <div class="item-body">We are resubmitting the attached application for Voluntary National Insurance contributions on behalf of our client, {!appObj.First_Name__c} {!appObj.Second_Name__c}.</div>

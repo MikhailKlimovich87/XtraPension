@@ -122,7 +122,7 @@ public class ApexToolkit {
         dfsle.Notifications notifySigner = new dfsle.Notifications(
             true, // Indicates that the recipient should be reminded to sign
             1, // Number of days to wait before sending a reminder
-            1, // Number of days between reminders
+            7, // Number of days between reminders
             true, // Whether or not the envelope expires and is voided
             60, // How many days before the envelope expires
             10, // Number of days before expiration to remind the recipient

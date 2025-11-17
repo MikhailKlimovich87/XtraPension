@@ -1,7 +1,7 @@
-import { LightningElement, api} from 'lwc';
+import { LightningElement} from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-
 import insertCheckResult from '@salesforce/apex/CheckModuleController.createHMRCCheckRequestRecord';
+import addRequestCheckData from '@salesforce/apex/CheckModuleController.addRequestCheckData';
 import getApps from '@salesforce/apex/CheckModuleController.getApplicationNames';
 
 export default class CheckModule extends LightningElement {
@@ -23,7 +23,10 @@ export default class CheckModule extends LightningElement {
 
     async handleInsertReply(event) {
         await insertCheckResult({
-            "checkReply" : JSON.stringify(event.detail)
+            checkData : {
+                checkReplies : event.detail.replies,
+                checkAgent   : event.detail.agent
+            }
         })
             .then(result => {
                 if (result) {
@@ -42,14 +45,33 @@ export default class CheckModule extends LightningElement {
             .catch(error => {
                 this.error = error;
                 this.checkRequest = undefined;
-                console.log('error ==== ', error);
-                
                 this.showToastMessage(
                     'Error',
                     'You have error: ' + error.body.message,
                     'error'
                 );
             });
+    }
+
+    handleRequestCheck(event) {
+        addRequestCheckData({
+            appId : event.detail
+        }).then(result => {
+            if (result) {
+                this.showToastMessage(
+                    "Success",
+                    "HMRC Check Request record updated",
+                    "success",
+                );
+            }
+        }).catch((error) => {
+                this.showToastMessage(
+                    "Error update record",
+                    error.body.message,
+                    "error",
+                );
+            }
+        );
     }
 
     showToastMessage(titleData, messageInfo, toastVariant) {

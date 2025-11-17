@@ -8,18 +8,16 @@
             <p>
                 <label class="custom-combobox-label ">App No<span class="request-sign"> *</span></label>
                 <lightning-input type="search" placeholder="e.g. A13845" name="appNo" variant="label-hidden"
-                    onchange={handleSearchChange} value={appName}></lightning-input>
+                    onchange={handleSearchChange} value={appName} disabled={isEmptyAppList}></lightning-input>
             </p>
             <template lwc:if={isExistSearchValue}>
-                <p>
-                    <label class="custom-combobox-label">Message</label>
-                    <lightning-textarea variant="label-hidden" maxlength="255" onchange={handleChange}
-                        data-id="message-body" value={messageBody}></lightning-textarea>
-                </p>
+                <div class="slds-p-horizontal_x-small">
+                    <c-search-result-check-module curr-app={searchValue}></c-search-result-check-module>
+                </div>
             </template>
             <div class="button-area">
                 <lightning-button variant="brand" label="REQUEST CHECK" class="slds-m-left_x-small"
-                    disabled={isBlockButton} onclick={handleCopy}></lightning-button>
+                    onclick={handleRquestCheck} disabled={isEmptySearchApp}></lightning-button>
             </div>
             <div class="comment-data">Agent will copy this message and send on the slack channel <a
                     href="https://xtrapensionworkspace.slack.com/archives/C08D48XMJBT">#15-hmrc-check</a></div>

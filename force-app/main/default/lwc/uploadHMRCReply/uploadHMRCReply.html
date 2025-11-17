@@ -21,6 +21,9 @@
                 <lightning-input type="text" value={caseworker} label="Caseworker"
                     onchange={handleChangeCaseworker}></lightning-input>
                 <br />
+                <lightning-combobox name="move-to-status" options={moveToStatusData} onchange={handleChangeStatus}
+                    value={moveToStatus} label="Move to Status:"></lightning-combobox>
+                <br />
                 <lightning-input type="file" accept="image/*, .png, .jpg, .bmp, .pdf" label="&zwnj;"
                     onchange={handleFilesSelected}></lightning-input>
                 <br />

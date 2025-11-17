@@ -1,4 +1,4 @@
-public class BulkRemoveBatch implements Database.Batchable<sObject>{
+public class BulkRemoveBatch implements Database.Batchable<sObject> {
     public final String Query;
 
     public BulkRemoveBatch(String q) {

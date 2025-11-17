@@ -30,9 +30,9 @@ public without sharing class ApplicationTriggerHandler {
     }
 
     Map<String, Integer> VAL_AGENTS_PROPORTION = new Map<String, Integer> {
-        'Sean'       => 25,
-        'Ciara'      => 25,
-        'Becky'      => 50
+        'Sean'       => 30,
+        'Ciara'      => 30,
+        'Becky'      => 40
         //'MaryClaire' => 30
     };
 
@@ -137,6 +137,46 @@ public without sharing class ApplicationTriggerHandler {
                 }
             }
             return AGENT_NOTIFICATION;
+        }
+        private set;
+    }
+
+    private static final Map<String, StaticResource> STATEMENT_EXAMPLES {
+        get {
+            if (STATEMENT_EXAMPLES == null) {
+                STATEMENT_EXAMPLES = new Map<String, StaticResource>();
+                List<StaticResource> resources = [
+                    SELECT
+                        Name,
+                        Body,
+                        Description
+                    FROM StaticResource
+                    WHERE Name = 'PRSI_Statement_Example' OR
+                          Name = 'ITSA_Statement_Example' OR
+                          Name = 'Social_Security_Statement_Example' OR
+                          Name = 'Super_Statement_Example' OR
+                          Name = 'Canada_Statement_Example' OR
+                          Name = 'New_Zealand_Statement_Example'
+                ];
+                if (!resources.isEmpty()) {
+                    for (StaticResource res : resources) {
+                        if (res.Name == 'PRSI_Statement_Example') {
+                            STATEMENT_EXAMPLES.put('IE', res);
+                        } else if (res.Name == 'ITSA_Statement_Example') {
+                            STATEMENT_EXAMPLES.put('ZA', res);
+                        } else if (res.Name == 'Social_Security_Statement_Example') {
+                            STATEMENT_EXAMPLES.put('US', res);
+                        } else if (res.Name == 'Super_Statement_Example') {
+                            STATEMENT_EXAMPLES.put('AU', res);
+                        } else if (res.Name == 'Canada_Statement_Example') {
+                            STATEMENT_EXAMPLES.put('CA', res);
+                        } else if (res.Name == 'New_Zealand_Statement_Example') {
+                            STATEMENT_EXAMPLES.put('NZ', res);
+                        }
+                    }
+                }
+            }
+            return STATEMENT_EXAMPLES;
         }
         private set;
     }
@@ -455,7 +495,9 @@ public without sharing class ApplicationTriggerHandler {
             WHERE Name = :REGISTRATION_TEMPLATE_NAME
         ];
         List<Application__c> apps = [
-            SELECT Contact__c
+            SELECT
+                Contact__c,
+                Current_Address_Abroad__CountryCode__s
             FROM Application__c
             WHERE Id IN : newApplications.keySet()
         ];
@@ -475,6 +517,16 @@ public without sharing class ApplicationTriggerHandler {
             }
             if ( owea.size() > 0 ) {
                 message.setOrgWideEmailAddressId(owea.get(0).Id);
+            }
+            StaticResource attachFile = STATEMENT_EXAMPLES.get(app.Current_Address_Abroad__CountryCode__s);
+            if (attachFile != null) {
+                ContentVersion contVersAttacment = new ContentVersion (
+                    VersionData = attachFile.Body,
+                    PathOnClient = attachFile.Description + '.pdf'
+                );
+                insert contVersAttacment;
+                message.setEntityAttachments(new List<Id>{contVersAttacment.Id});
+
             }
             Map<String, String> agentNameByEmail = (Map<String, String>)JSON.deserialize(XP_SETTINGS.Sales_Agent_Name_By_Email__c, Map<String, String>.class);
             String agentEmail = agentNameByEmail.get(currentApp.Agent_Making_Sale__c);
@@ -979,6 +1031,10 @@ public without sharing class ApplicationTriggerHandler {
             currApp.Val_Agent__c = (new List<String>( VAL_AGENTS_PROPORTION.keySet()))[0];
             return;
         }
+        if(currApp.Appeal_Application__c == true) {
+            currApp.Val_Agent__c = 'Sean';
+            return;
+        }
         if(currApp.Current_Address_Abroad_Country__c == 'Australia' || currApp.Current_Address_Abroad_Country__c == 'New Zealand' || currApp.Current_Address_Abroad_Country__c == 'South Korea') {
             currApp.Val_Agent__c = 'Becky';
             return;
@@ -1141,6 +1197,7 @@ public without sharing class ApplicationTriggerHandler {
         }
         List<Messaging.SingleEmailMessage> lstSingleEmailMessage = new List<Messaging.SingleEmailMessage>();
         for(Application__c app : apps) {
+            if(app.Val_Agent__c == null || VAL_AGENTS_BY_EMAIL.get(app.Val_Agent__c) == null) continue;
             String subject = app.Name + ' ' + app.First_Name__c + ' ' + app.Second_Name__c  + ' - MOVED TO FIX - PRIORITY';
             Messaging.CustomNotification notification = new Messaging.CustomNotification();
             notification.setTitle(subject);
@@ -1155,7 +1212,9 @@ public without sharing class ApplicationTriggerHandler {
             }
             lstSingleEmailMessage.add(message);
         }
-        Messaging.SendEmailResult[] result = Messaging.sendEmail(lstSingleEmailMessage);
+        if (lstSingleEmailMessage.size() != 0) {
+            Messaging.SendEmailResult[] result = Messaging.sendEmail(lstSingleEmailMessage);
+        }
     }
 
     public static void sendValAgentCustomNotification(Set<Id> currApps) {
@@ -1268,8 +1327,6 @@ public without sharing class ApplicationTriggerHandler {
         if (fileKeyWordByLink.get('ReSubLetter') == null && repeatApp == true) {
             errorMessage += 'ReSubLetter_ForSignature.pdf file is missing. \n';
         }
-        System.debug('errorMessage ==== ' + errorMessage);
-
         if (String.isNotBlank(errorMessage)) {
             update new Application__c(
                 Id = applicationId,
@@ -1371,8 +1428,10 @@ public without sharing class ApplicationTriggerHandler {
         }
         List<String> names = new List<String>();
         for (Application__c app : apps) {
+            if(app.Val_Agent__c == null) continue;
             names.add(app.Val_Agent__c);
         }
+        if (names.size() == 0) return;
         List<User> users = [
             SELECT
                 Id,
@@ -1408,6 +1467,7 @@ public without sharing class ApplicationTriggerHandler {
         }
         List<Messaging.SingleEmailMessage> lstSingleEmailMessage = new List<Messaging.SingleEmailMessage>();
         for(Application__c app : apps) {
+            if(app.Val_Agent__c == null || VAL_AGENTS_BY_EMAIL.get(app.Val_Agent__c) == null) continue;
             String subject = app.Name + ' ' + app.First_Name__c + ' ' + app.Second_Name__c  + ' - APP MOVED TO DEFERRED';
             Messaging.CustomNotification notification = new Messaging.CustomNotification();
             notification.setTitle(subject);
@@ -1422,7 +1482,9 @@ public without sharing class ApplicationTriggerHandler {
             }
             lstSingleEmailMessage.add(message);
         }
-        Messaging.SendEmailResult[] result = Messaging.sendEmail(lstSingleEmailMessage);
+        if(lstSingleEmailMessage.size() != 0) {
+            Messaging.SendEmailResult[] result = Messaging.sendEmail(lstSingleEmailMessage);
+        }
     }
 
     private static void createSplitPayments(Set<Id> splitApps) {

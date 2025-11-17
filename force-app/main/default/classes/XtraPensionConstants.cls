@@ -42,6 +42,12 @@ public class XtraPensionConstants {
             '<a href="https://xpen.uk/work" style="color: #1aa2b0; text-decoration: underline">https://xpen.uk/work</a>' +
         '</div>' +
         '<br/>';
+    public static final String  C3_APPEAL_LETTER_INFO =
+        '<div class="message-item">' +
+            '<b>&#8226; Rejection / CLASS 3 letter from HRMC</b>' +
+            '<br/> Please send a full phone/scanned version to clients@xtrapension.com or WhatsApp' +
+        '</div>' +
+        '<br/>';
     public static final String  RELATIONSHIP_INFO =
         '<div class="message-item">' +
             '<b>&#8226; Date of Marriage / Divorce / Bereavement</b>' +
@@ -259,67 +265,70 @@ public class XtraPensionConstants {
             '{FullName}' +
         '</p>';
     public static final String EU_RESIDENCY_APPEAL_TEMPLATE =
-        '<h2 style="text-align: center;">' +
-            '<strong style="font-size: 16px;">Appeal Against HMRC Refusal to Approve Class 2 NICs </strong>' +
-            '<br/>' +
+        '<hr>' +
+        '<h2>' +
+            '<strong style="font-size: 14px;">FORMAL REQUEST FOR RECONSIDERATION</strong>' +
         '</h2>' +
-        '<p>' +
-            '<br>' +
-        '</p>' +
         '<p>Dear Sir / Madam</p>' +
-        '<p>Thank you for your recent letter advising that our client is NOT eligible to pay Class 2 voluntary NI contributions.</p>' +
         '<p>' +
             '<br>' +
         '</p>' +
-        '<p>*** Your reply appears to be an outdated template from the time of HMRC\'s guidance error between 17 November 2017 and 8 April 2019. As per NI38 2025 guidance, you seem to have omitted the critical word \'OR\'.</p>' +
+        '<p>We represent a large number of clients, both British and international, who have applied to make voluntary National Insurance contributions using the CF83 form.</p>' +
         '<p>' +
             '<br>' +
         '</p>' +
-        '<p>====</p>' +
-        '<p>From HMRC NI38 Guidance Notes: "You can pay Class 2 National Insurance contributions if....</p>' +
+        '<p>We are writing to formally request a reconsideration of the recent decision regarding our client’s eligibility to pay voluntary contributions. While we appreciate the professionalism of your team, we believe the decision does not fully reflect HMRC’s own published guidance or the evidence previously submitted.</p>' +
         '<p>' +
             '<br>' +
         '</p>' +
-        '<p>1 - Immediately before going abroad, you were ordinarily an employed or self-employed earner in the UK (= YES)</p>' +
+        '<p>We address the key points of rejection below:</p>' +
+        '<hr>' +
         '<p>' +
             '<br>' +
         '</p>' +
-        '<p>2 - You ALSO satisfy EITHER of the following conditions:</p>' +
+        '<p><b>1) Rejection based on ‘3-year criteria’ (Regulation 147(3)(a) and (b))</b></p>' +
+        '<p>HMRC’s guidance NI38 states:<i>“If you lived or worked in an EU country, Iceland, Liechtenstein, Norway, Switzerland or Turkey, time spent there may help you to meet condition 2(a) or 2(b).”</i></p>' +
         '<p>' +
             '<br>' +
         '</p>' +
-        '<p>A - You’ve lived in the UK for a continuous 3 year period (= YES as per EEA RESIDENCY AGGREGATION via EC Article 14)</p>' +
-        '<p> \'OR\'</p>' + 
-        '<p>B - You paid 3 years National Insurance (= NO)</p>' +
-        '<p>====</p>' +
+        '<p>The CF83 application guidance reinforces this, confirming that applicants <i>“may be able to pay voluntary Class 2 or voluntary Class 3 National Insurance contributions if you have… paid 3 years of social security contributions in an EU country, Gibraltar, Iceland, Liechtenstein, Norway, Switzerland, or Turkey.”</i></p>' +
         '<p>' +
             '<br>' +
         '</p>' +
-        '<p>We provided proof (enclosed now again) of our client\'s EEA residence from the time they left the UK - therefore they clearly qualify for Class 2 NICs under the RESIDENCY condition starting with their time in the UK.</p>' +
+        '<p>Our client is an EU national with a clear history of employment and social insurance contributions within the EU. It is reasonable that they relied upon HMRC’s published guidance when applying. Our client reasonably expected that their EU social insurance contributions would be taken into account in satisfying the requirements of Regulation 147(3)(b). To interpret the legislation more narrowly than the published guidance indicates risks creating unfair outcomes.</p>' +
+        '<hr>' +
         '<p>' +
             '<br>' +
         '</p>' +
-        '<p>As per HMRC internal guidance note NIM71150, Article 14 of EC Regulation 883/2004 ensures the aggregation of social security periods and prevents gaps in eligibility, enabling our client to qualify for voluntary Class 2 NICs with less than 3 years of UK work/residency as per the criteria you have detailed which we note are from Section 147 of The Social Security (Contributions) Regulations 2001.</p>' +
+        '<p><b>2) Rejection based on ‘No Evidence of Living in EU’</b></p>' +
+        '<p>We have previously provided our client’s complete EU Social Insurance record, and we enclose it again with this letter. This record provides definitive evidence of both contributions and residency within the EU, before and after UK employment.</p>' +
+        '<hr>' +
         '<p>' +
             '<br>' +
         '</p>' +
-        '<p>Even though HMRC normally requires 3 years of work or residence to qualify for voluntary Class 2 NICs, Article 14 allows people to count the time they were insured or working in another EEA country toward those 3 years. </p>' +
+        '<p><b>3) Rejection based on ‘Brief History of Employment’</b></p>' +
+        '<p>Regulation 147(1)(a) of The Social Security (Contributions) Regulations 2001 requires only that an individual be <i>“ordinarily an employed earner or ordinarily a self-employed earner”</i> immediately before leaving the UK. There is no reference to a minimum duration of employment.</p>' +
         '<p>' +
             '<br>' +
         '</p>' +
-        '<p>(The Brexit Withdrawal Agreement & EU/UK Trade and Cooperation Agreement from Dec 31 2020 also facilitates this aggregation of social security periods in most cases)</p>' +
+        '<p>Your own records confirm that our client was employed and paying National Insurance contributions in the UK immediately prior to departure. This meets the requirement set out in the legislation.</p>' +
+        '<hr>' +
         '<p>' +
             '<br>' +
         '</p>' +
-        '<p>Please clarify if our understanding here is wrong or revise your decision if appropriate.</p>' +
+        '<p><b>Conclusion</b></p>' +
         '<p>' +
             '<br>' +
         '</p>' +
-        '<p>Only in the case that our client is still NOT entitled to Class 2 for their eligible working years abroad as we believe they clearly are, would they then like to formally apply via this letter to pay Class 3 NICs given that all necessary information has been provided to you in the CF83 previously submitted.</p>' +
+        '<p>In light of the above, we respectfully request that HMRC reconsider this application for voluntary Class 2 contributions, taking into account the clear guidance in NI38 and CF83, as well as the supporting evidence provided. We also request that a <b>Class 2 shortfall table</b> be issued to our client, setting out the eligible years and amounts payable.</p>' +
         '<p>' +
             '<br>' +
         '</p>' +
-        '<p>We look forward to receiving your decision and a correct NICs shortfall table soonest.</p>';
+        '<p>We are happy to provide any further documentation required to assist in resolving this matter.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We look forward to your prompt reconsideration.</p>';
     public static final String MAIDEN_NAME =
         '<h2 style="text-align: center;">' +
             '<strong style="font-size: 16px;">Ref: Information Mismatching by HMRC on 64-8</strong>' +
@@ -400,4 +409,10 @@ public class XtraPensionConstants {
             '<br>' +
         '</p>' +
         '<p>You recently rejected the attached signed 64-8 authorisation form our agent sent to you. Can you please update and confirm by return that HMRC\'s records have now been updated with the following correct details:</p>';
+    public static final String NOT_RECEIVED_CHECK_AGENT_MESSAGE = 'NOT RECEIVED by HMRC';
+    public static final String C2_C3_CHECK_AGENT_MESSAGE = 'LETTER NOT RECEIVED by XP (Check with Client)';
+    public static final String BAD_NINO_CHECK_AGENT_MESSAGE = 'BAD NINO after check';
+    public static final String X64_8_CHECK_AGENT_MESSAGE = '64-8 ISSUE after check';
+    public static final String REJECT_CHECK_AGENT_MESSAGE = 'REJECTION by HMRC (Check with Client)';
+    public static final String APPEAL_CHECK_AGENT_MESSAGE = 'APPEAL NOT RECEIVED by HMRC';
 }

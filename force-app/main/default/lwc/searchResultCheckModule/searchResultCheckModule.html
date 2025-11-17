@@ -4,14 +4,22 @@
         <p><span>Name:</span> {currApp.First_Name__c} {currApp.Second_Name__c}</p>
         <p><span>Current App Status: </span> {currApp.Status__c}</p>
         <p><span>Last Posted: </span>
-            <lightning-formatted-date-time value={currApp.CreatedDate} year="numeric" month="numeric" day="numeric">
+            <lightning-formatted-date-time value={lastPostedDate} year="numeric" month="numeric" day="numeric">
             </lightning-formatted-date-time>
         </p>
-        <template lwc:if={isOnDWPStage}>
+        <template lwc:if={isDWP_App}>
             <p><span>Age: </span> {currApp.Age__c}</p>
+            <p><a href="https://www.gov.uk/state-pension-age/y/age" target="_blank">Check State Pension Age</a></p>
         </template>
         <template lwc:if={isHMRCChecks}>
             <hr class="slds-var-m-vertical_medium" />
+            <div>
+                <template for:each={badgeLabels} for:item="label">
+                    <span class="slds-badge slds-badge_lightest slds-m-bottom_x-small" style={searchBlockColours}
+                        key={label}>{label}</span>
+                </template>
+
+            </div>
             <p><span>Check Agent: </span> {checkRequest.Check_Agents__c}</p>
             <p><span>Check Date: </span>
                 <lightning-formatted-date-time value={checkRequest.CreatedDate} year="numeric" month="numeric"
@@ -29,7 +37,7 @@
         </template>
         <template lwc:if={isNotifiactionSentTo}>
             <hr class="slds-var-m-vertical_medium" />
-            <p>Notification Sent to Grace</p>
+            <p>Notification Sent to {checkRequest.Agent_To_Sent_Notification__c}</p>
             <template lwc:if={isActionYet}>
                 <p>NOT ACTIONED YET</p>
                 <p><span>Recheck date: </span>
