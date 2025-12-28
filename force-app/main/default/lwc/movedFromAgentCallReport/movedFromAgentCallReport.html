@@ -9,10 +9,13 @@
                             <div class="slds-truncate"></div>
                         </th>
                         <template for:each={users} for:item="user">
-                            <th class="" scope="col" key={user.Id}>
+                            <th class="" scope="col" key={user.Id} width="10%">
                                 <div class="slds-truncate">{user.Name}</div>
                             </th>
                         </template>
+                        <th scope="col">
+                            <div class="slds-truncate">Total</div>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -22,6 +25,9 @@
                                 <div class="slds-truncate">{change}</div>
                             </td>
                         </template>
+                        <td data-label="Changes">
+                            <div class="slds-truncate">{todayTotalCount}</div>
+                        </td>
                     </tr>
                     <tr class="slds-hint-parent">
                         <template for:each={yesterdayData} for:item="change">
@@ -29,6 +35,9 @@
                                 <div class="slds-truncate">{change}</div>
                             </td>
                         </template>
+                        <td data-label="Changes">
+                            <div class="slds-truncate">{yesterdayTotalCount}</div>
+                        </td>
                     </tr>
                     <tr class="slds-hint-parent">
                         <template for:each={thisWeekData} for:item="change">
@@ -36,6 +45,9 @@
                                 <div class="slds-truncate">{change}</div>
                             </td>
                         </template>
+                        <td data-label="Changes">
+                            <div class="slds-truncate">{thisWeekTotalCount}</div>
+                        </td>
                     </tr>
                     <tr class="slds-hint-parent">
                         <template for:each={lastWeekData} for:item="change">
@@ -43,6 +55,9 @@
                                 <div class="slds-truncate">{change}</div>
                             </td>
                         </template>
+                        <td data-label="Changes">
+                            <div class="slds-truncate">{lastWeekTotalCount}</div>
+                        </td>
                     </tr>
                     <tr class="slds-hint-parent">
                         <template for:each={thisMonthData} for:item="change">
@@ -50,6 +65,9 @@
                                 <div class="slds-truncate">{change}</div>
                             </td>
                         </template>
+                        <td data-label="Changes">
+                            <div class="slds-truncate">{thisMonthTotalCount}</div>
+                        </td>
                     </tr>
                     <tr class="slds-hint-parent">
                         <template for:each={lastMonthData} for:item="change">
@@ -57,6 +75,9 @@
                                 <div class="slds-truncate">{change}</div>
                             </td>
                         </template>
+                        <td data-label="Changes">
+                            <div class="slds-truncate">{lastMonthTotalCount}</div>
+                        </td>
                     </tr>
                 </tbody>
             </table>

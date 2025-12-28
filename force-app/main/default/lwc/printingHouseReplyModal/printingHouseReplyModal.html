@@ -1,0 +1,80 @@
+<template>
+    <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01"
+        class="slds-modal slds-fade-in-open slds-modal_medium">
+        <div class="slds-modal__container main-space">
+            <div class="slds-modal__header">
+                <h1 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Send HMRC Reply with Attachments</h1>
+            </div>
+            <template if:true={isStepOne}>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div><b>1. Please, select files to send to the client after receiving
+                            tracking number!</b></div>
+                    <div class="slds-m-top_small">Available attachments:</div>
+                    <template for:each={docs} for:item="doc">
+                        <div key={doc.ContentDocumentId}>
+                            <a onclick={navigateToReplyFiles} value={doc.ContentDocumentId}>
+                                {doc.ContentDocument.Title}
+                            </a>
+                        </div>
+                    </template>
+                    <lightning-dual-listbox name="attachments" label="Choose Attachments" source-label="Available"
+                        selected-label="Selected" options={attachmentOptions} value={selectedValues}
+                        onchange={handleSelect} class="slds-m-top_medium">
+                    </lightning-dual-listbox>
+                </div>
+                <div class="slds-modal__footer">
+                    <lightning-button-group>
+                        <lightning-button label="Cancel" onclick={closeModal}>
+                        </lightning-button>
+                        <lightning-button label="Next" variant="brand" onclick={goToStepTwo}
+                            disabled={isSelectedEmailAttachments}>
+                        </lightning-button>
+                    </lightning-button-group>
+                </div>
+            </template>
+            <template if:true={isStepTwo}>
+                <template lwc:if={showSpinner}>
+                    <lightning-spinner alternative-text="Loading" size="medium" variant="brand"
+                        class="full-screen-spinner"></lightning-spinner>
+                    <div class="slds-backdrop backdrop_open"></div>
+                </template>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-2">
+                    <div><b>2. Also add the doc to be posted (only 1)</b></div>
+                    <div class="slds-m-top_small">Available attachments:</div>
+                    <template for:each={replyDocs} for:item="doc">
+                        <div key={doc.ContentDocumentId}>
+                            <a onclick={navigateToReplyFiles} value={doc.ContentDocumentId}>
+                                {doc.ContentDocument.Title}
+                            </a>
+                        </div>
+                    </template>
+                    <div class="slds-m-top_medium slds-m-bottom_x-large">
+                        <!-- Default/basic -->
+                        <lightning-combobox name="progress" label="Attach File" options={replyAttachmentOptions}
+                            onchange={handleSelectAttachment} value={selectAttach}
+                            placeholder="Select attachment"></lightning-combobox>
+                        <template if:true={selectAttachLabel}>
+                            <div class="slds-m-top_small">
+                                <div>Chosen Attachment</div>
+                                <lightning-pill label={selectAttachLabel} onremove={handleRemove}>
+                                </lightning-pill>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <div class="slds-modal__footer">
+                    <lightning-button-group>
+                        <lightning-button label="Cancel" onclick={closeModal}>
+                        </lightning-button>
+                        <lightning-button label="Previous" onclick={goToStepOne}>
+                        </lightning-button>
+                        <lightning-button label="Send to HMRC" variant="brand" onclick={handleSend}
+                            disabled={isSelectedHMRCAttachments}>
+                        </lightning-button>
+                    </lightning-button-group>
+                </div>
+            </template>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+</template>

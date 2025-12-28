@@ -9,6 +9,7 @@ export default class EditReplyModal extends LightningElement {
     @api appName;
     @api hmrcRef;
     @api nino;
+    @api abroadEmpl;
     currDate;
 
     allowedFormats = [

@@ -8,7 +8,12 @@ public without sharing class ApplicationTriggerHandler {
     private static final List<String> PRODUCT_NAMES = new String[] {
         'Deposit', 'Application', 'Monthly Updates', 'Success'
     };
-    private static final String APPEAL_PRODUCT_NAME = 'Appeal';
+    private static final List<String> APPEAL_PRODUCT_NAMES = new String[] {
+        'Appeal Application', 'Appeal Success'
+    };
+    private static final List<String> FAIL_ZIP_FILE_RECIPIENTS = new String[] {
+        'fernando@xtrapension.com', 'mihail.klimovich@outlook.com'
+    };
 
     private static final XtraPension_Settings__mdt XP_SETTINGS {
         get {
@@ -79,6 +84,38 @@ public without sharing class ApplicationTriggerHandler {
         'Deferred'            => 'Deferred_Changed_Date__c',
         'NO NINO'             => 'NO_NINO_Changed_Date__c'
     };
+    private final Map<String,String> CHANGED_STATUS_USER_FIELDS = new Map<String, String>{
+        'Form Completed'      => 'Form_Completed_Changed_User__c',
+        'NINO/Doc Needed'     => 'NINO_Doc_Needed_Changed_User__c',
+        'Pending Client'	  => 'Pending_Client_Changed_User__c',
+        'Fix'                 => 'Fix_Changed_User__c',
+        'Agent Check'         => 'Agent_Check_Changed_User__c',
+        'QC Approved'         => 'QC_Approved_Changed_User__c',
+        'Iffy List'           => 'Iffy_List_Changed_User__c',
+        'Sent for eSignature' => 'Sent_for_eSignature_Changed_User__c',
+        'Signed'              => 'Signed_Changed_User__c',
+        'Printing House'      => 'Printing_House_Changed_User__c',
+        'Posted'              => 'Posted_Changed_User__c',
+        '64-8 Bounce'         => 'X64_8_Bounce_Changed_User__c',
+        'HMRC Reply 1'        => 'HMRC_Reply_1_Changed_User__c',
+        'DWP Teleclaim'       => 'DWP_Teleclaim_Changed_User__c',
+        'DWP 2 Emails Sent'   => 'DWP_2_Emails_Sent_Changed_User__c',
+        'XP Letter Sent'      => 'XP_Letter_Sent_Changed_User__c',
+        'HMRC Appeal'         => 'HMRC_Appeal_Changed_User__c',
+        'DWP Appeal'          => 'DWP_Appeal_Changed_User__c',
+        'HMRC Reply 2'        => 'HMRC_Reply_2_Changed_User__c',
+        'Send to Client'      => 'Send_to_Client_Changed_User__c',
+        'Agent Call'	      => 'Agent_Call_Changed_User__c',
+        'Charge CC'	          => 'Charge_CC_Changed_User__c',
+        'Annual Service'      => 'Annual_Service_Changed_User__c',
+        'No Annual'           => 'No_Annual_Changed_User__c',
+        'Closed'              => 'Closed_Changed_User__c',
+        'REPEAT(edits)'       => 'REPEAT_edits_Changed_User__c',
+        'REPEAT(NO edits)'    => 'REPEAT_NO_edits_Changed_User__c',
+        'Deposit Refund'      => 'Deposit_Refund_Changed_User__c',
+        'Deferred'            => 'Deferred_Changed_User__c',
+        'NO NINO'             => 'NO_NINO_Changed_User__c'
+    };
     private final static String REGISTRATION_ORG_WIDE = 'clients@xtrapension.com';
     private final static String REGISTRATION_TEMPLATE_NAME = 'Registration Data Information';
 
@@ -86,29 +123,12 @@ public without sharing class ApplicationTriggerHandler {
         'Sean'       => 'seanb@xtrapension.com',
         'Ciara'      => 'ciara@xtrapension.com',
         'Becky'      => 'becky@xtrapension.com '
-        //'MaryClaire' => 'mary@xtrapension.com'
     };
 
     private static Map<String, String> DOC_AGENTS_BY_EMAIL = new Map<String, String> {
         'Daniel'  => 'daniel@xtrapension.com',
         'Maria'   => 'maria@xtrapension.com'
     };
-
-    //     private static Map<String, String> VAL_AGENTS_BY_EMAIL = new Map<String, String> {
-    //     'Sean'       => 'mihail.klimovich@outlook.com',
-    //     'Ciara'      => 'mihail.klimovich@outlook.com',
-    //     'Niamh'      => 'mihail.klimovich@outlook.com',
-    //     'Becky'      => 'mihail.klimovich@outlook.com',
-    //     'Monica'     => 'mihail.klimovich@outlook.com',
-    //     'MaryClaire' => 'mihail.klimovich@outlook.com'
-    // };
-
-    // private static Map<String, String> DOC_AGENTS_BY_EMAIL = new Map<String, String> {
-    //     'Daniel'  => 'mihail.klimovich@outlook.com',
-    //     'Edryl'   => 'mihail.klimovich@outlook.com',
-    //     'Camille' => 'mihail.klimovich@outlook.com',
-    //     'Maria'   => 'mihail.klimovich@outlook.com'
-    // };
 
     private static final OrgWideEmailAddress OWD {
         get {
@@ -164,7 +184,9 @@ public without sharing class ApplicationTriggerHandler {
                           Name = 'Social_Security_Statement_Example' OR
                           Name = 'Super_Statement_Example' OR
                           Name = 'Canada_Statement_Example' OR
-                          Name = 'New_Zealand_Statement_Example'
+                          Name = 'New_Zealand_Statement_Example' OR
+                          Name = 'Appeal_Next_Steps' OR
+                          Name = 'Next_Steps'
                 ];
                 if (!resources.isEmpty()) {
                     for (StaticResource res : resources) {
@@ -180,6 +202,10 @@ public without sharing class ApplicationTriggerHandler {
                             STATEMENT_EXAMPLES.put('CA', res);
                         } else if (res.Name == 'New_Zealand_Statement_Example') {
                             STATEMENT_EXAMPLES.put('NZ', res);
+                        } else if (res.Name == 'Appeal_Next_Steps') {
+                            STATEMENT_EXAMPLES.put('Appeal App', res);
+                        } else if (res.Name == 'Next_Steps') {
+                            STATEMENT_EXAMPLES.put('Standard App', res);
                         }
                     }
                 }
@@ -241,10 +267,12 @@ public without sharing class ApplicationTriggerHandler {
             }
             if (app.Status__c != oldApplications.get(app.Id).Status__c) {
                 String appStatus = CHANGED_STATUS_DATE_FIELDS.get(app.Status__c);
+                String changeStatusUserField = CHANGED_STATUS_USER_FIELDS.get(app.Status__c);
                 if(appStatus != null) {
                     Application__c currentApp = new Application__c();
                     currentApp.put('Id',app.Id);
                     currentApp.put(appStatus, Date.today());
+                    if(changeStatusUserField != null) currentApp.put(changeStatusUserField, UserInfo.getUserId());
                     changedStatusesApps.add(currentApp);
                 }
             }
@@ -505,7 +533,8 @@ public without sharing class ApplicationTriggerHandler {
         List<Application__c> apps = [
             SELECT
                 Contact__c,
-                Current_Address_Abroad__CountryCode__s
+                Current_Address_Abroad__CountryCode__s,
+                Appeal_Application__c
             FROM Application__c
             WHERE Id IN : newApplications.keySet()
         ];
@@ -526,6 +555,7 @@ public without sharing class ApplicationTriggerHandler {
             if ( owea.size() > 0 ) {
                 message.setOrgWideEmailAddressId(owea.get(0).Id);
             }
+            List<Id> attachIds = new List<Id>();
             StaticResource attachFile = STATEMENT_EXAMPLES.get(app.Current_Address_Abroad__CountryCode__s);
             if (attachFile != null) {
                 ContentVersion contVersAttacment = new ContentVersion (
@@ -533,8 +563,22 @@ public without sharing class ApplicationTriggerHandler {
                     PathOnClient = attachFile.Description + '.pdf'
                 );
                 insert contVersAttacment;
-                message.setEntityAttachments(new List<Id>{contVersAttacment.Id});
-
+                attachIds.add(contVersAttacment.Id);
+            }
+            ContentVersion nextStepContVersAttachment = new ContentVersion ();
+            if (app.Appeal_Application__c == true) {
+                StaticResource appealAttachFile = STATEMENT_EXAMPLES.get('Appeal App');
+                nextStepContVersAttachment.VersionData = appealAttachFile.Body;
+                nextStepContVersAttachment.PathOnClient = appealAttachFile.Description + '.pdf';
+            } else {
+                StaticResource standardAttachFile = STATEMENT_EXAMPLES.get('Standard App');
+                nextStepContVersAttachment.VersionData = standardAttachFile.Body;
+                nextStepContVersAttachment.PathOnClient = standardAttachFile.Description + '.pdf';
+            }
+            insert nextStepContVersAttachment;
+            attachIds.add(nextStepContVersAttachment.Id);
+            if(attachIds.size() != 0) {
+                message.setEntityAttachments(attachIds);
             }
             Map<String, String> agentNameByEmail = (Map<String, String>)JSON.deserialize(XP_SETTINGS.Sales_Agent_Name_By_Email__c, Map<String, String>.class);
             String agentEmail = agentNameByEmail.get(currentApp.Agent_Making_Sale__c);
@@ -902,7 +946,9 @@ public without sharing class ApplicationTriggerHandler {
     }
 
     private static void updatePaymentsFromAppealApps(Set<Id> appealApps) {
-        List<Payment__c> currentPayments = [
+        List<Sobject> upsertRecords = new List<Sobject>();
+        Map<Id, Id> applicationIdByOrderId = new Map<Id, Id>();
+        for (Payment__c payment : [
             SELECT
                 Product_Name__c,
                 Amount__c,
@@ -911,41 +957,37 @@ public without sharing class ApplicationTriggerHandler {
                 Order__c
             FROM Payment__c
             WHERE Application__c IN :appealApps
-        ];
-        if (currentPayments.isEmpty()) return;
-        List<Sobject> upsertRecords = new List<Sobject>();
-        Map<Id, Id> applicationIdByOrderId = new Map<Id, Id>();
-        for (Payment__c payment : currentPayments) {
+        ]) {
             if (payment.Product_Name__c == 'Deposit' && applicationIdByOrderId.get(payment.Application__c) == null) {
                 applicationIdByOrderId.put(payment.Application__c, payment.Order__c);
-            } else if (payment.Product_Name__c == 'Application') {
-                payment.Amount__c = 850;
-                upsertRecords.add(payment);
             } else {
                 payment.Status__c = 'Cancel';
                 upsertRecords.add(payment);
             }
         }
-
-        List<PriceBookEntry> priceBookEntries = [
+        Map<String, List<PriceBookEntry>> currencyByPricebookEntries = new Map<String, List<PriceBookEntry>>();
+        for (PriceBookEntry entry : [
             SELECT
                 Id,
                 Product2Id,
                 Product2.Name,
                 Pricebook2Id,
                 Pricebook2.IsStandard,
-                UnitPrice
+                UnitPrice,
+                CurrencyIsoCode
             FROM PriceBookEntry
-            WHERE Product2.Name = :APPEAL_PRODUCT_NAME
-        ];
-        if (priceBookEntries.isEmpty()) {
-            return;
+            WHERE Product2.Name IN :APPEAL_PRODUCT_NAMES
+        ]) {
+            List<PriceBookEntry> currentListEntries = currencyByPricebookEntries.get(entry.CurrencyIsoCode);
+            if(currentListEntries == null) currentListEntries = new List<PriceBookEntry>{entry};
+            else currentListEntries.add(entry);
+            currencyByPricebookEntries.put(entry.CurrencyIsoCode, currentListEntries);
         }
-        PriceBookEntry appealProduct = priceBookEntries[0];
         List<Application__c> currentApps = [
             SELECT
                 Payment_Method__c,
-                Stripe_Customer_Id__c
+                Stripe_Customer_Id__c,
+                CurrencyIsoCode
             FROM Application__c
             WHERE Id IN :appealApps
         ];
@@ -956,17 +998,27 @@ public without sharing class ApplicationTriggerHandler {
             if (applicationIdByOrderId.get(app.Id) == null) {
                 continue;
             }
-            upsertRecords.add(
-                new Payment__c (
-                    Amount__c         = appealProduct.UnitPrice,
-                    Product__c        = appealProduct.Product2Id,
-                    Status__c         = 'Draft',
-                    Payment_Method__c = app.Payment_Method__c,
-                    Customer_Id__c    = app.Stripe_Customer_Id__c,
-                    Application__c    = app.Id,
-                    Order__c          = applicationIdByOrderId.get(app.Id)
-                )
-            );
+            List<PriceBookEntry> currentListEntries = currencyByPricebookEntries.get(app.CurrencyIsoCode);
+            if (currentListEntries == null) continue;
+            String paymentMethodId = '';
+            if(app.Payment_Method__c.contains(';')) {
+                List<String> paymentMethods = app.Payment_Method__c.split(';');
+                paymentMethodId = paymentMethods[paymentMethods.size() - 1].trim();
+            } else if(app.Payment_Method__c != null) paymentMethodId = app.Payment_Method__c;
+            else continue;
+            for (PriceBookEntry entry : currentListEntries) {
+                upsertRecords.add(
+                    new Payment__c (
+                        Amount__c         = entry.UnitPrice,
+                        Product__c        = entry.Product2Id,
+                        Status__c         = 'Draft',
+                        Payment_Method__c = paymentMethodId,
+                        Customer_Id__c    = app.Stripe_Customer_Id__c,
+                        Application__c    = app.Id,
+                        Order__c          = applicationIdByOrderId.get(app.Id)
+                    )
+                );
+            }
         }
         if (!upsertRecords.isEmpty()) {
             upsert upsertRecords;
@@ -1294,6 +1346,17 @@ public without sharing class ApplicationTriggerHandler {
         if (applicationId == null) {
             return;
         }
+        List<Application__c> apps = [
+            SELECT
+                First_Name__c,
+                Second_Name__c,
+                Name
+            FROM Application__c
+            WHERE Id = :applicationId
+            LIMIT 1
+        ];
+        if(apps.size() == 0) return;
+        Application__c currentApplication = apps[0];
         List<ContentDocumentLink> cdls = [
             SELECT
                 ContentDocumentId,
@@ -1368,55 +1431,51 @@ public without sharing class ApplicationTriggerHandler {
                 currVers.put(docName, cv.Id);
             }
         }
+        try {
+            blob zipAttachment = writer.getArchive();
+            List<ContentDocumentLink> zipDoc =[
+                SELECT
+                    ContentDocumentId,
+                    ContentDocument.Title
+                FROM ContentDocumentLink
+                WHERE LinkedEntityId = :applicationId AND
+                      ContentDocument.Title LIKE '%ZIP%'
+            ];
+            update new Application__c(Id = applicationId, FTP_Send_Date__c = null, Zip_Archive_Contains_UPLOAD_file__c = isContainUploadFile);
+            String finalTitle = currentApplication.First_Name__c + '_' + currentApplication.Second_Name__c + '_' +
+            currentApplication.Name + '_ZIP';
+            if (zipDoc.size() != 0) {
+                insert new ContentVersion (
+                    ContentDocumentId = zipDoc[0].ContentDocumentId,
+                    VersionData = zipAttachment,
+                    PathOnClient = finalTitle + '.zip'
+                );
+            } else {
+                ContentVersion conVer = new ContentVersion();
+                conVer.ContentLocation = 'S';
+                conVer.PathOnClient = finalTitle + '.zip';
+                conVer.Title = finalTitle;
+                conVer.VersionData = zipAttachment;
+                insert conVer;
+                ContentVersion conDoc = [SELECT ContentDocumentId, ContentSize FROM ContentVersion WHERE Id =:conVer.Id][0];
 
-        blob zipAttachment = writer.getArchive();
-
-        List<ContentDocumentLink> zipDoc =[
-            SELECT
-                ContentDocumentId,
-                ContentDocument.Title
-            FROM ContentDocumentLink
-            WHERE LinkedEntityId = :applicationId AND
-                  ContentDocument.Title LIKE '%ZIP%'
-        ];
-
-        List<Application__c> apps = [
-            SELECT
-                First_Name__c,
-                Second_Name__c,
-                Name
-            FROM Application__c
-            WHERE Id = :applicationId
-            LIMIT 1
-        ];
-        if(apps.size() == 0) return;
-        Application__c currentApplication = apps[0];
-        update new Application__c(Id = applicationId, FTP_Send_Date__c = null, Zip_Archive_Contains_UPLOAD_file__c = isContainUploadFile);
-        String finalTitle = currentApplication.First_Name__c + '_' + currentApplication.Second_Name__c + '_' +
-        currentApplication.Name + '_ZIP';
-        if (zipDoc.size() != 0) {
-            insert new ContentVersion (
-                ContentDocumentId = zipDoc[0].ContentDocumentId,
-                VersionData = zipAttachment,
-                PathOnClient = finalTitle + '.zip'
+                ContentDocumentLink conDocLink = new ContentDocumentLink();
+                conDocLink.LinkedEntityId = applicationId;
+                conDocLink.ContentDocumentId = conDoc.ContentDocumentId;
+                conDocLink.shareType = 'I';
+                conDocLink.Visibility = 'AllUsers';
+                insert conDocLink;
+            }
+        } catch (HandledException ex) {
+            Messaging.SingleEmailMessage message = sendMessage(
+                currentApplication,
+                currentApplication.Name + ' - ERROR generating ZIP!',
+                null
             );
-        } else {
-
-            ContentVersion conVer = new ContentVersion();
-            conVer.ContentLocation = 'S';
-            conVer.PathOnClient = finalTitle + '.zip';
-            conVer.Title = finalTitle;
-            conVer.VersionData = zipAttachment;
-            insert conVer;
-
-            ContentVersion conDoc = [SELECT ContentDocumentId, ContentSize FROM ContentVersion WHERE Id =:conVer.Id][0];
-
-            ContentDocumentLink conDocLink = new ContentDocumentLink();
-            conDocLink.LinkedEntityId = applicationId;
-            conDocLink.ContentDocumentId = conDoc.ContentDocumentId;
-            conDocLink.shareType = 'I';
-            conDocLink.Visibility = 'AllUsers';
-            insert conDocLink;
+            message.setPlainTextBody('Error creating zip archive for application - ' + currentApplication.Name + '. Please compress PRSI file.');
+            message.toAddresses = FAIL_ZIP_FILE_RECIPIENTS;
+            List<Messaging.SingleEmailMessage> lstSingleEmailMessage = new List<Messaging.SingleEmailMessage>{message};
+            Messaging.SendEmailResult[] result = Messaging.sendEmail(lstSingleEmailMessage);
         }
     }
 

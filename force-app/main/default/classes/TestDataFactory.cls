@@ -348,4 +348,18 @@ public class TestDataFactory {
         }
         return u;
     }
+
+    public static HMRC_Check__c createHMRC_Check(Id appId, Boolean isInsertOrNone) {
+        HMRC_Check__c testCheckRequest = new HMRC_Check__c(
+            Application__c          = appId,
+            C2__c                   = true,
+            Notes__c                = 'Test record',
+            HMRC_Reply_Sent_Date__c = Date.today(),
+            Check_Agents__c         = 'Daniel'
+        );
+        if (isInsertOrNone) {
+            insert testCheckRequest;
+        }
+        return testCheckRequest;
+    }
 }

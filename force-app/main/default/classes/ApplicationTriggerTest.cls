@@ -659,7 +659,7 @@ public with sharing class ApplicationTriggerTest {
         ];
         Application__c currApp = testApps[0];
         List<Payment__c> paymentsBeforeUpdate = [
-            SELECT Amount__c
+            SELECT Amount__c, Status__c
             FROM Payment__c
             WHERE Product_Name__c = 'Application'
         ];
@@ -668,12 +668,12 @@ public with sharing class ApplicationTriggerTest {
         update currApp;
         Test.stopTest();
         List<Payment__c> paymentsAfterUpdate = [
-            SELECT Amount__c
+            SELECT Amount__c, Status__c
             FROM Payment__c
             WHERE Product_Name__c = 'Application'
         ];
-        Assert.areNotEqual(paymentsBeforeUpdate[0].Amount__c, paymentsAfterUpdate[0].Amount__c);
-        Assert.areEqual(850, paymentsAfterUpdate[0].Amount__c);
+        Assert.areNotEqual(paymentsBeforeUpdate[0].Status__c, paymentsAfterUpdate[0].Status__c);
+        Assert.isNotNull(paymentsAfterUpdate[0].Status__c);
     }
 
     @isTest

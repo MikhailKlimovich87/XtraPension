@@ -56,7 +56,7 @@ public class MassSendEmailsBatch implements Database.Batchable<SObject>, Databas
         Messaging.SendEmailResult[] results = Messaging.sendEmail(emailMessages);
         if(results[0].isSuccess() == true) {
             updatedApp = new Application__c(Id = currApp.Id, Sent_Mass_Email_Message__c = true, Mass_Sms_Message_Send_Date__c = Date.today());
-            System.enqueueJob(new MassSendSmsQueueable(MESSAGE_BODY, currApp.Related_Contact_Phone__c));
+            //System.enqueueJob(new MassSendSmsQueueable(MESSAGE_BODY, currApp.Related_Contact_Phone__c));
         }
         update updatedApp;
     }

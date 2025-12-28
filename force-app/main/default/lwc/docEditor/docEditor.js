@@ -51,6 +51,16 @@ export default class DocEditor extends LightningElement {
     maidenNameTemplate;
     dwp2RequestTemplate;
     bounceLetterTemplate;
+    euResidencyLetterTemplate;
+    replyToEU_C2_C3_RejectionTemplate;
+    class3AppealDespite3YearsTemplate;
+    badErrorInC2DecisionTemplate;
+    noShortfallTableProvidedTemplate;
+    missingCorrespondenceTemplate;
+    customCarnageTemplate;
+    cf83NotReceivedLetterAgainTemplate;
+    latePaymentAppealTemplate;
+    higherLevelAppealTemplate;
     bodyValue;
     error;
     errorData;
@@ -141,6 +151,26 @@ export default class DocEditor extends LightningElement {
                         this.bounceLetterTemplate = data.htmlValue;
                     } else if(data.templateName === '64-8 UPDATE LETTER') {
                         this.updateLetterTemplate = data.htmlValue;
+                    } else if(data.templateName === 'EU RESIDENCY LETTER') {
+                        this.euResidencyLetterTemplate = data.htmlValue;
+                    } else if(data.templateName === 'REPLY TO \'EU C2 & C3 REJECTION\'') {
+                        this.replyToEU_C2_C3_RejectionTemplate = data.htmlValue;
+                    } else if(data.templateName === 'CLASS3 APPEAL DESPITE 3+ YEARS') {
+                        this.class3AppealDespite3YearsTemplate = data.htmlValue;
+                    } else if(data.templateName === 'BAD / ERROR IN C2 DECISION') {
+                        this.badErrorInC2DecisionTemplate = data.htmlValue;
+                    } else if(data.templateName === 'NO SHORTFALL TABLE PROVIDED') {
+                        this.noShortfallTableProvidedTemplate = data.htmlValue;
+                    } else if(data.templateName === 'CUSTOM CARNAGE (EG STEWART-LORD!)') {
+                        this.customCarnageTemplate = data.htmlValue;
+                    } else if(data.templateName === 'MISSING CORRESPONDENCE') {
+                        this.missingCorrespondenceTemplate = data.htmlValue;
+                    } else if(data.templateName === 'CF83 NOT RECEIVED LETTER AGAIN TO HMRC') {
+                        this.cf83NotReceivedLetterAgainTemplate = data.htmlValue;
+                    } else if(data.templateName === 'LATE PAYMENT APPEAL') {
+                        this.latePaymentAppealTemplate = data.htmlValue;
+                    } else if(data.templateName === 'HIGHER LEVEL / STAGE 2 APPEAL > STATUTORY REVIEW') {
+                        this.higherLevelAppealTemplate = data.htmlValue;
                     }
                 });
             }
@@ -152,17 +182,27 @@ export default class DocEditor extends LightningElement {
 
     get options() {
         return [
-            { label: 'EU Residency Appeal', value: this.euResidencyAppealTemplate},
-            { label: 'Appeal', value: this.appealTemplate },
-            { label: 'Custom', value: this.customTemplate },
-            { label: 'NINO', value: this.ninoTemplate },
-            { label: 'Current Job', value: this.currentJobTemplate},
+            //{ label: 'EU Residency Appeal', value: this.euResidencyAppealTemplate},
+            //{ label: 'Appeal', value: this.appealTemplate },
+            //{ label: 'Custom', value: this.customTemplate },
+            //{ label: 'NINO', value: this.ninoTemplate },
+            //{ label: 'Current Job', value: this.currentJobTemplate},
             { label: 'DWP Status Check', value: this.dwpStatusCheckTemplate},
-            { label: 'Certified Doc', value: this.certifiedDocTemplate},
-            { label: 'Maiden Name', value: this.maidenNameTemplate},
+            //{ label: 'Certified Doc', value: this.certifiedDocTemplate},
+            //{ label: 'Maiden Name', value: this.maidenNameTemplate},
             { label: 'DWP C2 Request', value: this.dwp2RequestTemplate},
-            { label: 'Bounce Letter', value: this.bounceLetterTemplate},
-            { label: '64-8 Update Letter', value: this.updateLetterTemplate},
+            //{ label: 'Bounce Letter', value: this.bounceLetterTemplate},
+            //{ label: '64-8 Update Letter', value: this.updateLetterTemplate},
+            { label: 'EU Residency Letter', value: this.euResidencyLetterTemplate},
+            { label: 'Reply to \'EU C2 & C3 Rejection\'', value: this.replyToEU_C2_C3_RejectionTemplate},
+            { label: 'Class3 Appeal Despite 3+ Years', value: this.class3AppealDespite3YearsTemplate},
+            { label: 'Bad / Error In C2 Decision', value: this.badErrorInC2DecisionTemplate},
+            { label: 'No Shortfall Table Provided', value: this.noShortfallTableProvidedTemplate},
+            { label: 'Custom Carnage (EG Stewart-Lord!)', value: this.customCarnageTemplate},
+            { label: 'Missing Correspondence', value: this.missingCorrespondenceTemplate},
+            { label: 'CF83 NOT Received letter again to HMRC', value: this.cf83NotReceivedLetterAgainTemplate},
+            { label: 'Late Payment Appeal', value: this.latePaymentAppealTemplate},
+            { label: 'Higher Level / Stage 2 Appeal > Statutory Review', value: this.higherLevelAppealTemplate},
         ];
     }
 
@@ -179,13 +219,24 @@ export default class DocEditor extends LightningElement {
             this.currentLabel === 'NINO' ||
             this.currentLabel === 'Current Job' ||
             this.currentLabel === 'EU Residency Appeal' ||
-            this.currentLabel === 'Maiden Name') {
+            this.currentLabel === 'Maiden Name' ||
+            this.currentLabel === 'EU Residency Letter' ||
+            this.currentLabel === 'Reply to \'EU C2 & C3 Rejection\'' ||
+            this.currentLabel === 'Class3 Appeal Despite 3+ Years' ||
+            this.currentLabel === 'Bad / Error In C2 Decision' ||
+            this.currentLabel === 'No Shortfall Table Provided' ||
+            this.currentLabel === 'Custom Carnage (EG Stewart-Lord!)' ||
+            this.currentLabel === 'Missing Correspondence' ||
+            this.currentLabel === 'CF83 NOT Received letter again to HMRC' ||
+            this.currentLabel === 'Late Payment Appeal'
+        ) {
             this.isOpenModal = !this.isOpenModal;
         } else if(this.currentLabel === 'DWP Status Check') {
             this.isOpenDWPStatusModal = !this.isOpenDWPStatusModal;
         } else if(this.currentLabel === 'Certified Doc') {
             this.isCertifiedDocModal = !this.isCertifiedDocModal;
-        } else if(this.currentLabel === 'DWP C2 Request') {
+        } else if(this.currentLabel === 'DWP C2 Request' ||
+            this.currentLabel === 'Higher Level / Stage 2 Appeal > Statutory Review') {
             this.isDWP2RequestModal = !this.isDWP2RequestModal;
         } else if(this.currentLabel === 'Bounce Letter') {
             this.isBounceLetterModal = !this.isBounceLetterModal;

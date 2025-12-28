@@ -37,6 +37,7 @@ public with sharing class ClientSupportEmailServiceHandlerTest {
         email.subject = subject;
         email.fromAddress = 'john.snow@gmail.com';
         email.plainTextBody = 'Test message';
+        email.HtmlBody = '<div>Test message</div>';
         email.toAddresses = new List<String> {
             testApplicaition.Email__c
         };

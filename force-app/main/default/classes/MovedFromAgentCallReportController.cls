@@ -13,7 +13,8 @@ public without sharing class MovedFromAgentCallReportController {
                            Name = 'Sean Byrne' OR
                            Name = 'Becky McAllister' OR
                            Name = 'Fiona Carey' OR
-                           Name = 'Ciara Gibson')
+                           Name = 'Ciara Gibson' OR
+                           Name = 'Grace Coash')
                 ];
                 if (!activeUsers.isEmpty()) {
                     ACTIVE_USERS = activeUsers;
@@ -45,7 +46,8 @@ public without sharing class MovedFromAgentCallReportController {
                   CreatedBy.Name = 'Sean Byrne' OR
                   CreatedBy.Name = 'Becky McAllister' OR
                   CreatedBy.Name = 'Fiona Carey' OR
-                  CreatedBy.Name = 'Ciara Gibson')
+                  CreatedBy.Name = 'Ciara Gibson' OR
+                  CreatedBy.Name = 'Grace Coash')
             ORDER BY CreatedDate DESC
         ];
         if (historyData.size() == 0) {
@@ -163,9 +165,14 @@ public without sharing class MovedFromAgentCallReportController {
                 if (i == 0) {
                     finalResult.dataValue.add(fullChanges[i].dataValue[j]);
                 } else {
-                    finalResult.dataValue[j] = String.valueOf(Integer.valueOf(finalResult.dataValue[j]) +  Integer.valueOf(fullChanges[i].dataValue[j]));
+                    Integer currTotal = Integer.valueOf(finalResult.dataValue[j]) +  Integer.valueOf(fullChanges[i].dataValue[j]);
+                    finalResult.dataValue[j] = String.valueOf(currTotal);
                 }
             }
+        }
+        for (Integer i = 0; i < finalResult.dataValue.size(); i++) {
+            if (i == 0) continue;
+            finalResult.fullCount += Integer.valueOf(finalResult.dataValue[i]);
         }
         return finalResult;
     }

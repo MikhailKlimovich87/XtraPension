@@ -85,15 +85,11 @@ export default class EditDwpC2Modal extends LightningElement {
 
     @api
     get isExistUKEmployers() {
-        console.log('this.lastEmpl === ', this.lastEmpl);
-        
         return this.lastEmpl == undefined ? false : true;
     }
 
     @api
     get isExistAfterUKEmployers() {
-        console.log('this.abroadEmpl === ', this.abroadEmpl);
-
         return this.abroadEmpl == undefined ? false : true;
     }
 }

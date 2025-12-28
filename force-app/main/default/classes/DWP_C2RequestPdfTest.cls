@@ -29,6 +29,7 @@ public class DWP_C2RequestPdfTest {
         Test.startTest();
         PageReference pageRef = Page.DWP_C2Request;
         pageRef.getParameters().put('id', String.valueOf(app.Id));
+        pageRef.getParameters().put('template', 'DWP_C2_Request_Template__c');
         Test.setCurrentPage(pageRef);
         ApexPages.StandardController stdController = new ApexPages.StandardController(app);
         DWP_C2RequestPdf testDWP_C2Request = new DWP_C2RequestPdf(stdController);

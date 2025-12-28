@@ -2,6 +2,42 @@ global class XtraPensionEmailServiceHandler implements Messaging.InboundEmailHan
     global final String APPLICATION_ID_INDICATOR = 'AppID:';
     global final String TRACKING_NUMBER_INDICATOR = 'Tracking No:';
     global final String TRACKING_NUMBER_SEND_DATE_INDICATOR = 'Tracking No Rx\'d by Printer:';
+    private final static OrgWideEmailAddress DEFAULT_ORG_WIDE_EMAIL_ADDRESS {
+        get {
+            if (DEFAULT_ORG_WIDE_EMAIL_ADDRESS == null) {
+                List<OrgWideEmailAddress> orgWideEmailAddresses = [
+                    SELECT Id
+                    FROM OrgWideEmailAddress
+                    WHERE Address = 'clients@xtrapension.com'
+                    WITH USER_MODE
+                    LIMIT 1
+                ];
+                if (!orgWideEmailAddresses.isEmpty()) {
+                    DEFAULT_ORG_WIDE_EMAIL_ADDRESS = orgWideEmailAddresses[0];
+                }
+            }
+            return DEFAULT_ORG_WIDE_EMAIL_ADDRESS;
+        }
+        private set;
+    }
+    private final EmailTemplate CLIENT_APPEAL_TEMPLATE {
+        get {
+            if (CLIENT_APPEAL_TEMPLATE == null) {
+                List<EmailTemplate> emailTemplates = [
+                    SELECT Id
+                    FROM EmailTemplate
+                    WHERE DeveloperName = 'Appeal_tracking_number_receive_message'
+                    WITH USER_MODE
+                    LIMIT 1
+                ];
+                if (!emailTemplates.isEmpty()) {
+                    CLIENT_APPEAL_TEMPLATE = emailTemplates[0];
+                }
+            }
+        return CLIENT_APPEAL_TEMPLATE;
+    }
+        private set;
+    }
 
     global Messaging.InboundEmailResult handleInboundEmail(Messaging.InboundEmail email, Messaging.InboundEnvelope envelope) {
         Messaging.InboundEmailResult result = new Messaging.InboundEmailresult();
@@ -35,6 +71,55 @@ global class XtraPensionEmailServiceHandler implements Messaging.InboundEmailHan
             trackingNo         = trackingNo.substringAfter(TRACKING_NUMBER_INDICATOR).trim();
             trackingNoSendDate = trackingNoSendDate.substringAfter(TRACKING_NUMBER_SEND_DATE_INDICATOR).trim();
         }
+        List<SObject> upsertObjects = new List<SObject>();
+        if (email.subject.contains('APPEAL')) {
+            List<HMRC_Appeal_Reply__c> relies = [
+                SELECT
+                    Id,
+                    Application__c,
+                    Application__r.Email__c,
+                    Application__r.Contact__c,
+                    Client_Attach_File_Ids__c
+                FROM HMRC_Appeal_Reply__c
+                WHERE Status__c = 'Sent to HMRC' AND
+                      Application__r.Name = :applicationName
+            ];
+            if (relies.size() == 0) {
+                result.message = 'Don\'t find application in SF';
+                result.success = false;
+                return result;
+            }
+            HMRC_Appeal_Reply__c currReply = relies[0];
+            currReply.Sent_To_Client_Date__c = Date.today();
+            currReply.Status__c = 'Sent to Client';
+            currReply.Tracking_Number__c = trackingNo;
+            update currReply;
+
+            Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
+            message.setUseSignature(false);
+            message.setBccSender(false);
+            message.setSaveAsActivity(true);
+            message.setTreatTargetObjectAsRecipient(false);
+            message.setTargetObjectId(currReply.Application__r.Contact__c);
+
+            if(currReply.Client_Attach_File_Ids__c != null) {
+                Set<String> processedApps = (Set<String>)JSON.deserialize(currReply.Client_Attach_File_Ids__c, Set<String>.class);
+            }
+
+            if (CLIENT_APPEAL_TEMPLATE != null) {
+                message.setTemplateID(CLIENT_APPEAL_TEMPLATE.Id);
+            }
+            message.setWhatId(currReply.Id);
+            if ( DEFAULT_ORG_WIDE_EMAIL_ADDRESS != null ) {
+                message.setOrgWideEmailAddressId(DEFAULT_ORG_WIDE_EMAIL_ADDRESS.Id);
+            }
+            message.toAddresses = new String[] { currReply.Application__r.Email__c };
+            Messaging.SingleEmailMessage[] messages = new List<Messaging.SingleEmailMessage> {message};
+            Messaging.SendEmailResult[] emailResults = Messaging.sendEmail(messages);
+
+            result.success = true;
+            return result;
+        }
         try {
             List<Application__c> applications = [
                 SELECT
@@ -52,7 +137,6 @@ global class XtraPensionEmailServiceHandler implements Messaging.InboundEmailHan
                 return result;
             }
             Application__c app = applications[0];
-            List<SObject> upsertObjects = new List<SObject>();
             Integer amount = Integer.valueOf(app.Amount_PH_Responses__c);
 
             app.Tracking_Number__c = trackingNo;

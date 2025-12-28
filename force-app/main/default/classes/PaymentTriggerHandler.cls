@@ -4,7 +4,10 @@ public class PaymentTriggerHandler {
     public static final String NONE_EU_EMAIL_TEMPLATE_NAME = 'Client None EU Receipt';
     public static final String EU_DEPOSIT_EMAIL_TEMPLATE_NAME = 'Client EU Receipt(Deposit)';
     public static final String NONE_EU_DEPOSIT_EMAIL_TEMPLATE_NAME = 'Client None EU Receipt(Deposit)';
-     public static final String PAYMENT_ERROR_TEMPLATE = 'Payment error message';
+    public static final String APPEAL_EU_DEPOSIT_EMAIL_TEMPLATE_NAME = 'Client Appeal EU Receipt(Deposit)';
+    public static final String APPEAL_NONE_EU_DEPOSIT_EMAIL_TEMPLATE_NAME = 'Client Appeal None EU Receipt(Deposit)';
+    public static final String PAYMENT_ERROR_TEMPLATE = 'Payment error message';
+    public static final String SUCCESS_PAYMENT_ERROR_TEMPLATE = 'Success payment error message';
     private static final XtraPension_Settings__mdt XP_SETTINGS {
         get {
             if (XP_SETTINGS == null) {
@@ -55,10 +58,13 @@ public class PaymentTriggerHandler {
                     SELECT Id, Name
                     FROM EmailTemplate
                     WHERE Name = :PAYMENT_ERROR_TEMPLATE OR
+                          Name = :SUCCESS_PAYMENT_ERROR_TEMPLATE OR
                           Name = :NONE_EU_EMAIL_TEMPLATE_NAME OR
                           Name = :EU_EMAIL_TEMPLATE_NAME OR
                           Name = :EU_DEPOSIT_EMAIL_TEMPLATE_NAME OR
-                          Name = :NONE_EU_DEPOSIT_EMAIL_TEMPLATE_NAME
+                          Name = :NONE_EU_DEPOSIT_EMAIL_TEMPLATE_NAME OR
+                          Name = :APPEAL_EU_DEPOSIT_EMAIL_TEMPLATE_NAME OR
+                          Name = :APPEAL_NONE_EU_DEPOSIT_EMAIL_TEMPLATE_NAME
                 ]) {
                     EMAIL_TEMPLATE_NAME_BY_ID.put(template.Name, template.Id);
                 }
@@ -131,7 +137,8 @@ public class PaymentTriggerHandler {
                 Application_Contact__c,
                 Contact_Email__c,
                 Application__c,
-                CurrencyIsoCode
+                CurrencyIsoCode,
+                Application__r.Appeal_Application__c
             FROM Receipt__c
             WHERE Id IN :newReceipts.values()
         ];
@@ -231,10 +238,14 @@ public class PaymentTriggerHandler {
         message.setBccSender(false);
         message.setSaveAsActivity(true);
         message.setTreatTargetObjectAsRecipient(false);
-        if(currentReceipt.CurrencyIsoCode == 'EUR' && isDepositPayment == true) {
+        if(currentReceipt.CurrencyIsoCode == 'EUR' && isDepositPayment == true && currentReceipt.Application__r.Appeal_Application__c == false) {
             message.setTemplateId(EMAIL_TEMPLATE_NAME_BY_ID.get(EU_DEPOSIT_EMAIL_TEMPLATE_NAME));
-        } else if (currentReceipt.CurrencyIsoCode != 'EUR' && isDepositPayment == true) {
+        } else if (currentReceipt.CurrencyIsoCode != 'EUR' && isDepositPayment == true && currentReceipt.Application__r.Appeal_Application__c == false) {
             message.setTemplateId(EMAIL_TEMPLATE_NAME_BY_ID.get(NONE_EU_DEPOSIT_EMAIL_TEMPLATE_NAME));
+        } else if(currentReceipt.CurrencyIsoCode == 'EUR' && isDepositPayment == true && currentReceipt.Application__r.Appeal_Application__c == true) {
+            message.setTemplateId(EMAIL_TEMPLATE_NAME_BY_ID.get(APPEAL_EU_DEPOSIT_EMAIL_TEMPLATE_NAME));
+        } else if (currentReceipt.CurrencyIsoCode != 'EUR' && isDepositPayment == true && currentReceipt.Application__r.Appeal_Application__c == true) {
+            message.setTemplateId(EMAIL_TEMPLATE_NAME_BY_ID.get(APPEAL_NONE_EU_DEPOSIT_EMAIL_TEMPLATE_NAME));
         } else if (currentReceipt.CurrencyIsoCode == 'EUR' && isDepositPayment == false) {
             message.setTemplateId(EMAIL_TEMPLATE_NAME_BY_ID.get(EU_EMAIL_TEMPLATE_NAME));
         } else if (currentReceipt.CurrencyIsoCode != 'EUR' && isDepositPayment == false) {
@@ -350,7 +361,8 @@ public class PaymentTriggerHandler {
                 Error_Message__c,
                 Application__r.Contact__c,
                 Application__r.Related_Contact_Phone__c,
-                Application__r.Outstanding_Payment__c
+                Application__r.Outstanding_Payment__c,
+                Product_Name__c
             FROM Payment__c
             WHERE Id IN :failPaymentIds
         ];
@@ -359,7 +371,9 @@ public class PaymentTriggerHandler {
         List<Application__c> updatedApps = new List<Application__c>();
         for (Payment__c payment : failPayments) {
             Messaging.SingleEmailMessage singleErrorMessage = generateSingleEmailMessage(payment);
-            singleErrorMessage.setTemplateId(EMAIL_TEMPLATE_NAME_BY_ID.get(PAYMENT_ERROR_TEMPLATE));
+            if(payment.Product_Name__c == 'Success' || payment.Product_Name__c == 'Appeal Success' ) {
+                singleErrorMessage.setTemplateId(EMAIL_TEMPLATE_NAME_BY_ID.get(SUCCESS_PAYMENT_ERROR_TEMPLATE));
+            } else singleErrorMessage.setTemplateId(EMAIL_TEMPLATE_NAME_BY_ID.get(PAYMENT_ERROR_TEMPLATE));
             singleErrorMessage.setToAddresses(new String[] {payment.Application__r.Email__c});
             singleErrorMessage.setTargetObjectId(payment.Application__r.Contact__c);
             singleErrorMessage.setWhatId(payment.Id);

@@ -699,6 +699,18 @@ public without sharing class DocumentsContentController {
                 PathOnClient = TRANSFER_UK_PENSION_ATTACH_FILE.Description + '.pdf'
             );
             insert contVersAttacment;
+            ContentVersion conDoc = [
+                SELECT
+                    ContentDocumentId,
+                    ContentSize
+                FROM ContentVersion
+                WHERE Id =:contVersAttacment.Id][0];
+            ContentDocumentLink conDocStep2Link = new ContentDocumentLink();
+            conDocStep2Link.LinkedEntityId = app.Id;
+            conDocStep2Link.ContentDocumentId = conDoc.ContentDocumentId;
+            conDocStep2Link.shareType = 'V';
+            conDocStep2Link.Visibility = 'AllUsers';
+            insert conDocStep2Link;
             attachDocIds.add(contVersAttacment.Id);
         }
         if (!attachDocIds.isEmpty()) {

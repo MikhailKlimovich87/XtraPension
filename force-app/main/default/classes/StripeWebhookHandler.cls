@@ -107,8 +107,7 @@ global class StripeWebhookHandler {
 					String lastName = fullName.substringAfterLast(' ');
 					String firstName = fullName.removeEnd(lastName).trim();
 					String stateName = '';
-					if (paymentIntent?.shipping?.address?.country == 'IE' &&
-				    	paymentIntent?.shipping?.address?.state.contains('County')) {
+					if (paymentIntent?.shipping?.address?.country == 'IE') {
 						stateName = CountryCodeHelper.getStateCodeByStateName(
 							paymentIntent?.shipping?.address?.country,
 							paymentIntent?.shipping?.address?.state.remove('County').trim());

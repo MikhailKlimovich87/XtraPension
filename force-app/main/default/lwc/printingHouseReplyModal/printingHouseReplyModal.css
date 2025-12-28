@@ -1,0 +1,31 @@
+.row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.custom-label {
+    font-weight: var(--lwc-fontWeightRegular);
+}
+.custom-input lightning-input {
+    margin: 0;
+}
+.custom-input {
+    width: 90%;
+}
+.full-screen-spinner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+}
+.backdrop_open {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    opacity: 0.5;
+}

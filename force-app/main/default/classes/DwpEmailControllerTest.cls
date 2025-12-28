@@ -105,7 +105,7 @@ public class DwpEmailControllerTest {
         Test.stopTest();
 
         Application__c updatedApp = [SELECT Status__c, is_Sent_DWP_SMS_Message__c FROM Application__c WHERE Id = :testApp.Id];
-        System.assertEquals('DWP Shortfall Pending', updatedApp.Status__c, 'Expected status to be updated.');
+        System.assertEquals('DWP 2 Emails Sent', updatedApp.Status__c, 'Expected status to be updated.');
         System.assertEquals(true, updatedApp.is_Sent_DWP_SMS_Message__c, 'Expected SMS flag to be true.');
     }
 
@@ -118,7 +118,7 @@ public class DwpEmailControllerTest {
         Test.stopTest();
 
         Application__c updatedApp = [SELECT Status__c, is_Sent_DWP_SMS_Message__c FROM Application__c WHERE Id = :testApp.Id];
-        System.assertEquals('DWP Shortfall Pending', updatedApp.Status__c, 'Expected status to be updated.');
+        System.assertEquals('DWP 2 Emails Sent', updatedApp.Status__c, 'Expected status to be updated.');
         System.assertEquals(true, updatedApp.is_Sent_DWP_SMS_Message__c, 'Expected SMS flag to be true.');
     }
 

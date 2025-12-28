@@ -1,0 +1,11 @@
+<template>
+    <lightning-card>
+        <div class="slds-p-horizontal_small slds-align_absolute-center">
+            <lightning-button variant="brand" label="Ready! Send to PH" onclick={handleOpenModal}
+                class="slds-m-left_x-small"></lightning-button>
+        </div>
+    </lightning-card>
+    <template lwc:if={isOpenReplyModal}>
+        <c-printing-house-reply-modal app-id={recordId} onclosemodal={handleOpenModal}></c-printing-house-reply-modal>
+    </template>
+</template>

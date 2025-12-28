@@ -5,9 +5,11 @@ public class DWP_C2RequestPdf {
 	public String bottomDocBody{get;set;}
     public Employer__c empUKObj{get;set;}
     public List<Employer__c> empAfterUKObjList{get;set;}
+	public String fieldName{get;set;}
 
     public DWP_C2RequestPdf(ApexPages.StandardController Controller) {
         MstrId = ApexPages.currentPage().getParameters().get('id');
+		fieldName = ApexPages.currentPage().getParameters().get('template');
         appObj = [
 			SELECT
                 Id,
@@ -15,6 +17,7 @@ public class DWP_C2RequestPdf {
                 Second_Name__c,
                 National_Insurance_Number__c,
                 DWP_C2_Request_Template__c,
+				Higher_Level_Appeal_Template__c,
                 Full_Current_Address_Abroad__c,
 				HMRC_Reply_Doc_Generate_Date__c,
                 Tel__c,
@@ -23,8 +26,9 @@ public class DWP_C2RequestPdf {
 			WHERE Id =: MstrId
             LIMIT 1
 		];
-        if (appObj.DWP_C2_Request_Template__c != null) {
-			String[] textAreaData = appObj.DWP_C2_Request_Template__c.split('SPLIT=============');
+		String bodyData = (String)appObj.get(fieldName);
+        if (bodyData != null) {
+			String[] textAreaData = bodyData.split('SPLIT=============');
 			if (textAreaData.size() == 2) {
 				topDocBody = textAreaData[0];
  				bottomDocBody = textAreaData[1];

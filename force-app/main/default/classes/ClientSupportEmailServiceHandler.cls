@@ -16,8 +16,8 @@ global class ClientSupportEmailServiceHandler implements Messaging.InboundEmailH
         emailMessage.fromName = email.fromName;
         emailMessage.ToAddress = ORG_WIDE_EMAIL_ADDRESS;
         emailMessage.Subject = String.isBlank(subject) ? 'Empty' : subject;
-        emailMessage.HtmlBody = email.htmlBody;
-        emailMessage.TextBody = email.plainTextBody;
+        emailMessage.HtmlBody = email.htmlBody != null && email.htmlBody.length() >= 131072 ? email.htmlBody.substring(0, 131072) : email.htmlBody;
+        emailMessage.TextBody = email.plainTextBody != null && email.plainTextBody.length() >= 131072 ? email.plainTextBody.substring(0, 131072) : email.plainTextBody;
         emailMessage.Has_Attachment__c = emailAttachments != null ? true : false;
         emailMessage.Email_Message_Status__c = newStatus.Id;
 

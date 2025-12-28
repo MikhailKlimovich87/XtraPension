@@ -559,5 +559,464 @@ public class XtraPensionConstants {
         '<p>M-F: 8-6pm. Sat: 9-3pm</p>' +
         '<a href=\'https://xtrapension.com\'>https://xtrapension.com</a>' +
         '</p>';
-
+    public static final String EU_RESIDENCY_LETTER_TEMPLATE =
+        '<h2 style="text-align: center;">' +
+            '<strong style="font-size: 16px;">FORMAL REQUEST FOR RECONSIDERATION</strong>' +
+            '<br/>' +
+            '</h2>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Dear Sir / Madam</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We represent a large number of clients, both British and international, who have applied to make voluntary National Insurance contributions using the CF83 form. We are writing to formally request a reconsideration of the recent decision regarding our client’s eligibility to pay voluntary contributions.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>While we appreciate the professionalism of your team, we believe the decision does not fully reflect HMRC\'s published guidance or the evidence previously submitted. We address the key points of rejection below:</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p><b>1) Rejection Based on “3-Year Criteria” (Regulation 147(3)(a) and (b))</b></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>HMRC\'s guidance NI38 states:</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>“If you lived or worked in an EU country, Iceland, Liechtenstein, Norway, Switzerland or Turkey, time spent there may help you to meet condition 2(a) or 2(b).”</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>The CF83 application guidance reinforces this, confirming that applicants <i>“may be able to pay voluntary Class 2 or voluntary Class 3 National Insurance contributions if you have… paid 3 years of social security contributions in an EU country, Gibraltar, Iceland, Liechtenstein, Norway, Switzerland, or Turkey.”</i></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Where applicants have a clear history of employment and social insurance contributions within the EU, it is reasonable for them to rely on this published guidance when applying. Such contributions should therefore be taken into account when assessing eligibility under Regulation 147(3)(b).</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p><b>2) Rejection Based on “No Evidence of Living in EU”</b></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Where EU Social Insurance records have already been provided, they should be accepted as definitive evidence of both contributions and residency within the EU. These records confirm periods of residence and contributions before and after UK employment.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p><b>3) Rejection Based on “Brief History of Employment”</b></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Regulation 147(1)(a) of The Social Security (Contributions) Regulations 2001 requires only that an individual be <i>“ordinarily an employed earner or ordinarily a self-employed earner immediately before leaving the UK.”</i></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>There is no reference to any minimum duration of employment. HMRC\'s own records usually confirm that clients were employed and paying National Insurance contributions in the UK immediately prior to departure, which satisfies the statutory requirement.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p><b>4) Client Employment History</b></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<ul>' +
+        '<li>Last UK employment: <b>[UK Work Employer Name]</b>, ended <b>[Left UK].</b></li>' +
+        '<li>Began overseas employment on <b>[Abroad Start Date]</b> with <b>[First Work After UK Employer Name].</b></li>' +
+        '<li><b>Consistent employment abroad</b> since then, supported by Social Insurance records and Work History.</li>' +
+        '</ul>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p><b>Conclusion</b></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>In light of the above, we respectfully request that HMRC:</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>1. Reconsider the application for voluntary Class 2 contributions, taking into account NI38, CF83 guidance, and the supporting evidence provided.</p>' +
+        '<p>2. Issue a <b>Class 2 shortfall table</b> setting out the eligible years and amounts payable.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We are happy to provide any further documentation required to assist in resolving this matter.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We look forward to your prompt reconsideration.</p>';
+    public static final String REPLY_TO_EU_C2_C3_REJECTION_TEMPLATE =
+        '<h2 style="text-align: center;">' +
+            '<strong style="font-size: 16px;">FORMAL REQUEST FOR RECONSIDERATION</strong>' +
+            '<br/>' +
+            '</h2>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Dear Sir / Madam</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We represent a large number of clients, both British and international, who have applied to make voluntary National Insurance contributions using the CF83 form.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We are writing to formally request a reconsideration of the recent decision regarding our client\'s eligibility to pay voluntary contributions. While we appreciate the professionalism of your team, we believe the decision does not fully reflect HMRC’s own published guidance or the evidence previously submitted.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We address the key points of rejection below:</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p><b>1) Rejection based on \'3-year criteria\' (Regulation 147(3)(a) and (b))</b></p>' +
+        '<p>HMRC\'s guidance NI38 states: <i>“If you lived or worked in an EU country, Iceland, Liechtenstein, Norway, Switzerland or Turkey, time spent there may help you to meet condition 2(a) or 2(b).”</i></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>The CF83 application guidance reinforces this, confirming that applicants <i>“may be able to pay voluntary Class 2 or voluntary Class 3 National Insurance contributions if you have… paid 3 years of social security contributions in an EU country, Gibraltar, Iceland, Liechtenstein, Norway, Switzerland, or Turkey.”</i></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Our client has a clear history of employment and social insurance contributions. It is reasonable that they relied upon HMRC\'s published guidance when applying. Our client reasonably expected that his Irish social insurance contributions would be taken into account in satisfying the requirements of Regulation 147(3)(b). To interpret the legislation more narrowly than the published guidance indicates risks creating unfair outcomes.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p><b>2) Rejection based on \'No Evidence of Living in EU\'</b></p>' +
+        '<p>We have previously provided our client\'s complete Irish Social Insurance (PRSI) record, and we enclose it again with this letter. This record provides definitive evidence of both contributions and residency within the EU, before and after UK employment.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p><b>3) Rejection based on \'Brief History of Employment\'</b></p>' +
+        '<p>Regulation 147(1)(a) of The Social Security (Contributions) Regulations 2001 requires only that an individual be <i>“ordinarily an employed earner or ordinarily a self-employed earner”</i> immediately before leaving the UK. There is no reference to a minimum duration of employment.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Your own records confirm that our client was employed and paying Class 1 National Insurance contributions in the UK immediately prior to departure. This meets the requirement set out in the legislation.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p><b>4) Client Employment History</b></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<ul>' +
+        '<li>Last UK employment: <b>[UK Work Employer Name]</b>, ended <b>[Left UK].</b></li>' +
+        '<li>Began overseas employment on <b>[Abroad Start Date]</b> with <b>[First Work After UK Employer Name].</b></li>' +
+        '<li><b>Consistent employment abroad</b> since then, supported by Social Insurance records and Work History.</li>' +
+        '</ul>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p><b>Conclusion</b></p>' +
+        '<p>In light of the above, we respectfully request that HMRC reconsider this application for voluntary Class 2 contributions, taking into account the clear guidance in NI38 and CF83, as well as the supporting evidence provided. We also request that a <b>Class 2 shortfall table</b> be issued to our client, setting out the eligible years and amounts payable.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We are happy to provide any further documentation required to assist in resolving this matter.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We look forward to your prompt reconsideration.</p>';
+    public static final String CLASS_3_APPEAL_DESPITE_3_PLUS_YEARS_TEMPLATE =
+        '<h2 style="text-align: center;">' +
+        '<strong style="font-size: 16px;">Appeal of Your Class 3 Approval Decision. Request for Class 2 Approval.</strong>' +
+        '<br/>' +
+        '</h2>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Dear Sir / Madam</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Thank you for your recent letter advising us of HMRC\'s acceptance of our client\'s application to pay Class 3 voluntary NI contributions.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We stated previously that our client wished to “pay Class 2 or Class 3 as applicable”, but also our understanding that they were eligible to pay Class 2 contributions.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<ul>' +
+        '<li>Last UK employment: <b>[UK Work Employer Name]</b>, ended <b>[Left UK].</b></li>' +
+        '<li>Began overseas employment on <b>[Abroad Start Date]</b> with <b>[First Work After UK Employer Name].</b></li>' +
+        '<li><b>Consistent employment abroad</b> since then, supported by Social Insurance records and Work History.</li>' +
+        '</ul>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Can you please explain your decision to NOT approve our client to pay Class 2 NI contributions or change your decision if applicable?</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Our client appears to clearly qualify to pay Class 2 contributions under HMRC\'s stated criteria that:</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<ul>' +
+        '<li>They were ordinarily employed (/self-employed) immediately before last leaving the UK (and unemployment is regarded as employment)</li>' +
+        '<li>They are in employment which is not employment in respect of earnings from which Class 1 contributions are payable.</li>' +
+        '<li>They lived in the UK for a continuous three year period before the period for which NI contributions are to be paid (or EU equivalent)</li>' +
+        '<li>They paid the qualifying amount of contributions in three years or more in UK (or EU)</li>' +
+        '</ul>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We respectfully draw your attention to Article 14 of EC directive 883/2004 confirmed by Article 32(1)(a) of the EU-UK Withdrawal Agreement 2020.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p><b>We would ask that a Shortfall table be issued advising of the voluntary National Insurance contributions available to him since they moved abroad.</b></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Thank you in advance and we look forward to a positive reply at your earliest convenience.</p>';
+    public static final String BAD_ERROR_IN_C2_DECISION_TEMPLATE =
+        '<h2 style="text-align: center;">' +
+        '<strong style="font-size: 16px;">Re: Request for Clarification re Class 2 Decision</strong>' +
+        '<br/>' +
+        '</h2>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Dear Sir / Madam</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We act on behalf of the above individual in respect of their voluntary National Insurance contributions. Please note that we believe our client\'s employment history meets Class 2 criteria.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<ul>' +
+        '<li>Last UK employment: <b>[UK Work Employer Name]</b>, ended <b>[Left UK].</b></li>' +
+        '<li>Began overseas employment on <b>[Abroad Start Date]</b> with <b>[First Work After UK Employer Name].</b></li>' +
+        '<li><b>Consistent employment abroad</b> since then, supported by Social Insurance records and Work History.</li>' +
+        '</ul>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Our client appears to clearly qualify to pay Class 2 contributions under HMRC\'s stated criteria that:</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<ul>' +
+        '<li>They were ordinarily employed (/self-employed) immediately before last leaving the UK (and unemployment is regarded as employment)</li>' +
+        '<li>They have been in employment abroad (Rep of Ireland) continuously paying social insurance (as verified by the official Irish Govt contributions statement enclosed again here)</li>' +
+        '<li>Their employment abroad is not employment in respect of earnings from which Class 1 contributions are payable.</li>' +
+        '<li>They lived in the UK for a continuous three year period before the period for which NI contributions are to be paid (or EU equivalent)</li>' +
+        '<li>They paid the qualifying amount of contributions in three years or more in UK (or EU)</li>' +
+        '</ul>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Thank you in advance and we look forward to a positive reply at your earliest convenience.</p>';
+    public static final String NO_SHORTFALL_TABLE_PROVIDED_TEMPLATE =
+        '<h2 style="text-align: center;">' +
+        '<strong style="font-size: 16px;">Re: Request for Class 2 Shortfall Table</strong>' +
+        '<br/>' +
+        '</h2>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Dear Sir/Madam,</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We act on behalf of the above individual in respect of their voluntary National Insurance contributions.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We note your recent correspondence confirming their eligibility to pay Class 2 voluntary contributions. <b>However, no Shortfall Table was enclosed.</b></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>In order to allow this person to proceed with payment of outstanding contributions immediately, we kindly request that HMRC issues a <b>Class 2 Shortfall Table</b> at the earliest opportunity to both ourselves and our client.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Please let us know if further information is required.</p>';
+    public static final String CUSTOM_CARNAGE_EG_Stewart_Lord_TEMPLATE =
+        '<h2 style="text-align: center;">' +
+        '<strong style="font-size: 16px;">Re: Response to HMRC Letter Requesting……</strong>' +
+        '<br/>' +
+        '</h2>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Dear Sir/Madam,</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We act on behalf of the above individual in respect of their voluntary National Insurance contributions.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p style="text-align: center;">' +
+        '<strong style="font-size: 16px; color: red">ADD WHAT HERE  ? <i><u>Bespoke Basis for Appeal</u></i></strong>' +
+        '<br/>' +
+        '</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Thank you in advance and we look forward to a positive reply at your earliest convenience.</p>';
+    public static final String MISSING_CORRESPONDENCE_TEMPLATE =
+        '<h2 style="text-align: center;">' +
+        '<strong style="font-size: 16px;">Re: Request for Reissue of Correspondence</strong>' +
+        '<br/>' +
+        '</h2>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Dear Sir/Madam,</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We act on behalf of the above individual in respect of their voluntary National Insurance contributions.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>During a recent webchat with HMRC, we were advised that correspondence relating to this client was issued on <span style="color:red"><b>[insert date advised by HMRC - MANUAL]</b></span>.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>However, neither our client nor our office has received this correspondence.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We therefore kindly request that a copy of this correspondence be <b>reissued to us as agent</b>, together with any enclosures, to ensure the matter can progress without further delay <b>along with a corresponding extension to any deadline previously specified.</b></p>';
+    public static final String CF83_NOT_Received_Letter_Again_To_HMRC_TEMPLATE =
+        '<h2 style="text-align: center;">' +
+        '<strong style="font-size: 16px;">Re: Request for Clarification re Class 2 Decision</strong>' +
+        '<br/>' +
+        '</h2>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Dear Sir/Madam,</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We act on behalf of the above individual in respect of their voluntary National Insurance contributions.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We wish to confirm that this letter constitutes a resubmission of our client\'s original CF83 application, which was submitted on [PH1 Reply Date] prior to the 5 April 2025 deadline.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Our client was also registered on the DWP callback facility on [DWP Callback Request].</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>A full copy of the original CF83, together with the supporting documentation and Form 64-8, is enclosed for HMRC\'s reference. This resubmission is made to ensure that the application is formally recorded and processed without further delay.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Thank you in advance and we look forward to a positive reply at your earliest convenience.</p>';
+    public static final String LATE_PAYMENT_Appeal_TEMPLATE =
+        '<h2 style="text-align: center;">' +
+        '<strong style="font-size: 16px;">Re: Request for Clarification re Class 2 Decision</strong>' +
+        '<br/>' +
+        '</h2>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Dear Sir/Madam,</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We act on behalf of the above individual in respect of their voluntary National Insurance contributions.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We wish to confirm that our client\'s payment may have been received after the deadline specified, due to a delay in the delivery of HMRC\'s correspondence. </p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>As soon as we became aware of the letter, we <b>requested an extension</b> and guided our client to submit payment promptly.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We respectfully ask HMRC to consider this context when reviewing the apparent late payment and to confirm that our client\'s entitlement to make voluntary contributions is preserved.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Thank you in advance and we look forward to a positive reply at your earliest convenience.</p>';
+    public static final String HIGHER_LEVEL_STAGE2_APPEAL_STATUTORY_REVIEW_TEMPLATE =
+        '<h2 style="text-align: center;">' +
+            '<strong style="font-size: 16px;">Subject: Request for Statutory Review - Decision Type, e.g. Refusal of Class 2 Eligibility / Reversal of Approval / Shortfall Table Discrepancy]</strong>' +
+            '<br/>' +
+            '</h2>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Dear Sir / Madam</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We act on behalf of the above individual and formally request a Statutory Review of HMRC\'s decision dated [Letter Date], concerning their eligibility to pay voluntary National Insurance Contributions (NICs).</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>A completed Form 64-8 is enclosed, authorising us to act on our client\'s behalf in this matter. We kindly request that all future correspondence be directed to our office.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p><b>Background of the Case</b></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>On [Letter Date], HMRC issued [insert type of correspondence, e.g. INSL33A, shortfall table, approval/rejection letter - MANUAL]. The decision communicated was that [summarise HMRC decision - MANUAL].</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Our client disputes this decision on the basis that [insert summary – e.g. previous approval was granted, contributions were made in good faith, overseas contributions may qualify, etc. - MANUAL].</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p><b>Client\'s Work History (if relevant)</b>.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>To support this review, we provide the following summary of our client\'s work history:</p>' +
+        'SPLIT=============' +
+        '<p>We enclose supporting documentation where applicable, such as contribution statements, payslips, or overseas social insurance records.</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p><b>Grounds for Review</b></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Our request is based on the following grounds:</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<ol>' +
+        '<li>[Insert specific grounds - e.g. decision inconsistent with previous HMRC approval, client meets Class 2 eligibility criteria, overseas contributions should be considered under reciprocal/EU rules, etc. - MANUAL]</li>' +
+        '<li>[Additional grounds, as required - MANUAL]</li>' +
+        '<li>[Optional: request for explanation citing relevant legislation or HMRC guidance - MANUAL]</li>' +
+        '</ol>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p><b>Requested Outcome</b></p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We respectfully request that HMRC:</p>' +
+        '<ul>' +
+        '<li>[Insert desired outcome - e.g. reinstate Class 2 approval, issue revised shortfall table, apply NICs to NI record, confirm treatment of foreign contributions - MANUAL].</li>' +
+        '<li>If HMRC maintains the original decision, provide a clear legal explanation, referencing the specific regulations under which the decision was made.</li>' +
+        '<li>Confirm the next available steps for our client.</li>' +
+        '</ul>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>We appreciate your prompt attention to this matter and request written confirmation of receipt, along with an expected timeframe for review. Please do not hesitate to contact us should you require further information.</p>';
 }

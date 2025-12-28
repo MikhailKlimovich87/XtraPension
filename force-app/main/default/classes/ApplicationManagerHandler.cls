@@ -71,8 +71,7 @@ public with sharing class ApplicationManagerHandler {
                 ];
                 Id agentId = mainAgent.size() == 0 ? null : mainAgent[0].Id;
                 String stateName = '';
-                if (applicationData?.address?.country == 'IE' &&
-                    applicationData.address?.state.contains('County')) {
+                if (applicationData?.address?.country == 'IE') {
                     stateName = CountryCodeHelper.getStateCodeByStateName(
                         applicationData?.address?.country,
                         applicationData.address?.state.remove('County').trim());

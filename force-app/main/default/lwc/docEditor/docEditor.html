@@ -1,13 +1,8 @@
 <template>
     <template lwc:if={showSpinner}>
-        <div>
-            <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
-        </div>
-    </template>
-    <template lwc:if={showSpinner}>
-        <div>
-            <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
-        </div>
+        <lightning-spinner alternative-text="Loading" size="medium" variant="brand"
+            class="full-screen-spinner"></lightning-spinner>
+        <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
     <lightning-card title="Doc Editor">
         <p class="slds-p-horizontal_small"><lightning-combobox name="template" label="Status" value={value}
@@ -20,7 +15,8 @@
     </lightning-card>
     <template if:true={isOpenModal}>
         <c-edit-reply-modal onhidepopup={closePopup} chose-value={currentValue} ongeneratepdf={handleGeneratePdf}
-            first-name={firstName} second-name={secondName} nino={nino} app-name={appName} hmrc-ref={hmrcRef}>
+            first-name={firstName} second-name={secondName} nino={nino} app-name={appName} hmrc-ref={hmrcRef}
+            abroad-empl={abroadEmployers}>
         </c-edit-reply-modal>
     </template>
     <template if:true={isOpenDWPStatusModal}>

@@ -1,6 +1,7 @@
 public class DwpEmailController {
     private static final String FROM_NAME = 'XtraPension';
     private static final String MESSAGE_BODY = 'Hi, please check your email about your UK State Pension Top-Up';
+    private static final String SUCCESS_APP_STATUS = 'DWP 2 Emails Sent';
     private static final EmailTemplate DWP_TELECLAIM_TEMPLATE1 {
         get {
             if (DWP_TELECLAIM_TEMPLATE1 == null) {
@@ -248,10 +249,10 @@ public class DwpEmailController {
             if(response.getHtttpStatusCode() >= 201 && response.getHtttpStatusCode() < 300) {
                 app.is_Sent_DWP_SMS_Message__c = true;
             }
-            app.Status__c = 'DWP Shortfall Pending';
+            app.Status__c = SUCCESS_APP_STATUS;
             update app;
         } else {
-            app.Status__c = 'DWP Shortfall Pending';
+            app.Status__c = SUCCESS_APP_STATUS;
             app.is_Sent_DWP_SMS_Message__c = true;
             update app;
         }
@@ -307,10 +308,10 @@ public class DwpEmailController {
             // if(response.getHtttpStatusCode() >= 201 && response.getHtttpStatusCode() < 300) {
             //     app.is_Sent_DWP_SMS_Message__c = true;
             // }
-            app.Status__c = 'DWP Shortfall Pending';
+            app.Status__c = SUCCESS_APP_STATUS;
             update app;
         } else {
-            app.Status__c = 'DWP Shortfall Pending';
+            app.Status__c = SUCCESS_APP_STATUS;
             app.is_Sent_DWP_SMS_Message__c = true;
             update app;
         }
