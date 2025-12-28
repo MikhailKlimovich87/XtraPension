@@ -73,7 +73,6 @@ public class DocumentEditorController {
         'CERTIFIED DOC'       => XtraPensionConstants.CERTIFIED_DOC_TEMPLATE,
         'EU RESIDENCY APPEAL' => XtraPensionConstants.EU_RESIDENCY_APPEAL_TEMPLATE,
         'MAIDEN NAME'         => XtraPensionConstants.MAIDEN_NAME,
-        'DWP C2 REQUEST'      => XtraPensionConstants.DWP_C2_REQUEST,
         'BOUNCE LETTER'       => XtraPensionConstants.BOUNCE_LETTER,
         '64-8 UPDATE LETTER'  => XtraPensionConstants.UPDATE_LETTER
     };
@@ -103,6 +102,7 @@ public class DocumentEditorController {
                 Update_Letter_Template__c,
                 Date_Of_Marriage_Or_Civil_Partnership__c,
                 Date_Of_Leaving_Last_UK__c,
+                CurrencyIsoCode,
                 First_Name__c,
                 Second_Name__c,
                 Email__c,
@@ -137,7 +137,14 @@ public class DocumentEditorController {
             HTMLData bodyData = new HTMLData();
             String fieldValue = (String)currentApplication.get(TEMPLATE_NAME_TO_APPLICATION_FIELD.get(name));
             if (fieldValue == null) {
-                bodyData.htmlValue = replaceKeyWords(TEMPLATE_NAME_TO_BODY_DATA.get(name), currentApplication);
+                String templateBody = name != 'DWP C2 REQUEST' ?
+                                        TEMPLATE_NAME_TO_BODY_DATA.get(name) :
+                                        name == 'DWP C2 REQUEST' && currentApplication.CurrencyIsoCode == 'EUR' ?
+                                            XtraPensionConstants.DWP_C2_REQUEST_EUROPE :
+                                            name == 'DWP C2 REQUEST' && currentApplication.CurrencyIsoCode != 'EUR' ?
+                                                XtraPensionConstants.DWP_C2_REQUEST_OUTSIDE_EUROPE :
+                                                null;
+                bodyData.htmlValue = replaceKeyWords(templateBody, currentApplication);
             } else {
                 bodyData.htmlValue = replaceKeyWords(fieldValue, currentApplication);
             }

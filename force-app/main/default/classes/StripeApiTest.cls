@@ -68,6 +68,58 @@ public class StripeApiTest {
     }
 
     @IsTest
+    static void createPaymentIntentTestcase2() {
+        Test.setMock(HttpCalloutMock.class, new FailPaymentMock());
+        List<Payment__c> payment = [
+            SELECT
+                Name,
+                Product__r.Name,
+                Status__c,
+                Payment_Date__c,
+                Customer_Id__c,
+                Payment_Method__c,
+                Amount__c,
+                Application__r.Email__c,
+                Tax_VAT__c,
+				Error_Message__c,
+				Application__c
+            FROM Payment__c
+            LIMIT 1
+        ];
+        Payment__c testPayment = payment[0];
+        testPayment.Repeated_Payment_Date_1__c = Date.today().addDays(-8);
+        testPayment.Repeated_Payment_Date_2__c = Date.today().addDays(-4);
+        testPayment.Repeated_Payment_Date_3__c = Date.today();
+        update testPayment;
+
+        Map<String, String> paymentIntentParams = new Map<String, String> {
+            'confirmation_method' => 'manual',
+            'currency'            => 'eur',
+            'confirm'             => 'true',
+            'customer'            => testPayment?.Customer_Id__c,
+            'payment_method'      => testPayment?.Payment_Method__c,
+            'amount'              => String.valueOf(Integer.valueOf(testPayment?.Amount__c * 100))
+        };
+        System.assertNotEquals(null, testPayment, 'Payment must be not null');
+        System.assertEquals('Schedule', testPayment.Status__c, 'Payment status must be Schedule');
+        Test.startTest();
+        StripeApiService.createPaymentIntent(paymentIntentParams, testPayment.Id);
+        Test.stopTest();
+        Payment__c updatePayment = [
+            SELECT
+                Id,
+                Status__c,
+                Error_Message__c
+            FROM Payment__c
+            LIMIT 1
+        ];
+        System.assertNotEquals(null, updatePayment.Error_Message__c, 'Payment Error Message mustn\'t be null');
+        System.assertEquals('Fail', updatePayment.Status__c, 'Payment status must be Fail');
+        System.assertNotEquals(testPayment.Status__c, updatePayment.Status__c, 'Payment status before and after update must be not equals');
+    }
+
+
+    @IsTest
     static void getPaymentIntentTest() {
         Test.setMock(HttpCalloutMock.class, new PaymentServiceMock());
         Map<String, String> paymentIntentParams = new Map<String, String> {
@@ -270,6 +322,21 @@ public class StripeApiTest {
                     '}' +
                 '}');
             res.setStatusCode(200);
+            return res;
+        }
+    }
+
+    private class FailPaymentMock implements HttpCalloutMock{
+        public HTTPResponse respond(HTTPRequest req) {
+            HttpResponse res = new HttpResponse();
+            res.setHeader('Content-Type', 'application/json');
+            res.setBody(
+                '{' +
+                    '"error":{' +
+                        '"message":"Your card has insufficient funds."' +
+                    '}' +
+                '}');
+            res.setStatusCode(400);
             return res;
         }
     }

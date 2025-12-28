@@ -1,10 +1,43 @@
 public without sharing class DocumentsContentController {
-    private static final String[] RESULT_EMAIL_TEMPLATES = new String[] {
-        'Success HMRC Result',
-        'Reject HMRC Result'
-    };
-    private static final String HMRC_RESULT_INFO_OWD_NAME = 'clients@xtrapension.com';
+    private static final StaticResource TRANSFER_UK_PENSION_ATTACH_FILE {
+        get {
+            if (TRANSFER_UK_PENSION_ATTACH_FILE == null) {
+                List<StaticResource> resources = [
+                    SELECT
+                        Name,
+                        Body,
+                        Description
+                    FROM StaticResource
+                    WHERE Name = 'Transfer_Private_UK_Pension_to_Ireland'
+                ];
+                if (!resources.isEmpty()) {
+                    TRANSFER_UK_PENSION_ATTACH_FILE = resources[0];
+                }
+            }
+            return TRANSFER_UK_PENSION_ATTACH_FILE;
+        }
+        private set;
+    }
     private static final String HMRC_RESULT_STATUS = 'Agent Call';
+    private static final String MISSING_APPLICATION_PAYMENT_RECIPIENT_ADDRESS = 'fernando@xtrapension.com';
+    private static final OrgWideEmailAddress DEFAULT_ORG_WIDE_EMAIL_ADDRESS {
+        get {
+            if (DEFAULT_ORG_WIDE_EMAIL_ADDRESS == null) {
+                List<OrgWideEmailAddress> orgWideEmailAddresses = [
+                    SELECT Id
+                    FROM OrgWideEmailAddress
+                    WHERE Address = 'clients@xtrapension.com'
+                    WITH USER_MODE
+                    LIMIT 1
+                ];
+                if (!orgWideEmailAddresses.isEmpty()) {
+                    DEFAULT_ORG_WIDE_EMAIL_ADDRESS = orgWideEmailAddresses[0];
+                }
+            }
+            return DEFAULT_ORG_WIDE_EMAIL_ADDRESS;
+        }
+        private set;
+    }
 
     @AuraEnabled(cacheable='false')
     public static DocumentsData getContentDocuments(String recordId){
@@ -164,6 +197,7 @@ public without sharing class DocumentsContentController {
                 Previous_UK_Address_Start_Date_3__c,
                 Custom_Letter_Date__c,
                 Status__c,
+                Appeal_Application__c,
                     (SELECT
                         Employer_Name__c,
                         Start_Date__c,
@@ -176,7 +210,11 @@ public without sharing class DocumentsContentController {
                         Employers_Address_Country__c,
                         Type_Of_UK_Employment__c
                     FROM Employers__r
-                    WHERE Type__c = 'UK Work')
+                    WHERE Type__c = 'UK Work'),
+                    (SELECT
+                        Status__c
+                    FROM Payments__r
+                    WHERE (Product_Name__c = 'Application' OR Product_Name__c = 'Appeal') AND Status__c = 'Paid')
             FROM Application__c
             WHERE Id = :recordId
         ];
@@ -237,28 +275,19 @@ public without sharing class DocumentsContentController {
         data.abroadEmployers   = new List<EmployerData>();
         Map<String, DocumentInfo> titleByDocumentInfo = new Map<String, DocumentInfo>();
         Application__c app = currentApplication[0];
-        List<EmailTemplate> templates = [
-            SELECT
-                HtmlValue,
-                Name
-            FROM EmailTemplate
-            WHERE Name IN :RESULT_EMAIL_TEMPLATES
-        ];
-        if (!templates.isEmpty()) {
-            ResultEmailTemplate resultBody = new ResultEmailTemplate();
-            for (EmailTemplate template : templates) {
-                if (template.Name.contains('Success')) {
-                    resultBody.successTemplate = template.HtmlValue.replace('{!Application__c.First_Name__c}', app.First_Name__c);
-                } else if (template.Name.contains('Reject')) {
-                    resultBody.rejectTempalte = template.HtmlValue.replace('{!Application__c.First_Name__c}', app.First_Name__c);
-                }
-            }
-            resultBody.emailSubject = app.Name + ' - ' + app.First_Name__c + ' ' + app.Second_Name__c + ' - UK State Pension / Your HMRC Assessment';
-            data.templateData = resultBody;
-        }
+        ResultEmailTemplate resultBody = new ResultEmailTemplate();
+        resultBody.successTemplate = app.Current_Address_Abroad__CountryCode__s == 'IE' ?
+                                         XtraPensionConstants.SUCCESS_HMRC_RESULT_IRELAND_CUSTOMER_TEMPLATE.replace('{!Application__c.First_Name__c}', app.First_Name__c) :
+                                         XtraPensionConstants.SUCCESS_HMRC_RESULT_TEMPLATE.replace('{!Application__c.First_Name__c}', app.First_Name__c);
+        resultBody.rejectTempalte = XtraPensionConstants.REJECT_HMRC_RESULT_TEMPLATE.replace('{!Application__c.First_Name__c}', app.First_Name__c);
+        resultBody.emailSubject = app.Name + ' - ' + app.First_Name__c + ' ' + app.Second_Name__c + ' - UK State Pension / Your HMRC Assessment';
+        data.templateData = resultBody;
         List<String> notCompletedFiles = new List<String>();
         if(app.Status__c == 'Send to Client') data.isSendToClientAppStatus = true;
         else data.isSendToClientAppStatus = false;
+
+        if(app.Payments__r.size() != 0 ) data.isPaidApplicationPayment = true;
+        else data.isPaidApplicationPayment = false;
 
         for (ContentDocumentLink link : forSignatureContentDocs) {
             String title = link.ContentDocument.Title;
@@ -547,38 +576,6 @@ public without sharing class DocumentsContentController {
             }
         }
         return 'Success';
-        // if (forSignatureContDocument != null) {
-        //     List<ContentDocument> contentDocument = [
-        //         SELECT
-        //             Id,
-        //             Title,
-        //             OwnerId
-        //         FROM ContentDocument
-        //         WHERE Id = :forSignatureContDocument
-        //     ];
-        //     ContentDocument currentDocument = contentDocument[0];
-        //     Id currentUserId = UserInfo.getUserId();
-        //     List<ContentDocumentLink> relatedLinks = [
-        //         SELECT
-        //             LinkedEntityId
-        //         FROM ContentDocumentLink
-        //         WHERE
-        //             ContentDocumentId = :currentDocument.Id AND
-        //             LinkedEntityId = :currentUserId
-        //     ];
-        //     if (relatedLinks.isEmpty() && currentUserId != currentDocument.OwnerId) {
-        //         ContentDocumentLink currentUserContentDocumentLink = new ContentDocumentLink();
-        //         currentUserContentDocumentLink.LinkedEntityId = currentUserId;
-        //         currentUserContentDocumentLink.ContentDocumentId = currentDocument.Id;
-        //         currentUserContentDocumentLink.shareType = 'V';
-        //         currentUserContentDocumentLink.Visibility = 'AllUsers';
-        //         insert currentUserContentDocumentLink;
-        //     }
-        //     if (!contentDocument.isEmpty()) {
-        //         currentDocument.Title = currentDocument.Title.replace('ForSignature', 'v' + app.ContentDocumentLinks.size() + '.0');
-        //         update contentDocument;
-        //     }
-        // }
     }
 
     private static ContentVersion createContentVerison(Blob pdfBlob, String title) {
@@ -606,7 +603,8 @@ public without sharing class DocumentsContentController {
             SELECT
                 Contact__c,
                 Email__c,
-                Status__c
+                Status__c, 
+                Current_Address_Abroad__CountryCode__s
             FROM Application__c
             WHERE Id = :appId
         ];
@@ -615,11 +613,6 @@ public without sharing class DocumentsContentController {
             result.errorMessage = 'Didn\'t find application with this Id';
         }
         Application__c app = apps[0];
-        OrgWideEmailAddress[] owea = [
-            SELECT Id
-            FROM OrgWideEmailAddress
-            WHERE Address = :HMRC_RESULT_INFO_OWD_NAME
-        ];
         Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
         message.setTargetObjectId(app.Contact__c);
         message.setUseSignature(false);
@@ -666,10 +659,11 @@ public without sharing class DocumentsContentController {
                             'font-family: "Roboto", sans-serif;' +
                             'font-size: 1.0rem;' +
                             'color: #1aa2b0;' +
-                            'text-decoration: underline;' +
-                            'padding-left: 1rem;' +
-                            'padding-right: 1rem;' +
                         '}' +
+                        'p, ul {' +
+                            'margin-bottom: 0px;' +
+					        'margin-top: 0px;' +
+                        '}'+
                     '</style>' +
                 '</head>' +
                 '<body>' +
@@ -681,8 +675,8 @@ public without sharing class DocumentsContentController {
         );
         message.setSubject(emailData?.subject);
         message.setWhatId(app.Id);
-        if ( owea.size() > 0 ) {
-            message.setOrgWideEmailAddressId(owea.get(0).Id);
+        if ( DEFAULT_ORG_WIDE_EMAIL_ADDRESS != null) {
+            message.setOrgWideEmailAddressId(DEFAULT_ORG_WIDE_EMAIL_ADDRESS.Id);
         }
 
         List<String> conDocIds = emailData?.documentsIds;
@@ -694,26 +688,18 @@ public without sharing class DocumentsContentController {
             WHERE Id IN :conDocIds
         ];
 
-        // List<Messaging.EmailFileAttachment> attach = new List<Messaging.EmailFileAttachment>();
-        // for (ContentDocument doc : docs) {
-        //     Messaging.EmailFileAttachment objMsgEmailAttach = new Messaging.EmailFileAttachment();
-        //     objMsgEmailAttach.setFileName(doc.LatestPublishedVersion.Title + '.pdf');
-        //     if (!Test.isRunningTest()) {
-        //         objMsgEmailAttach.setBody(doc.LatestPublishedVersion.VersionData);
-        //     } else {
-        //         objMsgEmailAttach.setBody(Blob.valueOf('Test'));
-        //     }
-        //     objMsgEmailAttach.setContentType('application/pdf');
-        //     attach.add(objMsgEmailAttach);
-        // }
-
-        // if (!attach.isEmpty()) {
-        //     message.setFileAttachments(attach);
-        // }
-
         String[] attachDocIds = new List<String>();
         for (ContentDocument doc : docs) {
+            if (app.Current_Address_Abroad__CountryCode__s == 'IE' && doc.LatestPublishedVersion.Title.contains('Private Pensions')) continue;
             attachDocIds.add(doc.LatestPublishedVersionId);
+        }
+        if (TRANSFER_UK_PENSION_ATTACH_FILE != null && app.Current_Address_Abroad__CountryCode__s == 'IE') {
+            ContentVersion contVersAttacment = new ContentVersion (
+                VersionData = TRANSFER_UK_PENSION_ATTACH_FILE.Body,
+                PathOnClient = TRANSFER_UK_PENSION_ATTACH_FILE.Description + '.pdf'
+            );
+            insert contVersAttacment;
+            attachDocIds.add(contVersAttacment.Id);
         }
         if (!attachDocIds.isEmpty()) {
             message.setEntityAttachments(attachDocIds);
@@ -735,6 +721,50 @@ public without sharing class DocumentsContentController {
         return result;
     }
 
+    @AuraEnabled(cacheable=false)
+    public static void sendMissingApplicationPaymentEmail(Id appId) {
+        if (appId == null) return;
+        List<Application__c> apps = [
+            SELECT
+                Contact__c,
+                Name,
+                First_Name__c,
+                Second_Name__c,
+                Missing_App_Payment_Email_Send_Date__c
+            FROM Application__c
+            WHERE Id = :appId
+            LIMIT 1
+        ];
+        if (apps.size() == 0) return;
+        Application__c app = apps[0];
+        if (app.Missing_App_Payment_Email_Send_Date__c != null) return;
+        Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
+        message.setTargetObjectId(app.Contact__c);
+        message.setUseSignature(false);
+        message.setBccSender(false);
+        message.setSaveAsActivity(true);
+        message.setTreatTargetObjectAsRecipient(false);
+        message.setHtmlBody('<div></div>');
+        message.setSubject(app.Name + ' - ' + app.First_Name__c + ' ' + app.Second_Name__c + ' - Application Fee NOT PAID.');
+        message.setWhatId(app.Id);
+        if (DEFAULT_ORG_WIDE_EMAIL_ADDRESS != null) {
+            message.setOrgWideEmailAddressId(DEFAULT_ORG_WIDE_EMAIL_ADDRESS.Id);
+        }
+        message.toAddresses = new String[] { MISSING_APPLICATION_PAYMENT_RECIPIENT_ADDRESS };
+        Messaging.SingleEmailMessage[] messages = new List<Messaging.SingleEmailMessage> {message};
+        Messaging.SendEmailResult[] sendingResults = Messaging.sendEmail(messages);
+        Boolean isSuccess = true;
+        for (Messaging.SendEmailResult sendingResult : sendingResults) {
+            if (sendingResult.isSuccess() == false) {
+                isSuccess = false;
+            }
+        }
+        if (isSuccess == true) {
+            app.Missing_App_Payment_Email_Send_Date__c = Date.today();
+            update app;
+        }
+    }
+
     public class DocumentsData {
         @AuraEnabled
         public List<DocumentInfo> latestDocs{get; set;}
@@ -752,6 +782,8 @@ public without sharing class DocumentsContentController {
         public List<EmployerData> abroadEmployers{get; set;}
         @AuraEnabled
         public Boolean isSendToClientAppStatus{get; set;}
+        @AuraEnabled
+        public Boolean isPaidApplicationPayment{get; set;}
         @AuraEnabled
         public ResultEmailTemplate templateData{get; set;}
     }

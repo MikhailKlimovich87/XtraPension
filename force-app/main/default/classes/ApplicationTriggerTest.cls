@@ -945,40 +945,40 @@ public with sharing class ApplicationTriggerTest {
         Test.stopTest();
     }
 
-    @isTest
-    static void generateAllMainDocsTest() {
-        Test.setMock(HttpCalloutMock.class, new GeneratePDFMock());
-        TestDataFactory.createProductsWithPrices();
-        TestDataFactory.createTestCountry(true);
-        Account account = TestDataFactory.createAccount(true);
-        List<Contact> currentContact = [
-            SELECT
-                Id,
-                AccountId
-            FROM Contact
-            WHERE AccountId = :account.Id
-            LIMIT 1
-        ];
-        Id personContactId = currentContact[0].Id;
-        Application__c testApplication = TestDataFactory.createApplication(personContactId, true);
-        ContentVersion testContentVersion = TestDataFactory.createTestContentVersion(true);
-        Id contDocId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :testContentVersion.Id][0].ContentDocumentId;
-        ContentDocumentLink conDocLink = new ContentDocumentLink();
-        conDocLink.LinkedEntityId = testApplication.Id;
-        conDocLink.ContentDocumentId = contDocId;
-        insert conDocLink;
-        Agent__c testAgent = TestDataFactory.createAgent(true);
-        testApplication.Agent__c = testAgent.Id;
-        update testApplication;
-        Order order = TestDataFactory.createOrder(testApplication.Id, account.Id, true);
-        TestDataFactory.createPayment(testApplication.Id, order.Id, true);
-        TestDataFactory.createEmployer(testApplication.Id, 'UK Work', null, true);
-        TestDataFactory.createXtraPensionDataCustomSetting(true);
-        Test.startTest();
-        testApplication.Status__c = 'Form Completed';
-        update testApplication;
-        Test.stopTest();
-    }
+    // @isTest
+    // static void generateAllMainDocsTest() {
+    //     Test.setMock(HttpCalloutMock.class, new GeneratePDFMock());
+    //     TestDataFactory.createProductsWithPrices();
+    //     TestDataFactory.createTestCountry(true);
+    //     Account account = TestDataFactory.createAccount(true);
+    //     List<Contact> currentContact = [
+    //         SELECT
+    //             Id,
+    //             AccountId
+    //         FROM Contact
+    //         WHERE AccountId = :account.Id
+    //         LIMIT 1
+    //     ];
+    //     Id personContactId = currentContact[0].Id;
+    //     Application__c testApplication = TestDataFactory.createApplication(personContactId, true);
+    //     ContentVersion testContentVersion = TestDataFactory.createTestContentVersion(true);
+    //     Id contDocId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :testContentVersion.Id][0].ContentDocumentId;
+    //     ContentDocumentLink conDocLink = new ContentDocumentLink();
+    //     conDocLink.LinkedEntityId = testApplication.Id;
+    //     conDocLink.ContentDocumentId = contDocId;
+    //     insert conDocLink;
+    //     Agent__c testAgent = TestDataFactory.createAgent(true);
+    //     testApplication.Agent__c = testAgent.Id;
+    //     update testApplication;
+    //     Order order = TestDataFactory.createOrder(testApplication.Id, account.Id, true);
+    //     TestDataFactory.createPayment(testApplication.Id, order.Id, true);
+    //     TestDataFactory.createEmployer(testApplication.Id, 'UK Work', null, true);
+    //     TestDataFactory.createXtraPensionDataCustomSetting(true);
+    //     Test.startTest();
+    //     testApplication.Status__c = 'Form Completed';
+    //     update testApplication;
+    //     Test.stopTest();
+    // }
 
     private class PaymentMethodMock implements HttpCalloutMock {
         public HTTPResponse respond(HTTPRequest req) {

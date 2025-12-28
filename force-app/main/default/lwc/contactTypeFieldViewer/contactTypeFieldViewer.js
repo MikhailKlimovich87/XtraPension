@@ -15,7 +15,7 @@ export default class ContactTypeFieldViewer extends LightningElement {
     @api objectApiName;
 
     handleSuccess() {
-        let date = new Date().toISOString();
+        let date = new Date().toLocaleDateString('en-GB');
         const fields = {};
 
         fields[ID_FIELD.fieldApiName] = this.recordId;

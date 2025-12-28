@@ -85,22 +85,7 @@ public class DocumentsContentControllerTest {
         System.assertNotEquals(null, result.application, 'Application must be not empty');
         System.assertEquals('John', result.application.First_Name__c, 'Application First_Name__c must be John');
         System.assertEquals('Snow', result.application.Second_Name__c, 'Application Second_Name__c must be Snow');
-        //System.assertEquals('London Taxi', result.lastUKEmployer.employerName, 'Last UK Employer Name must be London Taxi');
     }
-
-    // @isTest
-    // static void getAllDocumentsTest(){
-    //     List<Application__c> apps = [
-    //         SELECT Id
-    //         FROM Application__c
-    //     ];
-    //     Application__c testApp = apps[0];
-    //     Test.startTest();
-    //     DocumentsContentController.AllDocumentsData result = DocumentsContentController.getAllDocuments(testApp.Id);
-    //     Test.stopTest();
-    //     System.assertNotEquals(null, result.allDocs, 'Result must be not empty');
-    //     System.assertEquals(2, result.allDocs.size(), 'Number of documents must be 2');
-    // }
 
     @isTest
     static void changeCustomLetterTest() {
@@ -192,5 +177,28 @@ public class DocumentsContentControllerTest {
         Test.stopTest();
         System.assertNotEquals(null, sendResult);
         System.assertEquals(true, sendResult.isSuccess);
+    }
+
+    @IsTest
+    static void sendMissingApplicationPaymentEmail() {
+        List<Application__c> appsBeforeSendMessage = [
+            SELECT
+                Id,
+                Missing_App_Payment_Email_Send_Date__c
+            FROM Application__c
+        ];
+        Assert.isNull(appsBeforeSendMessage[0].Missing_App_Payment_Email_Send_Date__c);
+        Test.startTest();
+        DocumentsContentController.sendMissingApplicationPaymentEmail(appsBeforeSendMessage[0].Id);
+        Test.stopTest();
+        List<Application__c> appsAfterSendMessage = [
+            SELECT
+                Id,
+                Missing_App_Payment_Email_Send_Date__c
+            FROM Application__c
+        ];
+        Assert.isNotNull(appsAfterSendMessage[0].Missing_App_Payment_Email_Send_Date__c);
+        Assert.areNotEqual(appsBeforeSendMessage[0].Missing_App_Payment_Email_Send_Date__c,
+                           appsAfterSendMessage[0].Missing_App_Payment_Email_Send_Date__c);
     }
 }

@@ -1,4 +1,5 @@
 public class ApplicationService {
+
     public void executeStripePayment(List<Payment__c> payments) {
         List<Payment__c> updatePayment = new List<Payment__c>();
         for (Payment__c payment : payments) {

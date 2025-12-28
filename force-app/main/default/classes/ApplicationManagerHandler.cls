@@ -1231,13 +1231,14 @@ public with sharing class ApplicationManagerHandler {
                 Application__r.Current_Address_Abroad__CountryCode__s,
                 Application__r.Current_Address_Abroad__City__s,
                 Application__r.Related_Contact_Phone__c,
-                Payment_Method__c
+                Payment_Method__c,
+                Status__c
             FROM Payment__c
-            WHERE Id = :paymentId /*AND Status__c != 'Paid'*/
+            WHERE Id = :paymentId
             LIMIT 1
         ];
 
-        if (!payments.isEmpty()) {
+        if (!payments.isEmpty() && payments[0].Status__c != 'Paid') {
             Payment__c currentPayment = payments[0];
             ApplicationManager.AddressDataWrapper addressData = new ApplicationManager.AddressDataWrapper();
             addressData.line1 = currentPayment.Application__r.Current_Address_Abroad__Street__s;
@@ -1256,11 +1257,122 @@ public with sharing class ApplicationManagerHandler {
             result.put('lastName', currentPayment.Application__r.Second_Name__c);
             result.put('phone', currentPayment.Application__r.Related_Contact_Phone__c);
             result.put('paymentMethod', currentPayment.Payment_Method__c);
+        } else if (!payments.isEmpty() && payments[0].Status__c == 'Paid') {
+            result.put('status', 'Error');
+            result.put('message', 'Current payment has already paid');
         } else {
             result.put('status', 'Error');
             result.put('message', 'Not found');
         }
         return result;
+    }
+
+    public static Map<String, Object> getCustomerInfo(String appId) {
+        Map<String, Object> result = new Map<String, Object>();
+        if(appId == null) {
+            result.put('status', 'Error');
+            result.put('message', 'Application id is null');
+            return result;
+        }
+        List<Application__c> apps = [
+            SELECT
+                Email__c,
+                First_Name__c,
+                Second_Name__c,
+                Current_Address_Abroad__PostalCode__s,
+                Current_Address_Abroad__StateCode__s,
+                Current_Address_Abroad__Street__s,
+                Current_Address_Abroad__CountryCode__s,
+                Current_Address_Abroad__City__s,
+                Related_Contact_Phone__c,
+                Stripe_Customer_Id__c
+            FROM Application__c
+            WHERE Id = :appId
+            LIMIT 1
+        ];
+        if (apps.size() == 0) {
+            result.put('status', 'Error');
+            result.put('message', 'Application isn\'t exist.');
+            return result;
+        }
+        Application__c currApp = apps[0];
+        if (currApp.Stripe_Customer_Id__c == null) {
+            result.put('status', 'Error');
+            result.put('message', 'Stripe Customer Id is Empty for this App');
+            return result;
+        }
+        ApplicationManager.AddressDataWrapper addressData = new ApplicationManager.AddressDataWrapper();
+        addressData.line1 = currApp.Current_Address_Abroad__Street__s;
+        addressData.postal_code = currApp.Current_Address_Abroad__PostalCode__s;
+        addressData.state = currApp.Current_Address_Abroad__StateCode__s;
+        addressData.city = currApp.Current_Address_Abroad__City__s;
+        addressData.country = currApp.Current_Address_Abroad__CountryCode__s;
+        result.put('status', 'Success');
+        result.put('email', currApp.Email__c);
+        result.put('customerId', currApp.Stripe_Customer_Id__c);
+        result.put('address', addressData);
+        result.put('firstName', currApp.First_Name__c);
+        result.put('lastName', currApp.Second_Name__c);
+        result.put('phone', currApp.Related_Contact_Phone__c);
+        return result;
+    }
+
+    public static Map<String, Object> addNewPaymentMethod(ApplicationManager.CardDataWrapper requestData) {
+        Map<String, Object> result = new Map<String, Object>();
+        if(requestData?.appId == null) {
+            result.put('status', 'Error');
+            result.put('message', 'Request Data is null');
+            return result;
+        }
+        List<Application__c> apps = [
+            SELECT
+                Payment_Method__c,
+                (SELECT Id
+                 FROM Payments__r
+                 WHERE Status__c = 'Draft' OR Status__c = 'Schedule' OR Status__c = 'Fail')
+            FROM Application__c
+            WHERE Id = :requestData?.appId
+            LIMIT 1
+        ];
+        if (apps.size() == 0) {
+            result.put('status', 'Error');
+            result.put('message', 'Application isn\'t exist.');
+            return result;
+        }
+        try {
+            Application__c currApp = apps[0];
+            String paymentMethodsData = currApp.Payment_Method__c == null ?
+                                            requestData?.paymentMethod :
+                                            currApp.Payment_Method__c + '; ' + requestData?.paymentMethod;
+            List<Sobject> updateRecords = new List<Sobject>();
+            updateRecords.add(
+                new Application__c(
+                    Id = currApp.Id,
+                    Payment_Method__c = paymentMethodsData
+                )
+            );
+            if (currApp.Payments__r.size() != 0) {
+                for(Payment__c payment : currApp.Payments__r) {
+                    updateRecords.add(
+                        new Payment__c(
+                            Id = payment.Id,
+                            Payment_Method__c = requestData?.paymentMethod
+                        )
+                    );
+                }
+            }
+            if (updateRecords.size() != 0) {
+                update updateRecords;
+                result.put('isComplete', 'true');
+            }
+            result.put('status', 'Success');
+            return result;
+        } catch (Exception ex) {
+            result.put('status', 'Error');
+            result.put('message', ex.getLineNumber() + '-' + ex.getMessage());
+            return result;
+        }
+
     }
 
     public static Map<String, Object> changeStatusFailedPayment(ApplicationManager.PaymentDataWrapper requestData) {

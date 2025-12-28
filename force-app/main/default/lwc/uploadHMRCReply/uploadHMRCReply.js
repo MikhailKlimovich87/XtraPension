@@ -14,6 +14,8 @@ import NAME_FIELD from "@salesforce/schema/Application__c.Name";
 import UK_WORK_FIELD from "@salesforce/schema/Application__c.Years_Of_Work_In_The_UK__c";
 import SHORTFALL_FIELD from "@salesforce/schema/Application__c.Shortfall__c";
 import CASEWORKER_FIELD from "@salesforce/schema/Application__c.Caseworker__c";
+import LETTER_DATE_FIELD from "@salesforce/schema/Application__c.Letter_Date__c";
+import XP_RECEIVED_DATE_FIELD from "@salesforce/schema/Application__c.XP_Received_Date__c";
 
 export default class UploadHMRCReply extends LightningElement {
     @api
@@ -24,8 +26,11 @@ export default class UploadHMRCReply extends LightningElement {
     currentFile;
     currentShortfall;
     currentCaseworker;
+    currentLetterDate;
+    currentXPReceivedDate;
     fileName;
     moveToStatus = 'Not Move';
+    todayDate = new Date();
 
     typesOfHMRCReply = [];
 
@@ -66,7 +71,7 @@ export default class UploadHMRCReply extends LightningElement {
 
     @wire(getRecord, {
         recordId: '$recordId',
-        fields: [NAME_FIELD, FIRST_NAME_FIELD, SECOND_NAME_FIELD, SHORTFALL_FIELD, HMRC_REF_FIELD, UK_WORK_FIELD, CASEWORKER_FIELD]
+        fields: [NAME_FIELD, FIRST_NAME_FIELD, SECOND_NAME_FIELD, SHORTFALL_FIELD, HMRC_REF_FIELD, UK_WORK_FIELD, CASEWORKER_FIELD, LETTER_DATE_FIELD, XP_RECEIVED_DATE_FIELD]
     })
     application;
 
@@ -87,6 +92,17 @@ export default class UploadHMRCReply extends LightningElement {
 
     get caseworker() {
         return getFieldValue(this.application.data, CASEWORKER_FIELD);
+    }
+
+    get letterDate() {
+        return getFieldValue(this.application.data, LETTER_DATE_FIELD);
+    }
+
+    get xpReceivedDate() {
+        let receiveDateData = getFieldValue(this.application.data, XP_RECEIVED_DATE_FIELD);
+        return receiveDateData == null ?
+                   this.todayDate.toISOString().split('T')[0]:
+                   receiveDateData;
     }
 
     handleChangeType(event) {
@@ -113,6 +129,14 @@ export default class UploadHMRCReply extends LightningElement {
         this.moveToStatus = event.detail.value;
     }
 
+    handleChangeLetterDate(event) {
+        this.currentLetterDate = event.detail.value;
+    }
+
+    handleChangeXPReceivedDate(event) {
+        this.currentXPReceivedDate = event.detail.value;
+    }
+
     handleFilesSelected(event) {
         this.currentFiles = event.target.files[0];
         let reader = new FileReader();
@@ -129,21 +153,31 @@ export default class UploadHMRCReply extends LightningElement {
     }
 
     async handleUploadFile() {
-        if (!this.currentFile || !this.currentReplyType) {
+        if (!this.currentFile ||
+            !this.currentReplyType ||
+            (!this.currentLetterDate &&
+             !this.letterDate &&
+             (this.currentReplyType == '2024ANNUAL' ||
+              this.currentReplyType == 'C2' ||
+              this.currentReplyType == 'C3' ||
+              this.currentReplyType == 'C2 AGT' ||
+              this.currentReplyType == 'BadStatement'))) {
             let titleEmptyData = `Please, specify all data before uploading`;
             this.toast(titleEmptyData, 'error');
         } else {
             this.showSpinner = !this.showSpinner;
             let requestData = {
-                "recordId"    : this.recordId,
-                "fileData"    : this.currentFile,
-                "ref"         : this.currentRef ? this.currentRef : this.hmrcRef,
-                "typeOfReply" : this.currentReplyType,
-                "years"       : this.currentYears ? this.currentYears : this.ukWork,
-                "fileName"    : this.fileName,
-                "shortfall"   : this.currentShortfall ? this.currentShortfall : this.shortfall,
-                "caseworker"  : this.currentCaseworker ? this.currentCaseworker : this.caseworker,
-                "status"      : this.moveToStatus == 'Not Move' ? null : this.moveToStatus
+                "recordId"       : this.recordId,
+                "fileData"       : this.currentFile,
+                "ref"            : this.currentRef ? this.currentRef : this.hmrcRef,
+                "typeOfReply"    : this.currentReplyType,
+                "years"          : this.currentYears ? this.currentYears : this.ukWork,
+                "fileName"       : this.fileName,
+                "shortfall"      : this.currentShortfall ? this.currentShortfall : this.shortfall,
+                "caseworker"     : this.currentCaseworker ? this.currentCaseworker : this.caseworker,
+                "status"         : this.moveToStatus == 'Not Move' ? null : this.moveToStatus,
+                "letterDate"     : this.currentLetterDate,
+                "xpReceivedDate" : this.currentXPReceivedDate ? this.currentXPReceivedDate : this.todayDate,
             };
             await uploadFile({
                 request : requestData
@@ -163,6 +197,10 @@ export default class UploadHMRCReply extends LightningElement {
         }
     }
 
+    get todayPlaceholder() {
+        return this.todayDate.toLocaleDateString('en-GB');
+    }
+
     toast(title, variantType){
         const toastEvent = new ShowToastEvent({
             title,
@@ -170,4 +208,13 @@ export default class UploadHMRCReply extends LightningElement {
         })
         this.dispatchEvent(toastEvent)
     }
+
+    get isRequiredLetterDate() {
+        return this.currentReplyType == '2024ANNUAL' ||
+               this.currentReplyType == 'C2' ||
+               this.currentReplyType == 'C3' ||
+               this.currentReplyType == 'C2 AGT' ||
+               this.currentReplyType == 'BadStatement' ? true : false;
+    }
+
 }

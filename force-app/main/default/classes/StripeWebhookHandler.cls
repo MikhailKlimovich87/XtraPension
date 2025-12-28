@@ -6,7 +6,7 @@ global class StripeWebhookHandler {
         'Deposit', 'Application', 'Success'
     };
 	private static final List<String> ORDER_OF_APPEAL_PRODUCT = new List<String> {
-        'Deposit', 'Appeal'
+        'Deposit', 'Appeal Application', 'Appeal Success'
     };
 
 	private static final String DESCRIPTION = 'Deposit MOTO';
@@ -204,11 +204,9 @@ global class StripeWebhookHandler {
 								UnitPrice
 							FROM PriceBookEntry
 							WHERE Pricebook2.IsStandard = true AND
-                              		CurrencyIsoCode = :currencyCode
+                              	  CurrencyIsoCode = :currencyCode
 							ORDER BY UnitPrice
 						];
-						System.debug('currencyCode =====' + currencyCode);
-						System.debug('priceBookEntries ==== ' + priceBookEntries);
 					} else {
 						priceBookEntries = [
                         	SELECT
@@ -244,6 +242,7 @@ global class StripeWebhookHandler {
 					} else paymentOrder.addAll(ORDER_OF_PRODUCT_NAME);
      				for (String productName : paymentOrder) {
 						PriceBookEntry entry = productNameByPricebookEntry.get(productName);
+						if (entry == null) continue;
 						newSobjects.add(
 					    	new OrderItem(
 								Product2Id       = entry.Product2Id,

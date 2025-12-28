@@ -56,6 +56,7 @@ public class CheckModuleControllerTest {
         req.appealLetterReceived = false;
         req.paymentReceived = false;
         req.paymentNotReceived = false;
+        req.dwpCall = false;
 
         CheckModuleController.CheckRequestWrapper testWrapper = new CheckModuleController.CheckRequestWrapper();
         testWrapper.checkReplies = new List<CheckModuleController.CheckRequest>();

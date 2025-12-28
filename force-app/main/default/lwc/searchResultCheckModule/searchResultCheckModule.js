@@ -63,6 +63,7 @@ export default class SearchResultCheckModule extends LightningElement {
         if (this.checkRequest.Appeal_Letter_Received__c == true) this.badgeLabels.push('Appeal Letter Received');
         if (this.checkRequest.Payment_Not_Received__c == true) this.badgeLabels.push('Payment Not Received');
         if (this.checkRequest.Payment_Received__c == true) this.badgeLabels.push('Payment Received');
+        if (this.checkRequest.DWP_Call__c == true) this.badgeLabels.push('DWP Call');
     }
 
     get isNotifiactionSentTo() {

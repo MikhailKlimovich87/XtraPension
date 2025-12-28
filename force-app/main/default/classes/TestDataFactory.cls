@@ -309,7 +309,9 @@ public class TestDataFactory {
     public static HMRC_SMS_Schedule_Date__c createHMRCSMSScheduleDate(Boolean isInsertOrNone) {
         HMRC_SMS_Schedule_Date__c scheduleDateTest = new HMRC_SMS_Schedule_Date__c(
             SMS_message__c  = 'Test message',
-            Execute_Date__c = Date.today()
+            Execute_Date__c = Date.today(),
+            Email_Subject__c = 'Test subject',
+            Email_Body__c = '<p>Test body</p>'
         );
         if (isInsertOrNone) {
             insert scheduleDateTest;
@@ -325,5 +327,25 @@ public class TestDataFactory {
             insert message;
         }
         return message;
+    }
+
+    public static User createStandardUser(Boolean isInsertOrNone) {
+        Profile p = [SELECT Id FROM Profile WHERE Name = 'Standard User' LIMIT 1];
+        User u = new User(
+            FirstName = 'TestFirst',
+            LastName = 'User',
+            Email = 'testuser@example.com',
+            Username = 'testuser' + System.currentTimeMillis() + '@example.com',
+            Alias = 'tusr',
+            TimeZoneSidKey = 'Europe/Warsaw',
+            LocaleSidKey = 'en_US',
+            EmailEncodingKey = 'UTF-8',
+            LanguageLocaleKey = 'en_US',
+            ProfileId = p.Id
+        );
+        if (isInsertOrNone == true) {
+            insert u;
+        }
+        return u;
     }
 }

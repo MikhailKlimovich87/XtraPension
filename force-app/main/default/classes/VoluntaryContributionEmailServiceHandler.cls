@@ -1,5 +1,5 @@
 global class VoluntaryContributionEmailServiceHandler implements Messaging.InboundEmailHandler {
-    private final static String AGENT_EMAIL_ADDRESS = 'grace@xtrapension.com';
+    private final static String[] AGENT_EMAIL_ADDRESSES = new String[] {'grace@xtrapension.com', 'mary@xtrapension.com'};
     private final static String FROM_DWP_EMAIL_ADDRESS = 'IPC.REVIEWANDRECONTEAM@dwp.gov.uk';
     private static Messaging.SingleEmailMessage agentEmailMessage;
 
@@ -79,7 +79,6 @@ global class VoluntaryContributionEmailServiceHandler implements Messaging.Inbou
         if (emailMessage != null) {
             insert emailMessage;
         }
-        System.debug('emailAttachments === ' + emailAttachments);
         if (emailAttachments != null && emailMessage != null) {
             List<ContentVersion> attachContVersions = new List<ContentVersion>();
             for (Messaging.InboundEmail.BinaryAttachment attachment : emailAttachments) {
@@ -95,7 +94,6 @@ global class VoluntaryContributionEmailServiceHandler implements Messaging.Inbou
             for (ContentVersion version : attachContVersions) {
 	            contVersIds.add(version.id);
             }
-            System.debug('contVersIds === ' + contVersIds);
             List<ContentVersion> contVersAfterInsert = [
                 SELECT ContentDocumentId
                 FROM ContentVersion
@@ -105,7 +103,6 @@ global class VoluntaryContributionEmailServiceHandler implements Messaging.Inbou
             for (ContentVersion version : contVersAfterInsert) {
                 contDocIds.add(version.ContentDocumentId);
             }
-            System.debug('contDocIds === ' + contDocIds);
             List<ContentDocumentLink> newLinks = new List<ContentDocumentLink>();
             for (Id conDocId : contDocIds) {
                 ContentDocumentLink conDocLink = new ContentDocumentLink();
@@ -118,7 +115,6 @@ global class VoluntaryContributionEmailServiceHandler implements Messaging.Inbou
             if (!newLinks.isEmpty()) {
                 insert newLinks;
             }
-            System.debug('newLinks === ' + newLinks);
         }
         if (agentEmailMessage != null) {
             Messaging.SingleEmailMessage[] messages = new List<Messaging.SingleEmailMessage> {agentEmailMessage};
@@ -143,7 +139,7 @@ global class VoluntaryContributionEmailServiceHandler implements Messaging.Inbou
         message.setSubject(subject);
         message.setPlainTextBody('');
         message.setOrgWideEmailAddressId(DEFAULT_ORG_WIDE_EMAIL_ADDRESS.Id);
-        message.setToAddresses(new String[] {AGENT_EMAIL_ADDRESS});
+        message.setToAddresses(AGENT_EMAIL_ADDRESSES);
 
         return message;
     }

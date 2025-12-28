@@ -36,7 +36,7 @@ public without sharing class SendToPHReportController {
                   CreatedBy.Name = 'Fiona Carey' OR
                   CreatedBy.Name = 'Rob Landy' OR
                   CreatedBy.Name = 'John Ring') AND
-                  (Parent.Status__c = 'DWP Teleclaim'  OR
+                  (Parent.Status__c = 'DWP Teleclaim' OR
                    Parent.Status__c = 'Posted' OR
                    Parent.Status__c = 'DWP 2 Emails Sent' OR
                    Parent.Status__c = 'DWP Shortfall Pending')
@@ -116,7 +116,7 @@ public without sharing class SendToPHReportController {
             if (changeDate <= todayDate && changeDate >= currentMonthStartDate) {
                 thisMonthAgentCheckChangesCounter.put(changeDate,currMapChanges);
             }
-            if (changeDate < lastMonthEndDate && changeDate > lastMonthStartDate) {
+            if (changeDate < lastMonthEndDate && changeDate >= lastMonthStartDate) {
                 lastMonthAgentCheckChangesCounter.put(changeDate,currMapChanges);
             }
         }
@@ -193,5 +193,4 @@ public without sharing class SendToPHReportController {
         @AuraEnabled
         public PeriodData lastMonthChanges{get; set;}
     }
-
 }

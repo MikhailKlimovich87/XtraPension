@@ -3,7 +3,7 @@ public without sharing class AgentSalesReportController {
     public static final String FIELD_NAME ='Agent_Making_Sale__c';
 
     @AuraEnabled(cacheable=true)
-    public static AgentSalesWrapper getAgentSalesApps(){
+    public static AgentSalesWrapper getAgentSalesApps() {
         AgentSalesWrapper result = new AgentSalesWrapper();
         Date todayDate = Date.today();
         Date yesterdayDate = Date.today().addDays(-1);
@@ -143,7 +143,8 @@ public without sharing class AgentSalesReportController {
                 agentsInfo[i].name == 'Brett' ||
                 agentsInfo[i].name == 'John R' ||
                 agentsInfo[i].name == 'Daniel' ||
-                agentsInfo[i].name == 'Mike') {
+                agentsInfo[i].name == 'Mike' ||
+                agentsInfo[i].name == 'Gerard') {
             } else {
                 todayWrapper.countData.add(agentsInfo[i].todayCount);
                 yesterdayWrapper.countData.add(agentsInfo[i].yesterdayCount);
@@ -185,7 +186,8 @@ public without sharing class AgentSalesReportController {
                 name == 'Brett' ||
                 name == 'John R' ||
                 name == 'Daniel' ||
-                name == 'Mike') {
+                name == 'Mike' ||
+                name == 'Gerard') {
                 continue;
             }
             activeAgents.add(name);

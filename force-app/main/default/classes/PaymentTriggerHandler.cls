@@ -1,7 +1,10 @@
 public class PaymentTriggerHandler {
     public static final String ORG_WIDE_EMAIL_ADDRESS = 'clients@xtrapension.com';
-    public static final String EU_CLIENT_EMAIL_TEMPLATE_NAME = 'Client EU Receipt';
+    public static final String EU_EMAIL_TEMPLATE_NAME = 'Client EU Receipt';
     public static final String NONE_EU_EMAIL_TEMPLATE_NAME = 'Client None EU Receipt';
+    public static final String EU_DEPOSIT_EMAIL_TEMPLATE_NAME = 'Client EU Receipt(Deposit)';
+    public static final String NONE_EU_DEPOSIT_EMAIL_TEMPLATE_NAME = 'Client None EU Receipt(Deposit)';
+     public static final String PAYMENT_ERROR_TEMPLATE = 'Payment error message';
     private static final XtraPension_Settings__mdt XP_SETTINGS {
         get {
             if (XP_SETTINGS == null) {
@@ -44,21 +47,23 @@ public class PaymentTriggerHandler {
         private set;
     }
 
-    private static final EmailTemplate PAYMENT_ERROR_TEMPLATE {
+    private static final Map<String, Id> EMAIL_TEMPLATE_NAME_BY_ID {
         get {
-            if (PAYMENT_ERROR_TEMPLATE == null) {
-                List<EmailTemplate> emailTemplates = [
-                    SELECT Id, Subject, Body
+            if (EMAIL_TEMPLATE_NAME_BY_ID == null) {
+                EMAIL_TEMPLATE_NAME_BY_ID = new Map<String, Id>();
+                for(EmailTemplate template : [
+                    SELECT Id, Name
                     FROM EmailTemplate
-                    WHERE DeveloperName = 'Payment_error_message'
-                    WITH USER_MODE
-                    LIMIT 1
-                ];
-                if (!emailTemplates.isEmpty()) {
-                    PAYMENT_ERROR_TEMPLATE = emailTemplates[0];
+                    WHERE Name = :PAYMENT_ERROR_TEMPLATE OR
+                          Name = :NONE_EU_EMAIL_TEMPLATE_NAME OR
+                          Name = :EU_EMAIL_TEMPLATE_NAME OR
+                          Name = :EU_DEPOSIT_EMAIL_TEMPLATE_NAME OR
+                          Name = :NONE_EU_DEPOSIT_EMAIL_TEMPLATE_NAME
+                ]) {
+                    EMAIL_TEMPLATE_NAME_BY_ID.put(template.Name, template.Id);
                 }
             }
-        return PAYMENT_ERROR_TEMPLATE;
+        return EMAIL_TEMPLATE_NAME_BY_ID;
     }
         private set;
     }
@@ -81,7 +86,7 @@ public class PaymentTriggerHandler {
             }
         }
         if (!paidPayments.isEmpty()) {
-            sendReceipt(paidPayments);
+            sendReceipt(paidPayments, false);
             calculateCurrentTotalAmount(paidPayments);
         }
         if (!failPaymentIds.isEmpty()) {
@@ -93,17 +98,15 @@ public class PaymentTriggerHandler {
     }
 
     public static void sendEmailAfterCreatePaidPayment(Map<Id, Payment__c> newPayments) {
-        List<Payment__c> paidPayments = new List<Payment__c>();
         for (Payment__c payment : newPayments.values()) {
             if (payment.Status__c == 'Paid') {
-                paidPayments.add(payment);
-                sendRegistrationFeeDataToAdmin(payment);
                 StripeApiService.updatePaymentCardData(payment.Id);
+                sendRegistrationFeeDataToAdmin(payment);
             }
         }
     }
 
-    public static void sendReceipt(List<Payment__c> paidPayments) {
+    public static void sendReceipt(List<Payment__c> paidPayments, Boolean isTheFirstPayment) {
         Map<Id, Receipt__c> newReceipts = new Map<Id, Receipt__c>();
         for (Payment__c payment : paidPayments) {
             newReceipts.put(
@@ -137,7 +140,7 @@ public class PaymentTriggerHandler {
         }
         for (Receipt__c receipt : currentReceipts) {
             if(receipt.Id != null) {
-                sendEmail(receipt);
+                sendEmail(receipt, isTheFirstPayment);
             }
         }
     }
@@ -149,20 +152,32 @@ public class PaymentTriggerHandler {
         for (Payment__c payment : [
             SELECT Application__c,
                    Application__r.Amount__c,
-                   Amount__c
+                   Application__r.Age__c,
+                   Application__r.Status__c,
+                   Product_Name__c,
+                   Amount__c,
+                   Application__r.Outstanding_Payment__c
             FROM Payment__c
             WHERE Id IN : paymentIdByPaidPayments.keySet()
         ]) {
+            Application__c currApp =  new Application__c(
+                Id = payment.Application__c
+            );
             if (payment.Amount__c != null) {
-                updatedApps.add(
-                    new Application__c(
-                        Id = payment.Application__c,
-                        Amount__c = payment.Application__r.Amount__c == null ?
+                currApp.Amount__c = payment.Application__r.Amount__c == null ?
                                         payment.Amount__c :
-                                        payment.Application__r.Amount__c + payment.Amount__c,
-                        Last_Payment_Date__c = Date.today()
-                    )
-                );
+                                        payment.Application__r.Amount__c + payment.Amount__c;
+                currApp.Last_Payment_Date__c = Date.today();
+                currApp.Outstanding_Payment__c = 'No';
+            }
+            if(payment.Application__r.Status__c == 'Charge CC' && payment.Product_Name__c == 'Success' && Integer.valueOf(payment.Application__r.Age__c) < 67) {
+                currApp.Status__c = 'Annual Service';
+            }
+            if(payment.Application__r.Status__c == 'Charge CC' && payment.Product_Name__c == 'Success' && Integer.valueOf(payment.Application__r.Age__c) >= 67) {
+                currApp.Status__c = 'Closed';
+            }
+            if (currApp != null && (currApp.Amount__c != null || currApp.Status__c != null)) {
+                updatedApps.add(currApp);
             }
         }
         if(updatedApps.size() != 0) {
@@ -204,34 +219,29 @@ public class PaymentTriggerHandler {
         }
     }
 
-    private static void sendEmail(Receipt__c currentReceipt) {
+    private static void sendEmail(Receipt__c currentReceipt, Boolean isDepositPayment) {
         OrgWideEmailAddress[] owea = [
             SELECT Id
             FROM OrgWideEmailAddress
             WHERE Address = :ORG_WIDE_EMAIL_ADDRESS
         ];
-        String templateName = EU_CLIENT_EMAIL_TEMPLATE_NAME;
-        if (currentReceipt.CurrencyIsoCode != 'EUR') {
-            templateName = NONE_EU_EMAIL_TEMPLATE_NAME;
-        }
-        List<EmailTemplate> receiptEmailTemplate = [
-            SELECT
-                Id
-            FROM EmailTemplate
-            WHERE Name = :templateName
-        ];
-
         Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
         message.setTargetObjectId(currentReceipt.Application_Contact__c);
         message.setUseSignature(false);
         message.setBccSender(false);
         message.setSaveAsActivity(true);
         message.setTreatTargetObjectAsRecipient(false);
-        if (!receiptEmailTemplate.isEmpty()) {
-            message.setTemplateID(receiptEmailTemplate[0].Id);
+        if(currentReceipt.CurrencyIsoCode == 'EUR' && isDepositPayment == true) {
+            message.setTemplateId(EMAIL_TEMPLATE_NAME_BY_ID.get(EU_DEPOSIT_EMAIL_TEMPLATE_NAME));
+        } else if (currentReceipt.CurrencyIsoCode != 'EUR' && isDepositPayment == true) {
+            message.setTemplateId(EMAIL_TEMPLATE_NAME_BY_ID.get(NONE_EU_DEPOSIT_EMAIL_TEMPLATE_NAME));
+        } else if (currentReceipt.CurrencyIsoCode == 'EUR' && isDepositPayment == false) {
+            message.setTemplateId(EMAIL_TEMPLATE_NAME_BY_ID.get(EU_EMAIL_TEMPLATE_NAME));
+        } else if (currentReceipt.CurrencyIsoCode != 'EUR' && isDepositPayment == false) {
+            message.setTemplateId(EMAIL_TEMPLATE_NAME_BY_ID.get(NONE_EU_EMAIL_TEMPLATE_NAME));
         }
         message.setWhatId(currentReceipt.Id);
-        if ( owea.size() > 0 ) {
+        if (owea.size() > 0) {
             message.setOrgWideEmailAddressId(owea.get(0).Id);
         }
         message.toAddresses = new String[] { currentReceipt.Contact_Email__c };
@@ -266,7 +276,7 @@ public class PaymentTriggerHandler {
         OrgWideEmailAddress[] owea = [
             SELECT Id
             FROM OrgWideEmailAddress
-            WHERE Address = :ORG_WIDE_EMAIL_ADDRESS
+            WHERE Address = 'clients@xtrapension.com'
         ];
         List<Application__c> applications = [
             SELECT
@@ -339,36 +349,47 @@ public class PaymentTriggerHandler {
                 Application__r.Second_Name__c,
                 Error_Message__c,
                 Application__r.Contact__c,
-                Application__r.Related_Contact_Phone__c
+                Application__r.Related_Contact_Phone__c,
+                Application__r.Outstanding_Payment__c
             FROM Payment__c
             WHERE Id IN :failPaymentIds
         ];
         Messaging.SingleEmailMessage[] messages = new List<Messaging.SingleEmailMessage>();
         List<String> phones = new List<String>();
+        List<Application__c> updatedApps = new List<Application__c>();
         for (Payment__c payment : failPayments) {
             Messaging.SingleEmailMessage singleErrorMessage = generateSingleEmailMessage(payment);
-            singleErrorMessage.setTemplateId(PAYMENT_ERROR_TEMPLATE.Id);
+            singleErrorMessage.setTemplateId(EMAIL_TEMPLATE_NAME_BY_ID.get(PAYMENT_ERROR_TEMPLATE));
             singleErrorMessage.setToAddresses(new String[] {payment.Application__r.Email__c});
             singleErrorMessage.setTargetObjectId(payment.Application__r.Contact__c);
             singleErrorMessage.setWhatId(payment.Id);
             messages.add(singleErrorMessage);
 
-            Messaging.SingleEmailMessage singleAdminReminderMessage = generateSingleEmailMessage(payment);
-            singleAdminReminderMessage.setPlainTextBody('Stripe Reason: ' + payment.Error_Message__c);
-            singleAdminReminderMessage.setSubject('XP - CC FAILURE - ' + payment.Application__r.Name + ' - ' + payment.Application__r.First_Name__c + ' ' + payment.Application__r.Second_Name__c);
-            singleAdminReminderMessage.setToAddresses((List<String>)JSON.deserialize(XP_SETTINGS.Admin_Fail_Reminder_Email_Addresses__c, List<String>.class));
-            messages.add(singleAdminReminderMessage);
+            // Messaging.SingleEmailMessage singleAdminReminderMessage = generateSingleEmailMessage(payment);
+            // singleAdminReminderMessage.setPlainTextBody('Stripe Reason: ' + payment.Error_Message__c);
+            // singleAdminReminderMessage.setSubject('XP - CC FAILURE - ' + payment.Application__r.Name + ' - ' + payment.Application__r.First_Name__c + ' ' + payment.Application__r.Second_Name__c);
+            // singleAdminReminderMessage.setToAddresses((List<String>)JSON.deserialize(XP_SETTINGS.Admin_Fail_Reminder_Email_Addresses__c, List<String>.class));
+            // messages.add(singleAdminReminderMessage);
 
             phones.add(payment.Application__r.Related_Contact_Phone__c);
             if(phones.size() == 100) {
                 sendMessage(phones, FAIL_PAYMENT_SMS_MESSAGE);
                 phones = new List<String>();
             }
+            updatedApps.add(
+                new Application__c (
+                    Id = payment.Application__c,
+                    Outstanding_Payment__c = 'Yes'
+                )
+            );
         }
         if(messages.size() != 0) {
             Messaging.sendEmail(messages);
         }
         if (phones.size() > 0) sendMessage(phones, FAIL_PAYMENT_SMS_MESSAGE);
+        if (updatedApps.size() != 0) {
+            Database.update(updatedApps, false);
+        }
     }
 
     public static void sendMessage(List<String> phoneData, String messageBody) {

@@ -138,7 +138,8 @@ public class CheckModuleController {
                     Appeal_Letter_Received__c,
                     Agent_To_Sent_Notification__c,
                     Payment_Received__c,
-                    Payment_Not_Received__c
+                    Payment_Not_Received__c,
+                    DWP_Call__c
                  FROM HMRC_Check_Requests__r
                  ORDER BY CreatedDate DESC
                  LIMIT 1)
@@ -199,7 +200,8 @@ public class CheckModuleController {
                     When__c = reply.whenDate == null ? null : Date.valueOf(reply.whenDate),
                     Check_Date__c = Date.today(),
                     Payment_Received__c = reply.paymentReceived,
-                    Payment_Not_Received__c = reply.paymentNotReceived
+                    Payment_Not_Received__c = reply.paymentNotReceived,
+                    DWP_Call__c = reply.dwpCall
                 )
             );
         }
@@ -373,5 +375,7 @@ public class CheckModuleController {
         public Boolean paymentReceived{get; set;}
         @AuraEnabled
         public Boolean paymentNotReceived{get; set;}
+        @AuraEnabled
+        public Boolean dwpCall{get; set;}
     }
 }

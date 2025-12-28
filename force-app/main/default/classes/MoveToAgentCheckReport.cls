@@ -23,7 +23,9 @@ public without sharing class MoveToAgentCheckReport {
                         Name != 'Niamh' AND
                         Name != 'Monica Lorica' AND
                         Name != 'MaryClaire Mchatton' AND
-                        Name != 'Stripe Webhooks Site Guest User'
+                        Name != 'Stripe Webhooks Site Guest User' AND
+                        Name != 'John Ring' AND
+                        Name != 'Richard Talbot'
                 ];
                 if (!activeUsers.isEmpty()) {
                     ACTIVE_USERS = activeUsers;
@@ -59,7 +61,9 @@ public without sharing class MoveToAgentCheckReport {
                   CreatedBy.Name!= 'Niamh' AND
                   CreatedBy.Name!= 'Monica Lorica' AND
                   CreatedBy.Name!= 'MaryClaire Mchatton' AND
-                  CreatedBy.Name!= 'Stripe Webhooks Site Guest User'
+                  CreatedBy.Name!= 'Stripe Webhooks Site Guest User' AND
+                  CreatedBy.Name!= 'John Ring' AND
+                  CreatedBy.Name!= 'Richard Talbot'
             ORDER BY CreatedDate DESC];
         if (historyData.size() == 0) {
             return null;
@@ -127,16 +131,16 @@ public without sharing class MoveToAgentCheckReport {
             if (changeDate == yesterdayDate) {
                 yesterdayAgentCheckChangesCounter.put(changeDate,currMapChanges);
             }
-            if (changeDate <= todayDate && changeDate >= currentWeekStartDate) {
+            if (changeDate >= currentWeekStartDate && changeDate <= todayDate ) {
                 thisWeekAgentCheckChangesCounter.put(changeDate,currMapChanges);
             }
-            if (changeDate < lastWeekEndDate && changeDate >= lastWeekStartDate) {
+            if (changeDate >= lastWeekStartDate && changeDate < lastWeekEndDate) {
                 lastWeekAgentCheckChangesCounter.put(changeDate,currMapChanges);
             }
-            if (changeDate <= todayDate && changeDate >= currentMonthStartDate) {
+            if (changeDate >= currentMonthStartDate && changeDate <= todayDate) {
                 thisMonthAgentCheckChangesCounter.put(changeDate,currMapChanges);
             }
-            if (changeDate < lastMonthEndDate && changeDate > lastMonthStartDate) {
+            if (changeDate >= lastMonthStartDate && changeDate < lastMonthEndDate) {
                 lastMonthAgentCheckChangesCounter.put(changeDate,currMapChanges);
             }
         }

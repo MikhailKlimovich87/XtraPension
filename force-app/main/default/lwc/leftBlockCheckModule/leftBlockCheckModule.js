@@ -38,7 +38,8 @@ export default class LeftBlockCheckModule extends LightningElement {
         "paymentMadeByClient" : null,
         "whenDate" : null,
         "paymentReceived": false,
-        "paymentNotReceived": false
+        "paymentNotReceived": false,
+        "dwpCall" : false
     }
     replies = [this.checkReply];
 
@@ -97,6 +98,7 @@ export default class LeftBlockCheckModule extends LightningElement {
         const agentInputElement = this.template.querySelector('[data-id="agent"]');
         let isValid = true;
         let isNotBlankCheckboxes = true;
+        let isOnlyDWPCallCheckboxChecked = true;
 
         if (!agentInputElement.value) {
             agentInputElement.setCustomValidity('Check Agent cannot be empty.');
@@ -123,10 +125,28 @@ export default class LeftBlockCheckModule extends LightningElement {
                 item.appealLetterNotReceived == false &&
                 item.appealLetterReceived == false &&
                 item.paymentReceived == false &&
-                item.paymentNotReceived == false
+                item.paymentNotReceived == false &&
+                item.dwpCall == false
             ) {
                 isNotBlankCheckboxes = false;
-                console.log('In Second IF');
+            }
+            if (item.notReceived == false &&
+                item.c2 == false &&
+                item.workItem == false &&
+                item.badNINO == false &&
+                item.badInfo == false &&
+                item.processing == false &&
+                item.c3 == false &&
+                item.dwp == false &&
+                item.X64_8 == false &&
+                item.reject == false &&
+                item.appealLetterNotReceived == false &&
+                item.appealLetterReceived == false &&
+                item.paymentReceived == false &&
+                item.paymentNotReceived == false &&
+                item.dwpCall == true
+            ) {
+                isOnlyDWPCallCheckboxChecked = false;
             }
         });
 
@@ -137,7 +157,6 @@ export default class LeftBlockCheckModule extends LightningElement {
                 'error'
             );
         }
-
         if (!isNotBlankCheckboxes) {
             this.showToastMessage(
                 'Error',
@@ -145,7 +164,14 @@ export default class LeftBlockCheckModule extends LightningElement {
                 'error'
             );
         }
-        return isValid && isNotBlankCheckboxes ? true : false;
+        if (!isOnlyDWPCallCheckboxChecked) {
+            this.showToastMessage(
+                'Error',
+                'Please, tick at least 2 checkboxes if \'DWP Call\' is ticked!',
+                'error'
+            );
+        }
+        return isValid && isNotBlankCheckboxes && isOnlyDWPCallCheckboxChecked ? true : false;
     }
 
     handleAddRequest() {
@@ -172,7 +198,8 @@ export default class LeftBlockCheckModule extends LightningElement {
             "paymentMadeByClient" : null,
             "whenDate" : null,
             "paymentReceived": false,
-            "paymentNotReceived": false
+            "paymentNotReceived": false,
+            "dwpCall" : false
         }];
     }
 

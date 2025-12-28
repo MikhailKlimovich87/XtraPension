@@ -16,16 +16,19 @@ public class UploadHMRCReplyController {
         if (apps.size() == 0) {
             return null;
         }
-        if (request?.recordId != null && request?.years != null && request?.ref != null) {
+        if (request?.recordId != null) {
+            System.debug('request?.xpReceivedDate ==== ' + request?.xpReceivedDate);
             Application__c updatedApp = new Application__c (
                 Id = request?.recordId,
-                Years_Of_Work_In_The_UK__c = Decimal.valueOf(request?.years),
+                Years_Of_Work_In_The_UK__c = request?.years != null ? Decimal.valueOf(request?.years) : null,
                 HMRC_Ref__c = request?.ref,
                 HMRC_Reply_Status__c = request?.typeOfReply == 'STATEMENT' || request?.typeOfReply == 'VOLUNTARY NI PAYMENT RECEIPT' ?
                                             apps[0].HMRC_Reply_Status__c :
                                             request?.typeOfReply,
                 Shortfall__c = request?.shortfall,
-                Caseworker__c = request?.caseworker
+                Caseworker__c = request?.caseworker,
+                Letter_Date__c = request?.letterDate == null ? null : Date.valueOf(request?.letterDate),
+                XP_Received_Date__c = request?.xpReceivedDate == null ? null : Date.valueOf(request?.xpReceivedDate)
             );
             if (request?.status != null) {
                 updatedApp.Status__c = request?.status;
@@ -90,5 +93,9 @@ public class UploadHMRCReplyController {
         public String caseworker {get; set;}
         @AuraEnabled
         public String status {get; set;}
+        @AuraEnabled
+        public String letterDate {get; set;}
+        @AuraEnabled
+        public String xpReceivedDate {get; set;}
     }
 }

@@ -5,6 +5,7 @@ import changeCustomLetter from '@salesforce/apex/DocumentsContentController.chan
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import pdfAction from '@salesforce/apex/DocumentsContentController.pdfAction';
 import sendEmail from '@salesforce/apex/DocumentsContentController.sendHMRCResult';
+import sendMissingPaymentsEmail from '@salesforce/apex/DocumentsContentController.sendMissingApplicationPaymentEmail';
 export default class DocumentsContent extends NavigationMixin(LightningElement) {
     @api recordId;
     @track latestDocs;
@@ -24,6 +25,7 @@ export default class DocumentsContent extends NavigationMixin(LightningElement) 
     @track sendDocs = Array();
     isOpenResultModal = false;
     isSendToClientAppStatus = false;
+    isPaidApplicationPayment = false;
     replyData;
     templates;
     currentTemplate;
@@ -46,6 +48,7 @@ export default class DocumentsContent extends NavigationMixin(LightningElement) 
           this.abroadEmployers         = result?.abroadEmployers;
           this.lastUKAddresses         = result?.latestUKAddress;
           this.isSendToClientAppStatus = result?.isSendToClientAppStatus;
+          this.isPaidApplicationPayment= result?.isPaidApplicationPayment;
           this.templates               = result?.templateData;
           this.emailSubject            = result?.templateData?.emailSubject;
           if(result.isSendToClientAppStatus) {
@@ -206,6 +209,25 @@ export default class DocumentsContent extends NavigationMixin(LightningElement) 
       }
     })
     this.isOpenResultModal = !this.isOpenResultModal;
+    // if (this.isPaidApplicationPayment) {
+    //   this.isOpenResultModal = !this.isOpenResultModal;
+    // } else {
+    //   this.dispatchEvent(new ShowToastEvent({
+    //       title: 'Error',
+    //       message: 'Application Fee NOT PAID',
+    //       variant: 'error',
+    //   }));
+    //   sendMissingPaymentsEmail({
+    //       appId: this.recordId
+    //   })
+    // }
+  }
+
+  handleSendMissingPaymentMessage() {
+    this.isOpenResultModal = !this.isOpenResultModal;
+    sendMissingPaymentsEmail({
+      appId: this.recordId
+    })
   }
 
   handleChangeBody(event) {

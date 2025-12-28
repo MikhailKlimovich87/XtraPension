@@ -1,8 +1,23 @@
 <template>
     <lightning-card title="Sent for ESign Call Follow Up">
-        <p class="slds-p-horizontal_small">
-            <lightning-record-form object-api-name={objectApiName} record-id={recordId} fields={fields} columns="3"
-                onsubmit={handleSubmit}></lightning-record-form>
-        </p>
+        <div class="slds-p-horizontal_small">
+            <div class="checkbox-info">
+                <template for:each={options} for:item="option">
+                    <div class="slds-form-element" key={option.value}>
+                        <label class="slds-form-element__label" for="checkbox-unique-id-85">{option.label}</label>
+                        <div class="slds-form-element__control">
+                            <span class="slds-checkbox slds-checkbox_standalone">
+                                <input type="checkbox" name={option.value} value={option.value} checked={option.checked}
+                                    onchange={handleChange} />
+                                <span class="slds-checkbox_faux"></span>
+                            </span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+        <template if:true={loaded}>
+            <lightning-spinner alternative-text="Loading"></lightning-spinner>
+        </template>
     </lightning-card>
 </template>

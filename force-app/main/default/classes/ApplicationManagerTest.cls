@@ -716,6 +716,30 @@ public class ApplicationManagerTest {
         System.assertEquals('Success', responseData.get('status'), 'Incorrect status in response for payment');
     }
 
+    @IsTest static void getCustomerInfoTest() {
+        RestRequest request = new RestRequest();
+        RestResponse response = new RestResponse();
+        request.requestURI = '/api/v1/save-card/getCustomerInfo';
+        request.httpMethod = 'POST';
+        List<Application__c> apps = [
+            SELECT Id
+            FROM Application__c
+            LIMIT 1
+        ];
+        request.requestBody = Blob.valueOf('{' +
+            '"id": "' + apps[0].Id + '"' +
+        '}');
+        RestContext.request = request;
+        RestContext.response= response;
+        Test.startTest();
+        ApplicationManager.createApplication();
+        Test.stopTest();
+        Map<String, Object> responseData = (Map<String,Object>)JSON.deserializeUntyped(response.responseBody.toString());
+        System.assertEquals('John', responseData.get('firstName'), 'Incorrect First Name in response for application');
+        System.assertEquals('john.snow@gmail.com', responseData.get('email'), 'Incorrect email in response for application');
+        System.assertEquals('Success', responseData.get('status'), 'Incorrect status in response for application');
+    }
+
     @IsTest static void changeStatusFailedPaymentTest() {
         Test.setMock(HttpCalloutMock.class, new PaymentMethodMock());
         RestRequest request = new RestRequest();
@@ -775,6 +799,46 @@ public class ApplicationManagerTest {
         ];
         System.assertEquals('Paid', updatePayment[0].Status__c, 'Didn\'t changed payment\'s status');
         System.assertEquals('pm_123456789', updatePayment[0].Payment_Method__c, 'Incorrect payment method in update Payment');
+    }
+
+    @IsTest static void savePaymentMethodTest() {
+        Test.setMock(HttpCalloutMock.class, new GeneratePDFMock());
+        RestRequest request = new RestRequest();
+        RestResponse response = new RestResponse();
+        request.requestURI = '/api/v1/save-card/savePaymentMethod';
+        request.httpMethod = 'POST';
+        List<Application__c> applications = [
+            SELECT
+                Id,
+                Name,
+                First_Name__c,
+                Second_Name__c,
+                Stripe_Transaction_Id__c,
+                Stripe_Customer_Id__c,
+                Email__c,
+                Payment_Method__c,
+                Related_Contact_Phone__c
+            FROM Application__c
+            LIMIT 1
+        ];
+        Application__c testApp = applications[0];
+        request.requestBody = Blob.valueOf('{' +
+            '"appId": "' + testApp.Id + '",' +
+            '"customer": "' + testApp.Stripe_Customer_Id__c + '",' +
+            '"paymentMethod": "pm_123456789111"' +
+        '}');
+        RestContext.request = request;
+        RestContext.response= response;
+        Test.startTest();
+        ApplicationManager.createApplication();
+        Test.stopTest();
+        List<Application__c> applicationsAfterUpdate = [
+            SELECT Payment_Method__c
+            FROM Application__c
+            LIMIT 1
+        ];
+        System.assert(applicationsAfterUpdate[0].Payment_Method__c.contains('pm_123456789111'));
+        System.assertNotEquals(applications[0].Payment_Method__c, applicationsAfterUpdate[0].Payment_Method__c);
     }
 
     @IsTest static void doGetCase1Test() {

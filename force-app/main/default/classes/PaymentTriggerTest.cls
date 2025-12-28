@@ -42,7 +42,11 @@ public class PaymentTriggerTest {
                 Id,
                 Status__c,
                 Application__c,
-                Amount__c
+                Amount__c,
+                Payment_Date__c,
+                Card_Data__c,
+                Tax_VAT__c,
+                CurrencyIsoCode
             FROM Payment__c
         ];
         Payment__c currentPayment = testPayments[0];
@@ -83,4 +87,5 @@ public class PaymentTriggerTest {
             return res;
         }
     }
+
 }

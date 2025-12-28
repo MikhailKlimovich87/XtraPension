@@ -5,6 +5,7 @@ export default class EditResultMessageModal extends LightningElement {
     @api recordId;
     @api templateBody;
     @api subject;
+    @api isPaidAppPayment;
     showSpinner = false;
 
     allowedFormats = [
@@ -37,11 +38,20 @@ export default class EditResultMessageModal extends LightningElement {
 
     handleChange(event) {
         this.templateBody = event.target.value;
-        console.log('this.templateBody === ', this.templateBody);
     }
 
     handleChangeSubject(event) {
         this.subject = event.target.value;
+    }
+
+    handleExit() {
+        this.dispatchEvent(
+            new CustomEvent('hidecofirmationpopup')
+        );
+    }
+
+    handleOpenEditPage() {
+        this.isPaidAppPayment = !this.isPaidAppPayment;
     }
 
     handleSend() {
@@ -52,5 +62,5 @@ export default class EditResultMessageModal extends LightningElement {
                 subject: this.subject
             }}
         ));
-     }
+    }
 }

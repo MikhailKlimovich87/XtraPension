@@ -11,6 +11,9 @@
                 <lightning-combobox name="type" options={typesOfHMRCReply} onchange={handleChangeType} required
                     label="Type of HMRC Reply:"></lightning-combobox>
                 </br>
+                <lightning-input type="date" label="Letter Date" value={letterDate} onchange={handleChangeLetterDate}
+                    date-style="short" required={isRequiredLetterDate}></lightning-input>
+                <br />
                 <lightning-input type="text" value={hmrcRef} label="HMRC Ref:"
                     onchange={handleChangeRef}></lightning-input>
                 <br />
@@ -23,6 +26,9 @@
                 <br />
                 <lightning-combobox name="move-to-status" options={moveToStatusData} onchange={handleChangeStatus}
                     value={moveToStatus} label="Move to Status:"></lightning-combobox>
+                <br />
+                <lightning-input type="date" label="XP Received Date" value={xpReceivedDate} date-style="short"
+                    onchange={handleChangeXPReceivedDate} placeholder={todayPlaceholder}></lightning-input>
                 <br />
                 <lightning-input type="file" accept="image/*, .png, .jpg, .bmp, .pdf" label="&zwnj;"
                     onchange={handleFilesSelected}></lightning-input>

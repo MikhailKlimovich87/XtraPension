@@ -58,13 +58,17 @@
                             </p>
                             <template lwc:if={isNotOnTheLastStages}>
                                 <p>
-                                    <lightning-input type="checkbox" label="BadNINO" onchange={handleChange}
+                                    <lightning-input type="checkbox" label="Bad NINO" onchange={handleChange}
                                         data-id="bad_nino"></lightning-input>
                                 </p>
                             </template>
                             <p>
-                                <lightning-input type="checkbox" label="BadInfo" onchange={handleChange}
+                                <lightning-input type="checkbox" label="Bad Info" onchange={handleChange}
                                     data-id="bad_info"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="DWP Call" onchange={handleChange}
+                                    data-id="dwp_call"></lightning-input>
                             </p>
                         </div>
                         <div>

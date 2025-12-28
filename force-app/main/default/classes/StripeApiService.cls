@@ -1,4 +1,61 @@
 public class StripeApiService {
+	private static final User RECIPIENT_USER {
+        get {
+            if (RECIPIENT_USER == null) {
+                List<User> users = [
+            		SELECT
+                		Id,
+                		Email
+                    FROM User
+                    WHERE Email = 'ciara@xtrapension.com'
+                    LIMIT 1
+                ];
+                if (!users.isEmpty()) {
+                    RECIPIENT_USER = users[0];
+                }
+            }
+            return RECIPIENT_USER;
+        }
+        private set;
+    }
+    private static final CustomNotificationType AGENT_NOTIFICATION {
+        get {
+            if (AGENT_NOTIFICATION == null) {
+                List<CustomNotificationType> notificationType = [
+                    SELECT
+                        Id,
+                        DeveloperName
+                    FROM CustomNotificationType
+                    WHERE DeveloperName = 'Doc_Agent_Notification'
+                    LIMIT 1
+                ];
+                if (!notificationType.isEmpty()) {
+                    AGENT_NOTIFICATION = notificationType[0];
+                }
+            }
+            return AGENT_NOTIFICATION;
+        }
+        private set;
+    }
+
+	private static final OrgWideEmailAddress OWD {
+        get {
+            if (OWD == null) {
+                List<OrgWideEmailAddress> orgWideEmailAddresses = [
+                    SELECT Id
+                    FROM OrgWideEmailAddress
+                    WHERE Address = 'clients@xtrapension.com'
+                    WITH USER_MODE
+                    LIMIT 1
+                ];
+                if (!orgWideEmailAddresses.isEmpty()) {
+                    OWD = orgWideEmailAddresses[0];
+                }
+            }
+            return OWD;
+        }
+        private set;
+    }
 
 	@future(callout=true)
     public static void createPaymentIntent(Map<String, String> requestParams, Id paymentId) {
@@ -14,13 +71,18 @@ public class StripeApiService {
 				Status__c,
 				Error_Message__c,
 				Application__c,
+				Application_Name__c,
 				Application__r.Contact__c,
 				Application__r.Email__c,
+				Client_First_Name__c,
+				Client_Second_Name__c,
+				Product_Name__c,
 				Payment_Intent__c,
 				Source__c,
 				Repeated_Payment_Date_1__c,
 				Repeated_Payment_Date_2__c,
-				Repeated_Payment_Date_3__c
+				Repeated_Payment_Date_3__c,
+				Fail_Payment_Date__c
 			FROM Payment__c
 			WHERE Id = :paymentId
 			LIMIT 1
@@ -59,6 +121,12 @@ public class StripeApiService {
 				currentPayment.Repeated_Payment_Date_1__c = todayDate.addDays(4);
 				currentPayment.Repeated_Payment_Date_2__c = todayDate.addDays(8);
 				currentPayment.Repeated_Payment_Date_3__c = todayDate.addDays(12);
+			}
+			if(currentPayment.Repeated_Payment_Date_3__c != null &&
+			   currentPayment.Repeated_Payment_Date_3__c == Date.today() &&
+			   currentPayment.Repeated_Payment_Date_2__c < Date.today() &&
+			   currentPayment.Repeated_Payment_Date_1__c < Date.today()) {
+			   sendFailNotification(currentPayment);
 			}
 			update currentPayment;
 		}
@@ -102,6 +170,12 @@ public class StripeApiService {
 				currentPayment.Repeated_Payment_Date_2__c = todayDate.addDays(8);
 				currentPayment.Repeated_Payment_Date_3__c = todayDate.addDays(12);
 			}
+			if(currentPayment.Repeated_Payment_Date_3__c != null &&
+			   currentPayment.Repeated_Payment_Date_3__c == Date.today() &&
+			   currentPayment.Repeated_Payment_Date_2__c < Date.today() &&
+			   currentPayment.Repeated_Payment_Date_1__c < Date.today()) {
+				sendFailNotification(currentPayment);
+			}
 			update currentPayment;
 		}
 		return newPaymentIntentResult;
@@ -140,7 +214,7 @@ public class StripeApiService {
 				currentPayment.Card_Data__c = 'visa - 4242';
 			} else currentPayment.Card_Data__c = cardData.get('brand') + ' - ' + cardData.get('last4');
 			update currentPayment;
-			PaymentTriggerHandler.sendReceipt(payment);
+			PaymentTriggerHandler.sendReceipt(new List<Payment__c>{currentPayment}, true);
 		}
 	}
 
@@ -155,6 +229,34 @@ public class StripeApiService {
 		} else {
 			return 'Error';
 		}
+	}
+
+	private static void sendFailNotification(Payment__c currPay) {
+		if (currPay == null) return;
+		String subject = '[URGENT] ' +  currPay.Application_Name__c + ' - ' + currPay.Client_First_Name__c + ' ' + currPay.Client_Second_Name__c + ' - ' + currPay.Product_Name__c + ' Fee - PAYMENT Failed (3x)';
+        Messaging.CustomNotification notification = new Messaging.CustomNotification();
+        notification.setTitle(subject);
+        notification.setBody(currPay.Application_Name__c + ' - ' + currPay.Product_Name__c + ' Fee - PAYMENT Failed (3x)');
+        notification.setNotificationTypeId(AGENT_NOTIFICATION.Id);
+        notification.setTargetId(currPay.Application__c);
+		if(RECIPIENT_USER == null) return;
+        notification.send(new Set<String> {RECIPIENT_USER.Id});
+
+		Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
+        message.setUseSignature(false);
+        message.setSaveAsActivity(true);
+        message.setTreatTargetObjectAsRecipient(false);
+        message.setWhatId(currPay.Application__c);
+        if ( OWD != null ) {
+            message.setOrgWideEmailAddressId(OWD.Id);
+        }
+        message.setSubject(subject);
+        message.setPlainTextBody('');
+        message.toAddresses = new String[]{RECIPIENT_USER.Email};
+
+        Messaging.SendEmailResult[] result = Messaging.sendEmail(
+			new List<Messaging.SingleEmailMessage>{message}
+		);
 	}
 
     public class StripeApiException extends Exception{

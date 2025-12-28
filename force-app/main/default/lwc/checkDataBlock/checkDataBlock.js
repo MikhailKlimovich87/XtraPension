@@ -221,6 +221,9 @@ export default class CheckDataBlock extends LightningElement {
             case 'payment-not-received':
                 this.currCheckReply.paymentNotReceived = event.target.checked;
                 break;
+            case 'dwp_call':
+                this.currCheckReply.dwpCall = event.target.checked;
+                break;
         }
         this.dispatchEvent(
             new CustomEvent('updatecheckreply', {

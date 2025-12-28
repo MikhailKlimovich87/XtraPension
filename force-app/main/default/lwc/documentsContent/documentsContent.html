@@ -99,7 +99,8 @@
     </template>
     <template if:true={isOpenResultModal}>
         <c-edit-result-message-modal onhideresultpopup={closeResultPopup} template-body={currentTemplate}
-            record-id={recordId} subject={emailSubject}
-            onsendresultemail={handleEventSend}></c-edit-result-message-modal>
+            record-id={recordId} subject={emailSubject} onsendresultemail={handleEventSend}
+            onhidecofirmationpopup={handleSendMissingPaymentMessage}
+            is-paid-app-payment={isPaidApplicationPayment}></c-edit-result-message-modal>
     </template>
 </template>

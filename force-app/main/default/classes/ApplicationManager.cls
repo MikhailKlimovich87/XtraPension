@@ -53,6 +53,14 @@ global with sharing class ApplicationManager {
         } else if(reqURI == '/api/v1/form/change-app-stage') {
             result = ApplicationManagerHandler.setFirstStatusApp(stripeId);
             response.responseBody = Blob.valueOf(JSON.serialize(result));
+        } else if(reqURI == '/api/v1/save-card/getCustomerInfo') {
+            String applicationId = (String)((Map<String, Object>)JSON.deserializeUntyped(requestBody)).get('id');
+            result = ApplicationManagerHandler.getCustomerInfo(applicationId);
+            response.responseBody = Blob.valueOf(JSON.serialize(result));
+        } else if(reqURI == '/api/v1/save-card/savePaymentMethod') {
+            CardDataWrapper cardData = (CardDataWrapper) JSON.deserialize(requestBody.replace('""', 'null'), CardDataWrapper.class);
+            result = ApplicationManagerHandler.addNewPaymentMethod(cardData);
+            response.responseBody = Blob.valueOf(JSON.serialize(result));
         }
         List<Application__c> createdApp = [
             SELECT Id
@@ -516,6 +524,12 @@ global with sharing class ApplicationManager {
         public String phone;
         public AddressDataWrapper address;
         public String currencyCode;
+    }
+
+    public class CardDataWrapper {
+        public String appId;
+        public String paymentMethod;
+        public String customer;
     }
 
     public class MobileDataWrapper {

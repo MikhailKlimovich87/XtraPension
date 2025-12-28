@@ -352,7 +352,7 @@ public class XtraPensionConstants {
             '<br>' +
         '</p>' +
         '<p>We trust that this will clarify the matter and we look forward to your earliest reply to their CF83 application.</p>';
-    public static final String DWP_C2_REQUEST =
+    public static final String DWP_C2_REQUEST_EUROPE =
         '<h2 style="text-align: center;">' +
             '<strong style="font-size: 16px;">Request to Pay Class 2 NICs</strong>' +
             '<br/>' +
@@ -376,13 +376,44 @@ public class XtraPensionConstants {
         '<br/>' +
         '<ul>' +
         '<li>I was ordinarily employed (/self-employed) immediately before last leaving the UK</li>' +
-        '<li>I was in employment which was not employment in respect of earnings from which Class 1 contributions were payable.</li>' +
+        '<li>I was in employment abroad which was not employment in respect of earnings from which Class 1 contributions were payable.</li>' +
         '<li>I was in employment abroad continuously paying social insurance (as verified by the official Govt contributions statement enclosed)</li>' +
         '<li>I lived in the UK (/EU) for a continuous 3 year period before the period for which NI contributions are to be paid.</li>' +
         '<li>I paid the qualifying amount of contributions in 3 years or more in UK (/EU)</li>' +
         '</ul>' +
         '<br/>' +
         '<p>As I was habitually resident in an EU country and was previously compulsorily insured in the UK, I believe I therefore qualify for voluntary Class 2 contributions under Article 14 of EC Regulation 883/2004, the shared ‘EU Residency’ rule.</p>' +
+        '<br/>' +
+        '<p>Yours sincerely</p>';
+    public static final String DWP_C2_REQUEST_OUTSIDE_EUROPE =
+        '<h2 style="text-align: center;">' +
+            '<strong style="font-size: 16px;">Request to Pay Class 2 NICs</strong>' +
+            '<br/>' +
+            '</h2>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Dear Sir / Madam</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>I wish to pay Class 2 NICs for all the available past years that I was working abroad up until I reached UK State Pension Age</p>' +
+        '<p>' +
+            '<br>' +
+        '</p>' +
+        '<p>Please find enclosed evidence of my post-UK work abroad as shown by social insurance/social security etc records.</p>' +
+        '<br/>' +
+        '<p><strong style="font-size: 16px;">Date I left the UK:{DateOfLeavingUK}</strong>.</p>' +
+        'SPLIT=============' +
+        '<p>I believe I qualify to pay Class 2 contributions for past years under HMRC\'s stated criteria that:</p>' +
+        '<br/>' +
+        '<ul>' +
+        '<li>I was ordinarily employed (/self-employed) immediately before last leaving the UK</li>' +
+        '<li>I was in employment abroad which was not employment in respect of earnings from which Class 1 contributions were payable.</li>' +
+        '<li>I was in employment abroad continuously paying social insurance (as verified by the official Govt contributions statement enclosed)</li>' +
+        '<li>I lived in the UK for a continuous 3 year period before the period for which NI contributions are to be paid.</li>' +
+        '<li>I paid the qualifying amount of contributions in 3 years or more in UK</li>' +
+        '</ul>' +
         '<br/>' +
         '<p>Yours sincerely</p>';
     public static final String BOUNCE_LETTER =
@@ -415,4 +446,118 @@ public class XtraPensionConstants {
     public static final String X64_8_CHECK_AGENT_MESSAGE = '64-8 ISSUE after check';
     public static final String REJECT_CHECK_AGENT_MESSAGE = 'REJECTION by HMRC (Check with Client)';
     public static final String APPEAL_CHECK_AGENT_MESSAGE = 'APPEAL NOT RECEIVED by HMRC';
+    public static final String SUCCESS_HMRC_RESULT_TEMPLATE =
+        '<p>Hi {!Application__c.First_Name__c}</p>' +
+        '<br/>' +
+        '<p> Watch this short video before we call you to see your next steps: <a href=\'https://xpen.uk/pay\'>https://xpen.uk/pay</a></p>' +
+        '<br/>' +
+        '<p>We applied on your behalf some time ago to pay voluntary National Insurance contributions to ensure you could maximise your UK State Pension if HMRC assessed you as being eligible to pay such contributions based on your circumstances. </p>' +
+        '<br/>' +
+        '<p>I\'m delighted to tell you that we have been successful in our application! </p>' +
+        '<br/>' +
+        '<p>' +
+        '<p><b>WARNING:</b>HMRC are being very strict on when you need to make payment by.<br/>' +
+            'We are asking them this week to note on your account when we received the attached letter in order to buy you some time with their payments team.<br/>' +
+            'We strongly recommend you pay HMRC immediately after speaking to our agent so as you do not miss out on buying past years.' +
+        '</p>' +
+        '</p>' +
+        '<br/>' +
+        '<p><b>Attached Now is:</b></p>' +
+        '<br/>' +
+        '<ul>' +
+            '<li>HMRC Letter of Approval</li>' +
+            '<li>Next Step 1 - Pay HMRC (incls their Bank Details & Tips)</li>' +
+            '<li>Next Step 2 - Get a Receipt (For you to print, complete & post)</li>' +
+            '<li>Annual Service - Details of our Annual \'Support Line\' Service</li>' +
+        '</ul>' +
+        '<br/>' +
+        '<p><b>An Agent will call you from a Galway, Ireland number 091... over the next few days to:</b></p>' +
+        '<br/>' +
+        '<ul>' +
+            '<li>Answer any questions you may have</li>' +
+            '<li>Guide you through the process of paying HMRC</li>' +
+            '<li>Confirm final amount that we will be charging you</li>' +
+            '<li>Tell you about our annual \'Pension Keeper\' service (€125 / year)</li>' +
+        '</ul>' +
+        '<br/>' +
+        '<p>Thanks again for your business!</p>' +
+        '<br/>' +
+        '<p><b>XtraPension Ltd</b></p>' +
+        '<p><b>Galway, Ireland</b></p>' +
+        '<br/>' +
+        '<p>Tel: +353 (0)91 335 583</p>' +
+        '<p>WhatsApp: +353 (0)83 123 4000</p>' +
+        '<br/>' +
+        '<p><a href=\'https://xtrapension.com\'>https://xtrapension.com</a></p>';
+    public static final String SUCCESS_HMRC_RESULT_IRELAND_CUSTOMER_TEMPLATE =
+        '<p>Hi {!Application__c.First_Name__c}</p>' +
+        '<br/>' +
+        '<p> Watch this short video before we call you to see your next steps: <a href=\'https://xpen.uk/pay\'>https://xpen.uk/pay</a></p>' +
+        '<br/>' +
+        '<p>We applied on your behalf some time ago to pay voluntary National Insurance contributions to ensure you could maximise your UK State Pension if HMRC assessed you as being eligible to pay such contributions based on your circumstances. </p>' +
+        '<br/>' +
+        '<p>I\'m delighted to tell you that we have been successful in our application! </p>' +
+        '<br/>' +
+        '<p>' +
+        '<p><b>WARNING:</b>HMRC are being very strict on when you need to make payment by.<br/>' +
+            'We are asking them this week to note on your account when we received the attached letter in order to buy you some time with their payments team.<br/>' +
+            'We strongly recommend you pay HMRC immediately after speaking to our agent so as you do not miss out on buying past years.' +
+        '</p>' +
+        '</p>' +
+        '<br/>' +
+        '<p><b>Attached Now is:</b></p>' +
+        '<br/>' +
+        '<ul>' +
+            '<li>HMRC Letter of Approval</li>' +
+            '<li>Next Step 1 - Pay HMRC (incls their Bank Details & Tips)</li>' +
+            '<li>Next Step 2 - Get a Receipt (For you to print, complete & post)</li>' +
+            '<li>Annual Service - Details of our Annual \'Support Line\' Service</li>' +
+            '<li>Private UK Pension Transfer - Details of this Service</li>' +
+        '</ul>' +
+        '<br/>' +
+        '<p><b>An Agent will call you from a Galway, Ireland number 091... over the next few days to:</b></p>' +
+        '<br/>' +
+        '<ul>' +
+            '<li>Answer any questions you may have</li>' +
+            '<li>Guide you through the process of paying HMRC</li>' +
+            '<li>Confirm final amount that we will be charging you</li>' +
+            '<li>Tell you about our annual \'Pension Keeper\' service (€125 / year)</li>' +
+        '</ul>' +
+        '<br/>' +
+        '<p>Thanks again for your business!</p>' +
+        '<br/>' +
+        '<p><b>XtraPension Ltd</b></p>' +
+        '<p><b>Galway, Ireland</b></p>' +
+        '<br/>' +
+        '<p>Tel: +353 (0)91 335 583</p>' +
+        '<p>WhatsApp: +353 (0)83 123 4000</p>' +
+        '<br/>' +
+        '<p><a href=\'https://xtrapension.com\'>https://xtrapension.com</a></p>';
+    public static final String REJECT_HMRC_RESULT_TEMPLATE =
+        '<p>' +
+        '<p>Hi {!Application__c.First_Name__c}</p>' +
+        '<br/>' +
+        '<p>We applied on your behalf several months ago to pay voluntary National Insurance contributions to ensure you could maximise your UK State Pension if HMRC assessed you as being eligible to pay such contributions based on your historic work history. </p>' +
+        '<br/>' +
+        '<p>I regret to inform you that your application has been rejected for the reasons outlined in the attached by HMRC.</p>' +
+        '<br/>' +
+        '<p>This is following an appeal by us on your behalf following an earlier rejection letter.</p>' +
+        '<br/>' +
+        '<p>Please tell us if there is additional information we were unaware of previously and if you feel HMRC\'s decision is wrong.</p>' +
+        '<br/>' +
+        '<p>Our 100% money-back guarantee still applies so we will be refunding all fees charged to you over the next 15 business days.</p>' +
+        '<br/>' +
+        '<p>We\'re very disappointed the news here is not better.</p>' +
+        '<br/>' +
+        '<p>Thanks again for using our service.</p>' +
+        '<br/>' +
+        '<p><b>XtraPension Ltd</b></p>' +
+        '<p><b>Galway, Ireland</b></p>' +
+        '<br/>' +
+        '<p><b>Tel:</b> (091) 335 583</p>' +
+        '<br/>' +
+        '<p>M-F: 8-6pm. Sat: 9-3pm</p>' +
+        '<a href=\'https://xtrapension.com\'>https://xtrapension.com</a>' +
+        '</p>';
+
 }
