@@ -1,0 +1,39 @@
+<template>
+    <lightning-card title="Missing Information">
+        <div class="slds-p-around_medium slds-is-relative">
+
+            <template if:true={isLoading}>
+                <lightning-spinner
+                    alternative-text="Loading"
+                    size="medium">
+                </lightning-spinner>
+            </template>
+
+            <div class="slds-m-bottom_medium">
+                <lightning-button
+                    label="Check Missing"
+                    variant="brand"
+                    onclick={handleCheckMissing}
+                    disabled={isLoading}>
+                </lightning-button>
+            </div>
+
+            <template if:true={hasMissing}>
+                <ul class="slds-list_dotted slds-p-left_medium">
+                    <template for:each={missingItems} for:item="item">
+                        <li key={item}>
+                            {item}
+                        </li>
+                    </template>
+                </ul>
+            </template>
+
+            <template if:false={hasMissing}>
+                <p class="slds-text-color_success">
+                    No missing information.
+                </p>
+            </template>
+
+        </div>
+    </lightning-card>
+</template>

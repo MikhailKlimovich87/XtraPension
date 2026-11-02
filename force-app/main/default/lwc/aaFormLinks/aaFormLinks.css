@@ -1,0 +1,18 @@
+.aa-fl-link {
+    color: var(--slds-g-color-brand-base-50, #0176d3);
+    font-size: 0.875rem;
+    text-decoration: none;
+    font-weight: 600;
+}
+.aa-fl-link:hover { text-decoration: underline; }
+.aa-fl-link:focus-visible {
+    outline: 2px solid var(--slds-g-color-brand-base-50, #0176d3);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+.aa-fl-empty {
+    color: var(--slds-g-color-neutral-base-50, #a0a0a0);
+    font-style: italic;
+    font-size: 0.75rem;
+    margin: 0;
+}

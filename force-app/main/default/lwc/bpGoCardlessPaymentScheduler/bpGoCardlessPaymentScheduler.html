@@ -1,0 +1,228 @@
+<template>
+    <lightning-card title="GoCardless Direct Debit Payment Scheduler" icon-name="standard:reward">
+
+        <!-- Loading state -->
+        <template lwc:if={isLoadingAny}>
+            <div class="slds-p-around_medium slds-align_absolute-center">
+                <lightning-spinner alternative-text="Loading GoCardless status..." size="small"></lightning-spinner>
+            </div>
+        </template>
+
+        <template lwc:else>
+            <div class="slds-p-around_medium">
+
+                <!-- ============================================= -->
+                <!-- MANDATE STATUS BANNER (always visible)        -->
+                <!-- ============================================= -->
+                <div class="mandate-block slds-m-bottom_large">
+
+                    <!-- Block Header -->
+                    <div class="mandate-block_header slds-m-bottom_small">
+                        <h2 class="slds-text-heading_small">Mandate Status</h2>
+                    </div>
+
+                    <div class="mandate-block_body slds-p-around_medium">
+
+                        <!-- ACTIVE STATE -->
+                        <template lwc:if={mandateStatus.isActive}>
+                            <div class="status-banner status-banner_active slds-p-around_small slds-m-bottom_medium">
+                                <p class="slds-text-body_regular">
+                                    <strong class="status-active-text">Active</strong>
+                                    <span class="slds-m-left_x-small">since {displayActiveSince}</span>
+                                </p>
+                            </div>
+
+                            <div class="mandate-details slds-m-top_small">
+                                <div class="detail-row slds-m-bottom_x-small">
+                                    <span class="detail-label">Reference</span>
+                                    <span class="detail-value">{displayReference}</span>
+                                </div>
+                                <div class="detail-row slds-m-bottom_x-small">
+                                    <span class="detail-label">Customer ID</span>
+                                    <span class="detail-value">{displayCustomerId}</span>
+                                </div>
+                                <div class="detail-row slds-m-bottom_x-small">
+                                    <span class="detail-label">Bank Account ID</span>
+                                    <span class="detail-value">{displayBankAccountId}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Mandate ID</span>
+                                    <span class="detail-value">{displayMandateId}</span>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- NOT SET UP STATE -->
+                        <template lwc:else>
+                            <div class="status-banner status-banner_inactive slds-p-around_small">
+                                <p class="slds-text-body_regular">
+                                    <strong>Not set up.</strong>
+                                    <span class="slds-m-left_x-small">{mandateStatus.message}</span>
+                                </p>
+                            </div>
+                            <div class="slds-m-top_medium">
+                                <lightning-button
+                                    variant="brand"
+                                    label="Set Up Mandate Now"
+                                    onclick={handleSetupMandate}
+                                    disabled={isSetupDisabled}>
+                                </lightning-button>
+                                <template lwc:if={isSettingUpMandate}>
+                                    <lightning-spinner alternative-text="Setting up mandate..." size="small" class="slds-m-left_small"></lightning-spinner>
+                                </template>
+                            </div>
+                        </template>
+
+                    </div>
+                </div>
+
+                <!-- ============================================= -->
+                <!-- ALREADY SCHEDULED CHECK                       -->
+                <!-- ============================================= -->
+                <template lwc:if={showAlreadyScheduled}>
+                    <div class="slds-box slds-theme_success slds-m-bottom_medium slds-p-around_medium">
+                        <p class="slds-text-heading_small">
+                            <lightning-icon icon-name="utility:success" size="x-small" variant="success" class="slds-m-right_x-small"></lightning-icon>
+                            A direct debit payment already exists for this claim.
+                        </p>
+                    </div>
+                    <p class="slds-text-body_regular slds-text-color_weak slds-m-bottom_large">
+                        New Direct Debit payments cannot be created if you have already created them and they are active.
+                    </p>
+                </template>
+
+                <!-- ============================================= -->
+                <!-- FORM (only when mandate active + no schedule) -->
+                <!-- ============================================= -->
+                <template lwc:if={showForm}>
+                    <div class="slds-m-top_medium">
+
+                        <!-- Award amount -->
+                        <div class="slds-form-element slds-m-bottom_medium">
+                            <label class="slds-form-element__label" for="awardAmount">
+                                <abbr class="slds-required" title="required">*</abbr> Award amount
+                            </label>
+                            <div class="slds-form-element__control">
+                                <lightning-input
+                                    type="text"
+                                    id="awardAmount"
+                                    value={awardDisplayValue}
+                                    onchange={handleAwardChange}
+                                    onblur={handleAwardBlur}
+                                    placeholder="£0.00"
+                                    variant="label-hidden">
+                                </lightning-input>
+                            </div>
+                        </div>
+
+                        <!-- DWP Payment Date -->
+                        <div class="slds-form-element slds-m-bottom_medium">
+                            <label class="slds-form-element__label" for="firstPaymentDate">
+                                <abbr class="slds-required" title="required">*</abbr> DWP Payment Date on Letter
+                            </label>
+                            <div class="slds-form-element__control">
+                                <lightning-input
+                                    type="date"
+                                    id="firstPaymentDate"
+                                    value={firstPaymentDate}
+                                    onchange={handleFirstPaymentDateChange}
+                                    variant="label-hidden">
+                                </lightning-input>
+                            </div>
+                        </div>
+
+                        <!-- First Charge Date -->
+                        <div class="slds-form-element slds-m-bottom_medium">
+                            <label class="slds-form-element__label" for="firstChargeDate">
+                                First Charge Date (auto: +10 days)
+                            </label>
+                            <div class="slds-form-element__control">
+                                <lightning-input
+                                    type="date"
+                                    id="firstChargeDate"
+                                    value={firstChargeDate}
+                                    disabled
+                                    variant="label-hidden">
+                                </lightning-input>
+                            </div>
+                        </div>
+
+                        <div class="fee-box slds-m-bottom_large slds-p-around_small">
+                            <span>Fee (25% of award amount):</span>
+                            <strong class="slds-text-heading_medium">£{formattedFeeAmount}</strong>
+                        </div>
+
+                        <template lwc:if={isOverride}>
+                            <div class="slds-m-bottom_large">
+                                <fieldset class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <lightning-radio-group
+                                            name="installments"
+                                            options={installmentOptions}
+                                            value={selectedInstallments}
+                                            type="radio"
+                                            onchange={handleInstallmentChange}>
+                                        </lightning-radio-group>
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </template>
+
+                        <!-- Split toggle -->
+                        <div class="slds-form-element slds-m-bottom_large">
+                            <label class="slds-checkbox_toggle slds-grid">
+                                <span class="slds-form-element__label slds-m-bottom_none">Split Payments?</span>
+                                <input type="checkbox" name="toggle" checked={isOverride} onchange={handleOverrideToggle} />
+                                <span class="slds-checkbox_faux_container" aria-live="polite">
+                                    <span class="slds-checkbox_faux"></span>
+                                    <span class="slds-checkbox_on">Split</span>
+                                    <span class="slds-checkbox_off">Not split</span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Preview -->
+                        <div class="schedule-preview slds-p-around_medium slds-m-bottom_large">
+                            <p>
+                                You'll charge <strong>£{formattedInstallmentAmount}</strong>
+                                on <strong>{schedulePreview}</strong>
+                                (across {selectedInstallments} months).
+                            </p>
+                            <template lwc:if={showExchangeRate}>
+                                <p class="slds-text-body_small slds-m-top_small slds-text-color_weak">
+                                    Exchange rate: <strong>{exchangeRateDisplay}</strong>
+                                    <span class="slds-m-left_xx-small">(1 GBP = {exchangeRateDisplay} {targetCurrency})</span>
+                                </p>
+                                <p class="slds-text-body_small slds-m-top_x-small">
+                                    Converted amount: <strong>{convertedMonthlyAmount} {targetCurrency}</strong> per month
+                                </p>
+                            </template>
+                        </div>
+
+                        <!-- Save buttons -->
+                        <div class="slds-grid slds-grid_align-center slds-gutters slds-m-top_large">
+                            <div class="slds-col">
+                                <lightning-button
+                                    variant="neutral"
+                                    label="Save"
+                                    onclick={handleSaveAward}
+                                    disabled={isSaveAwardDisabled}>
+                                </lightning-button>
+                            </div>
+                            <div class="slds-col">
+                                <lightning-button
+                                    variant="brand"
+                                    label="Save Schedule Payment"
+                                    onclick={handleSave}
+                                    disabled={isSaveDisabled}>
+                                </lightning-button>
+                            </div>
+                        </div>
+
+                    </div>
+                </template>
+
+            </div>
+        </template>
+    </lightning-card>
+</template>

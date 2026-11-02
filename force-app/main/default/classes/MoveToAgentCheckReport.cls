@@ -24,7 +24,6 @@ public without sharing class MoveToAgentCheckReport {
                         Name != 'Monica Lorica' AND
                         Name != 'MaryClaire Mchatton' AND
                         Name != 'Stripe Webhooks Site Guest User' AND
-                        Name != 'John Ring' AND
                         Name != 'Richard Talbot'
                 ];
                 if (!activeUsers.isEmpty()) {
@@ -62,7 +61,6 @@ public without sharing class MoveToAgentCheckReport {
                   CreatedBy.Name!= 'Monica Lorica' AND
                   CreatedBy.Name!= 'MaryClaire Mchatton' AND
                   CreatedBy.Name!= 'Stripe Webhooks Site Guest User' AND
-                  CreatedBy.Name!= 'John Ring' AND
                   CreatedBy.Name!= 'Richard Talbot'
             ORDER BY CreatedDate DESC];
         if (historyData.size() == 0) {

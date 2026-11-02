@@ -16,6 +16,7 @@ export default class EditDocumentModal extends LightningElement {
     @track newEmployerCheckboxData = [];
     @api showSpinner;
     currDate;
+    @api isReply;
 
     connectedCallback() {
         this.startLetterData = this.app.Freeform_RichText_Line1__c;
@@ -95,11 +96,13 @@ export default class EditDocumentModal extends LightningElement {
 
     @api
     get isExistUKEmployers() {
+        console.log('lastUkEmployer: ' + JSON.stringify(this.lastUkEmployer));
         return this.lastUkEmployer == undefined ? false : true;
     }
 
     @api
     get isExistAfterUKEmployers() {
+        console.log('abroadEmployers: ' + JSON.stringify(this.abroadEmployers));
         return this.abroadEmployers == undefined ? false : true;
     }
     

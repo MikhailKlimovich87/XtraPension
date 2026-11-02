@@ -25,6 +25,13 @@
             date-of-bitrh={dateOfBirth} email-address={customerEmail} full-address={addressInfo}>
         </c-edit-dwp-status-reply>
     </template>
+    <template if:true={isOpenDWP_HMRC_C2_RejectionModal}>
+        <c-edit-dwp-hmrc-c2-rejection-reply onhidepopup={closePopup} chose-value={currentValue}
+            ongeneratepdf={handleGeneratePdf} first-name={firstName} second-name={secondName} nino={nino}
+            app-name={appName} hmrc-ref={hmrcRef} date-of-bitrh={dateOfBirth} email-address={customerEmail}
+            full-address={addressInfo}>
+        </c-edit-dwp-hmrc-c2-rejection-reply>
+    </template>
     <template if:true={isCertifiedDocModal}>
         <c-edit-certified-doc-modal onhidepopup={closePopup} ongeneratepdf={handleGeneratePdf}
             full-address={addressInfo} hmrc-ref={hmrcRef} chose-value={currentValue}>
@@ -46,5 +53,22 @@
             full-address={addressInfo} chose-value={currentValue} first-name={firstName} second-name={secondName}
             nino={nino} date-of-bitrh={dateOfBirth} phone={phone} former-name={formerName} home-address={homeAddress}>
         </c-edit-update-letter-modal>
+    </template>
+    <template if:true={isOpenWorkHistoryModal}>
+        <c-edit-work-history-modal onhidepopup={closePopup} ongeneratepdf={handleGeneratePdf}
+            abroad-empl={abroadEmployers} last-empl={lastUkEmployer}>
+        </c-edit-work-history-modal>
+    </template>
+    <template if:true={isOpenRefundRequestModal}>
+        <c-edit-refund-request-modal onhidepopup={closePopup} ongeneratepdf={handleGeneratePdf}
+            first-name={firstName} second-name={secondName} nino={nino} phone={phone} full-address={addressInfo}>
+        </c-edit-refund-request-modal>
+    </template>
+    <template if:true={isOpenCustomLetterModal}>
+        <c-edit-document-modal app={currApplication} previous-addresses={previuosAddresses}
+            last-uk-employer={lastUkEmployer} abroad-employers={abroadEmployers} latest-address={lastUKAddresses}
+            show-spinner={isShowSpinner} onhidepopup={closePopup} onchangecustomletter={regenerateCustomLetter}
+            is-reply="true">
+        </c-edit-document-modal>
     </template>
 </template>

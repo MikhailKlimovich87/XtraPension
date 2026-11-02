@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>58.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Fee installments list with Retry for failed ones (embedded in pc1FeeChargeCard).</description>
+</LightningComponentBundle>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>60.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>AA Award Recorder</masterLabel>
+    <description>Records DWP award + lump sum + payment plan on AA Application. Fee=20% of award (formula). Plan auto-recommended (lump&gt;=fee: single; lump&lt;fee: 3-monthly) with val-team override to 1/2/3. Advances stage via AA_GoCardlessController.recordAward.</description>
+    <targets>
+        <target>lightning__RecordPage</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__RecordPage">
+            <objects>
+                <object>AA_Application__c</object>
+            </objects>
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

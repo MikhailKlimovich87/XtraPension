@@ -28,7 +28,8 @@ public without sharing class AgentSalesByCountryReportController {
                 Appeal_Application__c,
                 CreatedDate,
                 Current_Address_Abroad__CountryCode__s,
-                CurrencyIsoCode
+                CurrencyIsoCode,
+                Current_Abroad_Country__c
             FROM Application__c
             WHERE
                 Agent_Making_Sale__c != null AND
@@ -115,7 +116,8 @@ public without sharing class AgentSalesByCountryReportController {
                 name == 'John R' ||
                 name == 'Daniel' ||
                 name == 'Mike' ||
-                name == 'Gerard') {
+                name == 'Gerard' ||
+                name == 'Adrian') {
                 continue;
             }
             agentsName.add(name);
@@ -168,7 +170,8 @@ public without sharing class AgentSalesByCountryReportController {
 
             if (currentAgentApps != null) {
                 for (Application__c app : currentAgentApps) {
-                    Integer count = app.Appeal_Application__c == true ? 2 : 1;
+                    Integer count = app.Appeal_Application__c == true ||
+                                    (app.Agent_Making_Sale__c == 'Megan' && app.Current_Abroad_Country__c == 'South Africa')? 2 : 1;
                     Date createdDate = app.CreatedDate.date();
                     agentData.todayCount+=count;
                     if (app.Current_Address_Abroad__CountryCode__s == 'AU') {
@@ -255,7 +258,8 @@ public without sharing class AgentSalesByCountryReportController {
                 agentsInfo[i].name == 'John R' ||
                 agentsInfo[i].name == 'Daniel' ||
                 agentsInfo[i].name == 'Mike' ||
-                agentsInfo[i].name == 'Gerard') {
+                agentsInfo[i].name == 'Gerard' ||
+                agentsInfo[i].name == 'Adrian') {
             } else {
                 todayWrapper.countData.add(agentsInfo[i].todayCount);
                 irelandWrapper.countData.add(agentsInfo[i].irelandCount);

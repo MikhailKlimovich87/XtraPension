@@ -1,0 +1,103 @@
+<template>
+    <div class="slds-card pc1-feecharge">
+        <header class="pc1-feecharge__head">
+            <lightning-icon icon-name="standard:payment_method" size="small" class="pc1-feecharge__icon"></lightning-icon>
+            <div>
+                <h2 class="pc1-feecharge__title">Fee Charge</h2>
+                <p class="pc1-feecharge__sub">Charge the 20% success fee via the client's Direct Debit. Multi-installment plans fire installment&nbsp;1 immediately; the daily scheduler handles the rest.</p>
+            </div>
+        </header>
+
+        <!-- Gate visualization ---------------------------------------- -->
+        <div class="pc1-feecharge__gates">
+            <div class={mandateGateClass}>
+                <lightning-icon icon-name={mandateGateIcon} size="xx-small" class="pc1-feecharge__gate-icon"></lightning-icon>
+                <span>Direct Debit Active</span>
+            </div>
+            <div class={awardGateClass}>
+                <lightning-icon icon-name={awardGateIcon} size="xx-small" class="pc1-feecharge__gate-icon"></lightning-icon>
+                <span>Award Amount Recorded</span>
+            </div>
+            <div class={notChargedClass}>
+                <lightning-icon icon-name={notChargedIcon} size="xx-small" class="pc1-feecharge__gate-icon"></lightning-icon>
+                <span>Not Already Charged</span>
+            </div>
+        </div>
+
+        <!-- Not yet charged — show CTA + plan preview ---------------- -->
+        <template if:false={alreadyCharged}>
+            <div class="pc1-feecharge__cta-block">
+                <lightning-button
+                    variant="brand"
+                    label={ctaLabel}
+                    icon-name="utility:money"
+                    onclick={handleChargeClick}
+                    disabled={chargeDisabled}
+                    title={chargeTooltip}
+                    class="pc1-feecharge__cta">
+                </lightning-button>
+                <template if:true={feeAmount}>
+                    <div class="pc1-feecharge__amount">
+                        <lightning-formatted-number
+                            value={firstInstallmentAmount}
+                            format-style="currency"
+                            currency-code="GBP">
+                        </lightning-formatted-number>
+                        <template if:true={multiInstallment}>
+                            <span class="pc1-feecharge__amount-sub">&nbsp;now (installment&nbsp;1 of {installmentsCount})</span>
+                        </template>
+                    </div>
+                </template>
+                <template if:true={multiInstallment}>
+                    <p class="pc1-feecharge__plan-hint">Remaining installments ({remainingLabels}) will be charged automatically by the daily scheduler.</p>
+                </template>
+                <template if:true={chargeTooltip}>
+                    <p class="pc1-feecharge__disabled-reason">{chargeTooltip}</p>
+                </template>
+            </div>
+        </template>
+
+        <!-- Already charged — show status + installment table --------- -->
+        <template if:true={alreadyCharged}>
+            <div class="pc1-feecharge__charged">
+                <div class="pc1-feecharge__charged-banner">
+                    <strong>Charged</strong>
+                    <template if:true={chargedAtDisplay}>
+                        &nbsp;on {chargedAtDisplay}
+                    </template>
+                    <template if:true={prettyPaymentStatus}>
+                        &nbsp;— {prettyPaymentStatus}
+                    </template>
+                </div>
+                <div class="pc1-feecharge__meta">
+                    <div class="pc1-feecharge__row">
+                        <span class="pc1-feecharge__k">Total fee</span>
+                        <span class="pc1-feecharge__v">
+                            <lightning-formatted-number
+                                value={feeAmount}
+                                format-style="currency"
+                                currency-code="GBP">
+                            </lightning-formatted-number>
+                        </span>
+                    </div>
+                    <div class="pc1-feecharge__row">
+                        <span class="pc1-feecharge__k">Plan</span>
+                        <span class="pc1-feecharge__v">{planSummary}</span>
+                    </div>
+                    <template if:true={nextChargeDisplay}>
+                        <div class="pc1-feecharge__row">
+                            <span class="pc1-feecharge__k">Next charge</span>
+                            <span class="pc1-feecharge__v">{nextChargeDisplay}</span>
+                        </div>
+                    </template>
+                    <div class="pc1-feecharge__row">
+                        <span class="pc1-feecharge__k">Payment ID (installment&nbsp;1)</span>
+                        <span class="pc1-feecharge__v pc1-feecharge__mono">{maskedPaymentId}</span>
+                    </div>
+                </div>
+            </div>
+        </template>
+        <!-- Installments + Retry for failed ones (2026-10-02) -->
+        <c-pc1-fee-installments record-id={recordId}></c-pc1-fee-installments>
+    </div>
+</template>

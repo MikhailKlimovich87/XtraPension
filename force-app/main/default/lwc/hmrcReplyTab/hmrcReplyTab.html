@@ -1,0 +1,239 @@
+<template>
+    <lightning-card title="HMRC reply">
+        <div class="hmrc-wrapper">
+            <div class="hmrc-container">
+                <div lwc:if={file} class="selected-file-container">
+                    <lightning-icon icon-name="doctype:pdf" alternative-text="PDF" title="PDF"></lightning-icon>
+                    <div>
+                        <div class="selected-file-container_file-name"><b>File:</b> {file.name}</div>
+                        <div class="selected-file-container_file-size"><b>Size:</b> {fileSize}</div>
+                    </div>
+                    <div lwc:if={isLoadingFile} class="spinner-container">
+                        <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                    </div>
+                    <div class="selected-file-container_btns">
+                        <lightning-button
+                                variant="brand"
+                                label="Upload"
+                                onclick={handleUploadFile}
+                                disabled={disableUploadFile}
+                        ></lightning-button>
+                        <lightning-button
+                                variant=""
+                                label="Cancel"
+                                onclick={handleCancel}
+                                disabled={disableUploadFile}
+                        ></lightning-button>
+                    </div>
+                    <!--Show Form -->
+                    <div lwc:if={isShowForm} class="form-container">
+                        <div class="input-block">
+                            <lightning-combobox
+                                name="type"
+                                label="Type of HMRC Reply:"
+                                options={typesOfHMRCReply}
+                                onchange={handleInputChange}
+                                required
+                                data-field-name="currentReplyType"
+                                value={extractedData.currentReplyType.fieldValue}
+                                disabled={disableUpdate}
+                                class="form-input"
+                            ></lightning-combobox>
+                            <template if:true={extractedData.currentReplyType.isMatch}>
+                                <lightning-icon icon-name="action:approval" alternative-text="Approved"
+                                            title="Approved" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                            <template if:false={extractedData.currentReplyType.isMatch}>
+                                <lightning-icon icon-name="action:close" alternative-text="Closed"
+                                        title="Closed" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                        </div>
+
+                        <div class="input-block">
+                            <lightning-input
+                                type="date"
+                                label="Letter Date"
+                                onchange={handleInputChange}
+                                date-style="short"
+                                required={isRequiredLetterDate}
+                                data-field-name="letterDate"
+                                value={extractedData.letterDate.fieldValue}
+                                disabled={disableUpdate}
+                                class="form-input"
+                            ></lightning-input>
+                            <template if:true={extractedData.letterDate.isMatch}>
+                                <lightning-icon icon-name="action:approval" alternative-text="Approved"
+                                            title="Approved" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                            <template if:false={extractedData.letterDate.isMatch}>
+                                <lightning-icon icon-name="action:close" alternative-text="Closed"
+                                        title="Closed" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                        </div>
+
+                        <div class="input-block">
+                            <lightning-input
+                                type="text"
+                                label="HMRC Ref:"
+                                data-field-name="ourReference"
+                                value={extractedData.ourReference.fieldValue}
+                                onchange={handleInputChange}
+                                disabled={disableUpdate}
+                                class="form-input"
+                            ></lightning-input>
+                            <template if:true={extractedData.ourReference.isMatch}>
+                                <lightning-icon icon-name="action:approval" alternative-text="Approved"
+                                            title="Approved" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                            <template if:false={extractedData.ourReference.isMatch}>
+                                <lightning-icon icon-name="action:close" alternative-text="Closed"
+                                        title="Closed" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                        </div>
+
+                        <div class="input-block">
+                            <lightning-input
+                                type="number"
+                                label="Number of Qualifying Years:"
+                                step="0.1"
+                                data-field-name="qualifyingYears"
+                                value={extractedData.qualifyingYears.fieldValue}
+                                onchange={handleInputChange}
+                                disabled={disableUpdate}
+                                class="form-input"
+                            ></lightning-input>
+                            <template if:true={extractedData.qualifyingYears.isMatch}>
+                                <lightning-icon icon-name="action:approval" alternative-text="Approved"
+                                            title="Approved" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                            <template if:false={extractedData.qualifyingYears.isMatch}>
+                                <lightning-icon icon-name="action:close" alternative-text="Closed"
+                                        title="Closed" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                        </div>
+                        <div class="input-block">
+                            <lightning-combobox
+                                name="shortfall"
+                                label="Shortfall:"
+                                options={shortfallOptions}
+                                onchange={handleInputChange}
+                                data-field-name="shortfall"
+                                value={extractedData.shortfall.fieldValue}
+                                disabled={disableUpdate}
+                                class="form-input"
+                            ></lightning-combobox>
+                            <template if:true={extractedData.shortfall.isMatch}>
+                                <lightning-icon icon-name="action:approval" alternative-text="Approved"
+                                            title="Approved" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                            <template if:false={extractedData.shortfall.isMatch}>
+                                <lightning-icon icon-name="action:close" alternative-text="Closed"
+                                        title="Closed" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                        </div>
+                        <div class="input-block">
+                            <lightning-input
+                                type="text"
+                                label="Caseworker"
+                                data-field-name="caseworker"
+                                value={extractedData.caseworker.fieldValue}
+                                onchange={handleInputChange}
+                                disabled={disableUpdate}
+                                class="form-input"
+                            ></lightning-input>
+                            <template if:true={extractedData.caseworker.isMatch}>
+                                <lightning-icon icon-name="action:approval" alternative-text="Approved"
+                                            title="Approved" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                            <template if:false={extractedData.caseworker.isMatch}>
+                                <lightning-icon icon-name="action:close" alternative-text="Closed"
+                                        title="Closed" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                        </div>
+                        <div class="input-block">
+                            <lightning-combobox
+                                name="move-to-status"
+                                label="Move to Status:"
+                                options={moveToStatusOptions}
+                                onchange={handleInputChange}
+                                data-field-name="moveToStatus"
+                                value={extractedData.moveToStatus.fieldValue}
+                                disabled={disableUpdate}
+                                class="form-input"
+                            ></lightning-combobox>
+                            <template if:true={extractedData.moveToStatus.isMatch}>
+                                <lightning-icon icon-name="action:approval" alternative-text="Approved"
+                                            title="Approved" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                            <template if:false={extractedData.moveToStatus.isMatch}>
+                                <lightning-icon icon-name="action:close" alternative-text="Closed"
+                                        title="Closed" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                        </div>
+                        <div class="input-block">
+                            <lightning-input
+                                type="date"
+                                label="XP Received Date"
+                                data-field-name="xpReceivedDate"
+                                value={extractedData.xpReceivedDate.fieldValue}
+                                date-style="short"
+                                onchange={handleInputChange}
+                                placeholder={todayPlaceholder}
+                                disabled={disableUpdate}
+                                class="form-input"
+                            ></lightning-input>
+                            <template if:true={extractedData.xpReceivedDate.isMatch}>
+                                <lightning-icon icon-name="action:approval" alternative-text="Approved"
+                                            title="Approved" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                            <template if:false={extractedData.xpReceivedDate.isMatch}>
+                                <lightning-icon icon-name="action:close" alternative-text="Closed"
+                                        title="Closed" size="xx-small" class="slds-text-align_right">
+                                </lightning-icon>
+                            </template>
+                        </div>
+
+
+                        <div lwc:if={isLoadingUpdate} class="spinner-container">
+                            <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                        </div>
+
+                        <div class="form-container_btns">
+                            <lightning-button
+                                    variant="brand"
+                                    label="Update"
+                                    onclick={handleUpdate}
+                                    disabled={disableUpdate}
+                            ></lightning-button>
+                        </div>
+                    </div>
+                </div>
+                <!--Choose File -->
+                <div lwc:else class="choose-file-container">
+                    <h1>Upload PDF</h1>
+                    <lightning-button
+                            variant="brand"
+                            label="Choose a file"
+                            onclick={handleChooseFile}
+                            class="slds-m-left_x-small"
+                    ></lightning-button>
+                </div>
+            </div>
+        </div>
+    </lightning-card>
+</template>

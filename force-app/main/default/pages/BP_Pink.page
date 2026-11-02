@@ -1,0 +1,208 @@
+<apex:page renderAs="advanced_pdf"
+           showHeader="false"
+           sidebar="false"
+           standardStylesheets="false"
+           applyBodyTag="false"
+           applyHtmlTag="false"
+           >
+           <apex:stylesheet value="{!$Resource.BP_Pink}"/>
+<html style="margin: 0px; padding: 0px;">
+    <head>
+        <style>
+            @page {
+                size: A4;
+                margin: 20px 20px 20px 60px;
+            }
+        </style>
+        
+    </head>
+<body>
+<table style="width:100%;
+              height:100%;
+              border-collapse:collapse;
+              font-family:Arial, Helvetica, sans-serif;
+              margin-left: 40px;">
+
+
+        <!-- CONTENT -->
+        <tr>
+
+            <td></td>
+
+            <td style="vertical-align:top;
+                    padding-left:20px;
+                    padding-right:20px;">
+
+                <!-- TITLE -->
+
+                <div style="text-align:center;
+                            font-size:14px;
+                            font-weight:bold;
+                            margin-top:40px;
+                            margin-bottom:70px;">
+
+                    Instructions to Certify a Copy of Passport / Birth Cert / Marriage Cert
+
+                </div>
+
+                <!-- SECTION A -->
+
+                <div style="font-size:14px;
+                            font-weight:bold;
+                            margin-bottom:45px;">
+
+                    A - Instructions for Client
+
+                </div>
+
+                <table style="width:100%;
+                            border-collapse:collapse;
+                            font-size:14px;
+                            line-height:1.8;">
+
+                    <tr>
+                        <td style="padding-bottom:16px;">
+                            1. Make a clear COLOUR
+                            <span style="font-weight:bold;">photocopy</span>
+                            of each document/cert.
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding-bottom:16px;">
+                            2. Write
+                            <span style="font-weight:bold;">
+                                your full name &amp; date of birth
+                            </span>
+                            in
+                            <span style="font-weight:bold;">
+                                CAPITALS
+                            
+                            on top right </span> corner of each photocopy
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding-bottom:16px;">
+                            3. Ensure
+                            <span style="font-weight:bold;">
+                                all 4 edges
+                            </span>
+                            of the document are visible on photocopy
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding-bottom:16px;">
+                            4. Also photocopy
+                            <span style="font-weight:bold;">
+                                anything on back
+                            </span>
+                            of certificate(s) (if it exists)
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            5. Ensure writing &amp; information on photocopies is
+                            <span style="font-weight:bold;">
+                                100% legible
+                            </span>
+                        </td>
+                    </tr>
+
+                </table>
+
+                <div style="height:95px;"></div>
+
+                <!-- SECTION B -->
+
+                <div style="font-size:14px;
+                            font-weight:bold;
+                            margin-bottom:40px;">
+
+                    B – Instructions for Certifying {!IF($CurrentPage.parameters.country == 'IE', 'Garda / Police Officer', 'Police Officer')} /
+                    Post Office / Doctor / Solicitor / Notary
+
+                </div>
+
+                <div style="font-size:14px;
+                            margin-bottom:35px;">
+
+                    For each photocopy, please:
+
+                </div>
+
+                <table style="width:100%;
+                            border-collapse:collapse;
+                            font-size:14px;
+                            line-height:1.8;">
+
+                    <tr>
+                        <td style="padding-bottom:16px;">
+                            1. Use Official Stamp
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding-bottom:16px;">
+                            2. Write "Certified to be a true copy of the original seen by me"
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            3. Underneath this include your:
+                        </td>
+                    </tr>
+
+                </table>
+
+                <div style="margin-top:18px;
+                            margin-left:20px;
+                            font-size:14px;">
+                    &gt; Signature
+                </div>
+
+                <div style="margin-top:12px;
+                            margin-left:20px;
+                            font-size:14px;">
+                    &gt; Full Name in CAPITALS
+                </div>
+
+                <div style="margin-top:12px;
+                            margin-left:20px;
+                            font-size:14px;">
+                    &gt; Occupation
+                </div>
+
+                <div style="margin-top:12px;
+                            margin-left:20px;
+                            font-size:14px;">
+                    &gt; Business Address
+                </div>
+
+                <div style="margin-top:12px;
+                            margin-left:20px;
+                            font-size:14px;">
+                    &gt; Phone Number
+                </div>
+
+                <div style="margin-top:12px;
+                            margin-left:20px;
+                            font-size:14px;">
+                    &gt; Date
+                </div>
+
+            </td>
+
+            <td></td>
+
+        </tr>
+
+    </table>
+</body>
+
+</html>
+
+</apex:page>

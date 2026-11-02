@@ -1,0 +1,46 @@
+/* aaFilesCard — matches the "Docs" card pattern used on Claim / Sales.
+ * Each entry is a stacked title + date block, dividers between rows,
+ * blue underlined title that opens the SF file preview modal. */
+
+.doc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.doc-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--slds-g-color-neutral-base-90, #dddbda);
+}
+.doc-item:last-child {
+    border-bottom: none;
+}
+.doc-title {
+    color: var(--slds-g-color-brand-base-50, #0176d3);
+    font-size: 0.9375rem;
+    font-weight: 400;
+    text-decoration: underline;
+    display: block;
+    line-height: 1.35;
+}
+.doc-title:hover,
+.doc-title:focus {
+    color: var(--slds-g-color-brand-base-40, #014486);
+    text-decoration: underline;
+    outline: none;
+}
+.doc-date {
+    color: var(--slds-g-color-neutral-base-10, #181818);
+    font-size: 0.8125rem;
+    margin-top: 0.25rem;
+}
+
+.doc-view-all {
+    text-align: center;
+    padding: 0.75rem 0 0.25rem 0;
+    border-top: 1px solid var(--slds-g-color-neutral-base-90, #dddbda);
+    margin-top: 0.5rem;
+}
+.doc-view-all a {
+    color: var(--slds-g-color-brand-base-50, #0176d3);
+    font-size: 0.9375rem;
+}

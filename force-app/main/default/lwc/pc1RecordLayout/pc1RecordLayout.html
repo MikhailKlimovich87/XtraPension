@@ -1,0 +1,34 @@
+<template>
+    <div class="pc1-layout">
+        <div class="pc1-layout__header">
+            <c-pc1-application-header record-id={recordId}></c-pc1-application-header>
+            <div class="pc1-layout__spacer"></div>
+            <c-pc1-path-bar record-id={recordId}></c-pc1-path-bar>
+            <div class="pc1-layout__spacer"></div>
+            <c-pc1-handoff-card record-id={recordId}></c-pc1-handoff-card>
+        </div>
+        <div class="pc1-layout__grid">
+            <div class="pc1-layout__col pc1-layout__col--left">
+                <div class="pc1-layout__stack">
+                    <c-pc1-call-history record-id={recordId}></c-pc1-call-history>
+                    <c-pc1-stage-timeline record-id={recordId}></c-pc1-stage-timeline>
+                    <c-pc1-progress-bar record-id={recordId}></c-pc1-progress-bar>
+                </div>
+            </div>
+            <div class="pc1-layout__col pc1-layout__col--center">
+                <div class="pc1-layout__stack">
+                    <c-pc1-application-data record-id={recordId}></c-pc1-application-data>
+                </div>
+            </div>
+            <div class="pc1-layout__col pc1-layout__col--right">
+                <div class="pc1-layout__stack">
+                    <c-pc1-fill-run-panel record-id={recordId}></c-pc1-fill-run-panel>
+                    <c-pc1-form-links record-id={recordId}></c-pc1-form-links>
+                    <c-pc1-files-card record-id={recordId}></c-pc1-files-card>
+                    <c-pc1-call-schedule record-id={recordId}></c-pc1-call-schedule>
+                    <c-pc1-stage-card record-id={recordId}></c-pc1-stage-card>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>

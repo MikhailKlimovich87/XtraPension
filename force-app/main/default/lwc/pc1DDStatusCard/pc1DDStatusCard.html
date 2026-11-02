@@ -1,0 +1,107 @@
+<template>
+    <div class="slds-card pc1-ddstatus">
+        <header class="pc1-ddstatus__head">
+            <lightning-icon icon-name="standard:money" size="small" class="pc1-ddstatus__icon"></lightning-icon>
+            <div>
+                <h2 class="pc1-ddstatus__title">Direct Debit</h2>
+                <p class="pc1-ddstatus__sub">Direct Debit agreement status for later fee collection.</p>
+            </div>
+        </header>
+
+        <div class="pc1-ddstatus__section">
+            <!-- STATE 1 — No Direct Debit agreement yet -->
+            <template if:true={isNoMandate}>
+                <div class={bannerClass}>
+                    <strong>Not set up.</strong> {gatingHint}
+                </div>
+                <template if:true={canCreate}>
+                    <div class="pc1-ddstatus__actions">
+                        <lightning-button
+                            variant="brand"
+                            label="Create Direct Debit"
+                            icon-name="utility:add"
+                            onclick={handleCreateMandate}
+                            disabled={creating}
+                            class="pc1-ddstatus__cta">
+                        </lightning-button>
+                        <p class="pc1-ddstatus__hint">
+                            The client will receive an email confirming the Direct Debit; it
+                            stays waiting for their bank to confirm (usually the same working day).
+                        </p>
+                    </div>
+                </template>
+            </template>
+
+            <!-- STATE 2 — Waiting for bank confirmation -->
+            <template if:true={isPending}>
+                <div class={bannerClass}>
+                    <strong>Waiting for the bank to confirm</strong> ({prettyStatus}).
+                </div>
+                <div class="pc1-ddstatus__meta">
+                    <div class="pc1-ddstatus__row">
+                        <span class="pc1-ddstatus__k">Reference</span>
+                        <span class="pc1-ddstatus__v pc1-ddstatus__mono">{maskedMandateId}</span>
+                    </div>
+                    <template if:true={createdAtDisplay}>
+                        <div class="pc1-ddstatus__row">
+                            <span class="pc1-ddstatus__k">Created</span>
+                            <span class="pc1-ddstatus__v">{createdAtDisplay}</span>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- STATE 3 — Active -->
+            <template if:true={isActive}>
+                <div class={bannerClass}>
+                    <strong>Active</strong>
+                    <template if:true={activatedAtDisplay}>
+                        &nbsp;since {activatedAtDisplay}
+                    </template>
+                </div>
+                <div class="pc1-ddstatus__meta">
+                    <div class="pc1-ddstatus__row">
+                        <span class="pc1-ddstatus__k">Reference</span>
+                        <span class="pc1-ddstatus__v pc1-ddstatus__mono">{maskedMandateId}</span>
+                    </div>
+                </div>
+            </template>
+
+            <!-- STATE 4 — Failed / cancelled -->
+            <template if:true={isFailed}>
+                <div class={bannerClass}>
+                    <strong>{prettyStatus}</strong>
+                    <template if:true={failureReason}>
+                        <span class="pc1-ddstatus__reason-inline">&nbsp;Reason: {failureSnippet}.</span>
+                    </template>
+                    <div class="pc1-ddstatus__next-action">
+                        Call the client, confirm the account details, and re-enter them in the
+                        Bank Account section above. Once they are confirmed, click
+                        <em>Set up new Direct Debit</em>.
+                    </div>
+                </div>
+                <template if:true={canReplace}>
+                    <div class="pc1-ddstatus__actions">
+                        <lightning-button
+                            variant="brand"
+                            label="Set up new Direct Debit"
+                            icon-name="utility:refresh"
+                            onclick={handleCreateMandate}
+                            disabled={creating}
+                            class="pc1-ddstatus__cta">
+                        </lightning-button>
+                        <p class="pc1-ddstatus__hint">
+                            Creates a new Direct Debit on the confirmed account and cancels the old one.
+                        </p>
+                    </div>
+                </template>
+                <div class="pc1-ddstatus__meta">
+                    <div class="pc1-ddstatus__row">
+                        <span class="pc1-ddstatus__k">Reference</span>
+                        <span class="pc1-ddstatus__v pc1-ddstatus__mono">{maskedMandateId}</span>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>

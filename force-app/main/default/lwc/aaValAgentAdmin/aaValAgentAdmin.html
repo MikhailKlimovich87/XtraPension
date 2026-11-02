@@ -1,0 +1,160 @@
+<template>
+    <div class="slds-card aa-va">
+        <header class="slds-card__header">
+            <div class="aa-va__head">
+                <div>
+                    <h2 class="aa-va__title">AA Validation Agents</h2>
+                    <p class="aa-va__sub">
+                        New Applications auto-assign to <strong>active</strong> agents using their
+                        weights. Change a weight and the next insert picks it up.
+                    </p>
+                </div>
+                <div class="aa-va__actions">
+                    <lightning-button
+                        variant="brand"
+                        icon-name="utility:add"
+                        label="Add Agent"
+                        onclick={handleShowAdd}
+                        disabled={saving}>
+                    </lightning-button>
+                </div>
+            </div>
+        </header>
+
+        <template if:true={loading}>
+            <div class="slds-p-around_large slds-align_absolute-center">
+                <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+            </div>
+        </template>
+
+        <template if:true={isEmpty}>
+            <div class="slds-p-around_large slds-align_absolute-center aa-va__empty">
+                No agents configured yet. Click <em>Add Agent</em> to create one.
+            </div>
+        </template>
+
+        <template if:true={showTable}>
+            <div class="aa-va__table">
+                <div class="aa-va__row aa-va__row--head">
+                    <div>Name</div>
+                    <div>Weight</div>
+                    <div>Share</div>
+                    <div>Assigned</div>
+                    <div>Status</div>
+                    <div class="aa-va__actions-col">Actions</div>
+                </div>
+                <template for:each={rows} for:item="r">
+                    <div key={r.id} class={r.rowCls}>
+                        <div class="aa-va__cell">
+                            <lightning-input
+                                type="text"
+                                variant="label-hidden"
+                                value={r.name}
+                                data-id={r.id}
+                                onblur={handleNameBlur}
+                                disabled={saving}>
+                            </lightning-input>
+                        </div>
+                        <div class="aa-va__cell">
+                            <lightning-input
+                                type="number"
+                                variant="label-hidden"
+                                value={r.weight}
+                                step="0.5"
+                                min="0.1"
+                                data-id={r.id}
+                                onchange={handleWeightChange}
+                                disabled={saving}>
+                            </lightning-input>
+                        </div>
+                        <div class="aa-va__cell aa-va__share">
+                            <div class="aa-va__bar">
+                                <div class="aa-va__bar-fill" style={r.barStyle}></div>
+                            </div>
+                            <div class="aa-va__pct">{r.pctDisplay}</div>
+                        </div>
+                        <div class="aa-va__cell aa-va__count">{r.assignedDisplay}</div>
+                        <div class="aa-va__cell">
+                            <span class={r.activeBadgeCls}>{r.activeLabel}</span>
+                        </div>
+                        <div class="aa-va__cell aa-va__actions-col">
+                            <lightning-button-icon
+                                icon-name="utility:power"
+                                alternative-text="Toggle active"
+                                title="Activate / Pause"
+                                variant="border-filled"
+                                data-id={r.id}
+                                onclick={handleToggleActive}
+                                disabled={saving}>
+                            </lightning-button-icon>
+                            <lightning-button-icon
+                                icon-name="utility:delete"
+                                alternative-text="Delete"
+                                title="Delete agent"
+                                variant="border-filled"
+                                data-id={r.id}
+                                onclick={handleDelete}
+                                disabled={saving}>
+                            </lightning-button-icon>
+                        </div>
+                    </div>
+                </template>
+                <div class="aa-va__footer">
+                    <span>
+                        Active weight total: <strong>{totalWeight}</strong>
+                    </span>
+                    <span>
+                        Total assigned across all agents: <strong>{totalAssigned}</strong>
+                    </span>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <template if:true={showAdd}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 class="slds-modal__title slds-hyphenate">Add Validation Agent</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-input
+                        type="text"
+                        label="Name"
+                        placeholder="e.g. Priya"
+                        value={newName}
+                        onchange={handleNewName}
+                        required>
+                    </lightning-input>
+                    <lightning-input
+                        type="number"
+                        label="Weight"
+                        step="0.5"
+                        min="0.1"
+                        value={newWeight}
+                        onchange={handleNewWeight}
+                        required
+                        field-level-help="Relative share vs other active agents. e.g. 30/30/40 = 30% / 30% / 40%.">
+                    </lightning-input>
+                    <lightning-input
+                        type="checkbox"
+                        label="Active"
+                        checked={newActive}
+                        onchange={handleNewActive}>
+                    </lightning-input>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={handleCloseAdd} disabled={saving}></lightning-button>
+                    <lightning-button
+                        class="slds-m-left_x-small"
+                        variant="brand"
+                        label="Add"
+                        onclick={handleCreate}
+                        disabled={saving}>
+                    </lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

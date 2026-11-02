@@ -1,0 +1,43 @@
+<apex:page controller="ExcelExportController" 
+           contentType="application/vnd.ms-excel#AccountExport.xls" 
+           cache="true" 
+           expires="0">
+    
+    <!-- Excel XML Namespace wrapper to ensure proper parsing -->
+    <html xmlns:o="urn:schemas-microsoft-com:office:office"
+          xmlns:x="urn:schemas-microsoft-com:office:excel"
+          xmlns:w="urn:schemas-microsoft-com:office:word"
+          xmlns="http://w3.org">
+        <head>
+            <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+            <style>
+                <!-- Optional: Add basic CSS styling for Excel to read -->
+                .header-row { background-color: #1797c0; color: #FFFFFF; font-weight: bold; }
+                .text-cell { mso-number-format:"\@"; } /* Forces Excel to treat as text */
+            </style>
+        </head>
+        <body>
+            <table border="1">
+                <thead>
+                    <tr class="header-row">
+                        <th>App No</th>
+                        <th>First Name</th>
+                        <th>Second Name</th>
+                        <th>Address</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Loop through the list of records from the Apex controller -->
+                    <apex:repeat value="{!appList}" var="app">
+                        <tr>
+                            <td class="text-cell">{!app.Name}</td>
+                            <td class="text-cell">{!app.First_Name__c}</td>
+                            <td class="text-cell">{!app.Second_Name__c}</td>
+                            <td class="text-cell">{!app.Full_Current_Address_Abroad__c}</td>
+                        </tr>
+                    </apex:repeat>
+                </tbody>
+            </table>
+        </body>
+    </html>
+</apex:page>

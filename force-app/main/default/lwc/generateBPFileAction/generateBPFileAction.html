@@ -1,0 +1,45 @@
+<template>
+    <lightning-card>
+        <div style="margin:1rem">
+            
+            <lightning-quick-action-panel header="Redo a Form">
+                <div class="slds-is-relative" style="min-height:300px;">
+                    <template if:true={isLoading}>
+                        <lightning-spinner
+                            alternative-text="Loading..."
+                            variant="brand"
+                            size="medium">
+                        </lightning-spinner>
+                    </template>
+                <lightning-tabset>
+                    <template for:each={tabs} for:item="tab">
+                        <lightning-tab label={tab.label} value={tab.value} key={tab.value} onactive={handleTabActive}>   
+                        <div style="margin-bottom: 0.5rem;">
+                            <template if:true={showLatest}>
+                                <template for:each={filteredDocs} for:item="doc">
+                                    <div class="slds-box slds-theme_default" style="display:block;border:0;font-size:0.875rem;"
+                                        key={doc.documentId}>
+                                        <div
+                                            style="margin-bottom:0.5rem;display: flex;align-items: center;justify-content: space-between">
+                                            <a onclick={navigateToFiles} data-document-id={doc.documentId} value={doc.title}>
+                                                <u>{doc.title}</u>
+                                            </a>
+                                        
+                                        </div>
+                                        <div>{doc.createdDate}</div>
+                                    </div>
+                                </template>
+                            </template>
+                        </div>
+                    </lightning-tab>
+                </template>
+                    </lightning-tabset>
+            </div>
+            </lightning-quick-action-panel>
+            <lightning-button variant="neutral" label="Cancel" onclick={handleCancel} ></lightning-button>
+            <lightning-button variant="brand" class="slds-m-left_x-small" label="Regenerate" onclick={handleRegenerate} 
+                disabled={isLoading}>
+            </lightning-button>
+        </div>   
+    </lightning-card>
+</template>

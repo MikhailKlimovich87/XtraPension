@@ -1,0 +1,29 @@
+<template>
+    <lightning-card title="Stage History" icon-name="standard:timeslot">
+        <p class="slds-p-horizontal_medium slds-text-body_small slds-text-color_weak pc1-sub">{headerSummary}</p>
+        <div class="slds-p-horizontal_small slds-p-bottom_small">
+            <template lwc:if={hasLogs}>
+                <ul class="timeline">
+                    <template for:each={rows} for:item="r">
+                        <li key={r.id} class="tl-item">
+                            <span class={r.actorCls} aria-hidden="true">{r.actorGlyph}</span>
+                            <div class="tl-body">
+                                <div class="tl-title">{r.title}</div>
+                                <div class="tl-sub">
+                                    {r.whenFmt} · {r.actor}
+                                    <template lwc:if={r.hasChangedBy}> · {r.changedBy}</template>
+                                </div>
+                                <template lwc:if={r.hasNote}>
+                                    <div class="tl-note">{r.note}</div>
+                                </template>
+                            </div>
+                        </li>
+                    </template>
+                </ul>
+            </template>
+            <template lwc:else>
+                <div class="slds-text-body_small slds-text-color_weak slds-p-around_small">No transitions yet.</div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

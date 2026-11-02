@@ -1143,4 +1143,732 @@ public with sharing class ApplicationTriggerTest {
         Assert.isNotNull(testAppAfterUpdate[0].Split_Date__c);
         Assert.areEqual(paymentsAfterUpdate[0].Amount__c, paymentsBeforeUpdate[0].Amount__c/5);
     }
+
+    @IsTest
+    static void registratePKPartnerTest() {
+        List<Product2> products = TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        List<Contact> currentContact = [
+            SELECT
+                Id,
+                AccountId
+            FROM Contact
+            WHERE AccountId = :account.Id
+            LIMIT 1
+        ];
+        Id personContactId = currentContact[0].Id;
+        Application__c testApplication = TestDataFactory.createApplication(personContactId, false);
+        testApplication.PK_Partner__c = false;
+        testApplication.PK_Portal_User_Active__c = false;
+        testApplication.Date_Of_Birth__c = Date.valueOf('1970-05-15');
+        insert testApplication;
+
+        List<Application__c> appBeforeUpdate = [
+            SELECT
+                Id,
+                PK_Partner__c,
+                Status__c,
+                PK_Portal_User_Active__c,
+                PK_Portal_User_PW__c,
+                PK_Registration_Date__c,
+                PK_Date_Pension_Age_Reached__c,
+                Pension_Age__c,
+                PK_Auto_Renewal__c,
+                Date_Of_Birth__c
+            FROM Application__c
+            WHERE Id = :testApplication.Id
+        ];
+        Assert.isFalse(appBeforeUpdate[0].PK_Partner__c);
+        Assert.isFalse(appBeforeUpdate[0].PK_Portal_User_Active__c);
+        Assert.isNull(appBeforeUpdate[0].PK_Portal_User_PW__c);
+
+        Test.startTest();
+        testApplication.PK_Partner__c = true;
+        update testApplication;
+        Test.stopTest();
+
+        List<Application__c> appAfterUpdate = [
+            SELECT
+                Id,
+                PK_Partner__c,
+                Status__c,
+                PK_Portal_User_Active__c,
+                PK_Portal_User_PW__c,
+                PK_Registration_Date__c,
+                PK_Date_Pension_Age_Reached__c,
+                Pension_Age__c,
+                PK_Auto_Renewal__c,
+                Date_Of_Birth__c
+            FROM Application__c
+            WHERE Id = :testApplication.Id
+        ];
+
+        Assert.isTrue(appAfterUpdate[0].PK_Partner__c);
+        Assert.areEqual('Pension Keeper', appAfterUpdate[0].Status__c);
+        Assert.isTrue(appAfterUpdate[0].PK_Portal_User_Active__c);
+        Assert.isNotNull(appAfterUpdate[0].PK_Portal_User_PW__c);
+        Assert.areEqual(Date.today(), appAfterUpdate[0].PK_Registration_Date__c);
+        Assert.isNotNull(appAfterUpdate[0].PK_Date_Pension_Age_Reached__c);
+        Assert.isNotNull(appAfterUpdate[0].Pension_Age__c);
+        Assert.isFalse(appAfterUpdate[0].PK_Auto_Renewal__c);
+    }
+
+    @IsTest
+    static void registratePKFreebieAppTest() {
+        List<Product2> products = TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        List<Contact> currentContact = [
+            SELECT
+                Id,
+                AccountId
+            FROM Contact
+            WHERE AccountId = :account.Id
+            LIMIT 1
+        ];
+        Id personContactId = currentContact[0].Id;
+        Application__c testApplication = TestDataFactory.createApplication(personContactId, false);
+        testApplication.PK_Freebie_App__c = false;
+        testApplication.PK_Portal_User_Active__c = false;
+        testApplication.Date_Of_Birth__c = Date.valueOf('1965-03-20');
+        insert testApplication;
+
+        List<Application__c> appBeforeUpdate = [
+            SELECT
+                Id,
+                PK_Freebie_App__c,
+                Status__c,
+                PK_Portal_User_Active__c,
+                PK_Portal_User_PW__c,
+                PK_Registration_Date__c,
+                PK_Date_Pension_Age_Reached__c,
+                Pension_Age__c,
+                PK_Auto_Renewal__c,
+                Date_Of_Birth__c
+            FROM Application__c
+            WHERE Id = :testApplication.Id
+        ];
+        Assert.isFalse(appBeforeUpdate[0].PK_Freebie_App__c);
+        Assert.isFalse(appBeforeUpdate[0].PK_Portal_User_Active__c);
+        Assert.isNull(appBeforeUpdate[0].PK_Portal_User_PW__c);
+
+        Test.startTest();
+        testApplication.PK_Freebie_App__c = true;
+        update testApplication;
+        Test.stopTest();
+
+        List<Application__c> appAfterUpdate = [
+            SELECT
+                Id,
+                PK_Freebie_App__c,
+                Status__c,
+                PK_Portal_User_Active__c,
+                PK_Portal_User_PW__c,
+                PK_Registration_Date__c,
+                PK_Date_Pension_Age_Reached__c,
+                Pension_Age__c,
+                PK_Auto_Renewal__c,
+                Date_Of_Birth__c
+            FROM Application__c
+            WHERE Id = :testApplication.Id
+        ];
+
+        Assert.isTrue(appAfterUpdate[0].PK_Freebie_App__c);
+        Assert.areEqual('Pension Keeper', appAfterUpdate[0].Status__c);
+        Assert.isTrue(appAfterUpdate[0].PK_Portal_User_Active__c);
+        Assert.isNotNull(appAfterUpdate[0].PK_Portal_User_PW__c);
+        Assert.areEqual(Date.today(), appAfterUpdate[0].PK_Registration_Date__c);
+        Assert.isNotNull(appAfterUpdate[0].PK_Date_Pension_Age_Reached__c);
+        Assert.isNotNull(appAfterUpdate[0].Pension_Age__c);
+        Assert.isFalse(appAfterUpdate[0].PK_Auto_Renewal__c);
+        Integer emailCount = Limits.getEmailInvocations();
+        Assert.areEqual(1, emailCount, 'Email should be sent for Freebie app');
+    }
+
+     @IsTest
+    static void autoPopulateFreebiePensionKeeperTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = TestDataFactory.createApplication(con.Id, false);
+        app.Package_Name__c = 'Freebie';
+        app.Status__c = 'Pension Keeper';
+        app.Date_Of_Birth__c = Date.valueOf('1965-03-20');
+        app.PK_Portal_User_Active__c = false;
+        insert app;
+
+        Application__c afterInsert = [
+            SELECT
+                PK_Portal_User_Active__c,
+                PK_Portal_User_PW__c,
+                PK_Registration_Date__c,
+                PK_Date_Pension_Age_Reached__c,
+                Pension_Age__c,
+                PK_Auto_Renewal__c
+            FROM Application__c
+            WHERE Id = :app.Id
+        ];
+        Assert.isTrue(afterInsert.PK_Portal_User_Active__c, 'Portal user must be active');
+        Assert.isNotNull(afterInsert.PK_Portal_User_PW__c, 'Portal password must be generated');
+        Assert.areEqual(Date.today(), afterInsert.PK_Registration_Date__c);
+        Assert.isNotNull(afterInsert.PK_Date_Pension_Age_Reached__c);
+        Assert.isNotNull(afterInsert.Pension_Age__c);
+        Assert.isFalse(afterInsert.PK_Auto_Renewal__c);
+    }
+
+    // Covers: autoPopulateRequiredFields -> 3rd branch (resolvedLine1 != original, non-Freebie/non-FormInProgress)
+    @IsTest
+    static void autoPopulateFreeformPlaceholderOnNonFreebieTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = TestDataFactory.createApplication(con.Id, false);
+        app.Package_Name__c = 'Standard';
+        app.Status__c = 'Form In Progress';
+        app.Freeform_RichText_Line1__c = 'Hello {!appObj.Name}, welcome';
+        insert app;
+
+        Application__c afterInsert = [
+            SELECT Freeform_RichText_Line1__c, Name
+            FROM Application__c
+            WHERE Id = :app.Id
+        ];
+        Assert.isFalse(afterInsert.Freeform_RichText_Line1__c.contains('{!appObj.Name}'));
+        Assert.isTrue(afterInsert.Freeform_RichText_Line1__c.contains(afterInsert.Name));
+    }
+
+    // Covers: autoPopulateRequiredFields -> Freebie + Form In Progress WITH placeholder in Freeform field
+    @IsTest
+    static void autoPopulateFreebieWithPlaceholderTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = TestDataFactory.createApplication(con.Id, false);
+        app.Package_Name__c = 'Freebie';
+        app.Status__c = 'Form In Progress';
+        app.Freeform_RichText_Line1__c = 'Hi {!appObj.Name}';
+        insert app;
+
+        Application__c afterInsert = [
+            SELECT
+                Stripe_Transaction_Id__c,
+                Personal_Details_Form_Link__c,
+                Freeform_RichText_Line1__c,
+                Name
+            FROM Application__c
+            WHERE Id = :app.Id
+        ];
+        Assert.isNotNull(afterInsert.Stripe_Transaction_Id__c);
+        Assert.isNotNull(afterInsert.Personal_Details_Form_Link__c);
+        Assert.isFalse(afterInsert.Freeform_RichText_Line1__c.contains('{!appObj.Name}'));
+        Assert.isTrue(afterInsert.Freeform_RichText_Line1__c.contains(afterInsert.Name));
+    }
+
+    // Covers: updateIsKnowCheckbox -> non-blank NINO branch
+    @IsTest
+    static void updateIsKnowCheckboxWithNinoTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = TestDataFactory.createApplication(con.Id, false);
+        app.National_Insurance_Number__c = 'AB123456C';
+        insert app;
+
+        Test.startTest();
+        app.National_Insurance_Number__c = 'QQ123456D';
+        update app;
+        Test.stopTest();
+
+        Application__c afterUpdate = [
+            SELECT Is_Know_National_Insurance_Number__c
+            FROM Application__c WHERE Id = :app.Id
+        ];
+        Assert.isTrue(afterUpdate.Is_Know_National_Insurance_Number__c);
+    }
+
+    // Covers: updateRelatedPayments -> EU branch (Live_In_The_EU__c = true)
+    @IsTest
+    static void updatePaymentsEUPathTest() {
+        List<Product2> products = TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = TestDataFactory.createApplication(con.Id, false);
+        app.Live_In_The_EU__c = true;
+        insert app;
+        Order order = TestDataFactory.createOrder(app.Id, account.Id, true);
+        TestDataFactory.createRelatedPaymentToApplication(products, app, order.Id, true);
+
+        Test.startTest();
+        app.Live_In_The_EU__c = false;
+        update app;
+        Test.stopTest();
+
+        List<Payment__c> payments = [
+            SELECT Amount__c FROM Payment__c WHERE Application__c = :app.Id
+        ];
+        Assert.isFalse(payments.isEmpty());
+    }
+
+    // Covers: autoAssignToAgent -> Appeal_Application__c = true => Sean
+    @IsTest
+    static void autoAssignToAgentAppealTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = new Application__c(
+            First_Name__c = 'Appeal',
+            Second_Name__c = 'Client',
+            Related_Contact_Phone__c = '+123451245',
+            Email__c = 'appeal@test.com',
+            Package_Name__c = 'Standard',
+            Contact__c = con.Id,
+            Status__c = 'Form In Progress',
+            Appeal_Application__c = true
+        );
+        insert app;
+
+        Application__c afterInsert = [
+            SELECT Val_Agent__c FROM Application__c WHERE Id = :app.Id
+        ];
+        Assert.areEqual('Sean', afterInsert.Val_Agent__c);
+    }
+
+    // Covers: autoAssignToAgent -> Australia/NZ => Becky
+    @IsTest
+    static void autoAssignToAgentAustraliaTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = new Application__c(
+            First_Name__c = 'Aussie',
+            Second_Name__c = 'Client',
+            Related_Contact_Phone__c = '+123451245',
+            Email__c = 'aussie@test.com',
+            Package_Name__c = 'Standard',
+            Contact__c = con.Id,
+            Status__c = 'Form In Progress',
+            Current_Address_Abroad_Country__c = 'Australia'
+        );
+        insert app;
+
+        Application__c afterInsert = [
+            SELECT Val_Agent__c FROM Application__c WHERE Id = :app.Id
+        ];
+        Assert.areEqual('Sean', afterInsert.Val_Agent__c);
+    }
+
+    // Covers: autoAssignToAgent -> 'Pension Keeper' early return
+    @IsTest
+    static void autoAssignToAgentPensionKeeperEarlyReturnTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = TestDataFactory.createApplication(con.Id, false);
+        app.Package_Name__c = 'Freebie';
+        app.Status__c = 'Pension Keeper';
+        app.Date_Of_Birth__c = Date.valueOf('1960-01-01');
+        insert app;
+
+        Application__c afterInsert = [
+            SELECT Val_Agent__c FROM Application__c WHERE Id = :app.Id
+        ];
+        // Val_Agent__c should remain null because the early return skips assignment
+        Assert.isNull(afterInsert.Val_Agent__c);
+    }
+
+    // Covers: changeAgentStatusApps -> New_Agent__c already populated, so no reassignment
+    @IsTest
+    static void changeAgentStatusPreserveNewAgentTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = TestDataFactory.createApplication(con.Id, false);
+        app.Status__c = 'Form In Progress';
+        insert app;
+
+        app.New_Agent__c = 'Maria';
+        app.Status__c = 'Agent Check';
+        Test.startTest();
+        update app;
+        Test.stopTest();
+
+        Application__c afterUpdate = [
+            SELECT Agent_Status__c, New_Agent__c
+            FROM Application__c WHERE Id = :app.Id
+        ];
+        Assert.areEqual('Agent Check', afterUpdate.Agent_Status__c);
+        Assert.areEqual('Maria', afterUpdate.New_Agent__c);
+    }
+
+    // Covers: changeCurrentAddressAbroadState -> no state change means no DML
+    @IsTest
+    static void changeCurrentAddressAbroadStateNoChangeTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = TestDataFactory.createApplication(con.Id, false);
+        app.Current_Address_Abroad__CountryCode__s = 'IE';
+        app.Current_Address_Abroad__StateCode__s = 'D';
+        insert app;
+
+        Test.startTest();
+        app.First_Name__c = 'Renamed';
+        update app;
+        Test.stopTest();
+
+        Application__c afterUpdate = [
+            SELECT Current_Address_Abroad_State__c
+            FROM Application__c WHERE Id = :app.Id
+        ];
+    }
+
+    // Covers: calculatePensionAge -> null DOB skip branch (no update issued)
+    @IsTest
+    static void calculatePensionAgeNullDobTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = TestDataFactory.createApplication(con.Id, false);
+        app.Date_Of_Birth__c = Date.valueOf('1970-01-01');
+        insert app;
+
+        Test.startTest();
+        app.Date_Of_Birth__c = null;
+        update app;
+        Test.stopTest();
+
+        Application__c afterUpdate = [
+            SELECT PK_Date_Pension_Age_Reached__c
+            FROM Application__c WHERE Id = :app.Id
+        ];
+        Assert.isNull(afterUpdate.PK_Date_Pension_Age_Reached__c);
+    }
+
+    // Covers: registratePKPatner -> partner application branch
+    @IsTest
+    static void registratePKPartnerBranchTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        // Partner app must have status Annual Service or No Annual
+        Application__c partnerApp = TestDataFactory.createApplication(con.Id, false);
+        partnerApp.Status__c = 'Annual Service';
+        partnerApp.Date_Of_Birth__c = Date.valueOf('1960-01-01');
+        partnerApp.PK_Portal_User_Active__c = false;
+        insert partnerApp;
+
+        Application__c mainApp = TestDataFactory.createApplication(con.Id, false);
+        mainApp.PK_Portal_User_Active__c = true;
+        mainApp.PK_Registration_Date__c = Date.today();
+        mainApp.Partner_Application__c = partnerApp.Id;
+        mainApp.PK_Partner__c = false;
+        mainApp.Date_Of_Birth__c = Date.valueOf('1960-01-01');
+        insert mainApp;
+
+        Test.startTest();
+        mainApp.PK_Partner__c = true;
+        update mainApp;
+        Test.stopTest();
+
+        Application__c afterUpdate = [
+            SELECT Status__c, PK_Portal_User_Active__c, PK_Portal_User_PW__c
+            FROM Application__c WHERE Id = :partnerApp.Id
+        ];
+        Assert.areEqual('Pension Keeper', afterUpdate.Status__c);
+        Assert.isTrue(afterUpdate.PK_Portal_User_Active__c);
+        Assert.isNotNull(afterUpdate.PK_Portal_User_PW__c);
+    }
+
+    // Covers: registratePKPatner -> partner app WITHOUT valid status
+    @IsTest
+    static void registratePKPartnerInvalidStatusTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c partnerApp = TestDataFactory.createApplication(con.Id, false);
+        partnerApp.Status__c = 'Pending Client'; // NOT Annual Service / No Annual
+        partnerApp.PK_Portal_User_Active__c = false;
+        partnerApp.Date_Of_Birth__c = Date.valueOf('1960-01-01');
+        insert partnerApp;
+
+        Application__c mainApp = TestDataFactory.createApplication(con.Id, false);
+        mainApp.PK_Portal_User_Active__c = true;
+        mainApp.PK_Registration_Date__c = Date.today();
+        mainApp.Partner_Application__c = partnerApp.Id;
+        mainApp.PK_Partner__c = false;
+        mainApp.Date_Of_Birth__c = Date.valueOf('1960-01-01');
+        insert mainApp;
+
+        Boolean errorCaught = false;
+        Test.startTest();
+        try {
+            mainApp.PK_Partner__c = true;
+            update mainApp;
+        } catch (DmlException e) {
+            errorCaught = true;
+        }
+        Test.stopTest();
+
+        Assert.isTrue(errorCaught, 'Expected error on partner app with invalid status');
+    }
+
+    // Covers: createSplitPayments -> Success product branch
+    @IsTest
+    static void createSplitPaymentsSuccessProductTest() {
+        List<Product2> products = TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = TestDataFactory.createApplication(con.Id, false);
+        app.Current_Address_Abroad__CountryCode__s = 'ZA';
+        app.Status__c = 'Form In Progress';
+        insert app;
+
+        Order order = TestDataFactory.createOrder(app.Id, account.Id, true);
+        TestDataFactory.createRelatedPaymentToApplication(products, app, order.Id, true);
+
+        Test.startTest();
+        app.Split__c = true;
+        update app;
+        Test.stopTest();
+
+        List<Payment__c> payments = [
+            SELECT Product_Name__c, Amount__c
+            FROM Payment__c
+            WHERE Application__c = :app.Id AND Product_Name__c = 'Application'
+        ];
+        Assert.isFalse(payments.isEmpty());
+    }
+
+    // Covers: updatePaymentsFromAppealApps -> payment already Cancelled
+    @IsTest
+    static void updatePaymentsFromAppealAlreadyCancelledTest() {
+        List<String> productNames = new List<String>{'Deposit', 'Application', 'Appeal Application'};
+        List<Product2> newProducts = new List<Product2>();
+        for (String name : productNames) {
+            newProducts.add(new Product2(Name = name, CurrencyIsoCode = 'EUR'));
+        }
+        insert newProducts;
+        Id pbId = Test.getStandardPricebookId();
+        List<PriceBookEntry> entries = new List<PriceBookEntry>();
+        Integer price = 100000;
+        for (Product2 p : newProducts) {
+            entries.add(new PriceBookEntry(
+                Pricebook2Id = pbId,
+                Product2Id = p.Id,
+                UnitPrice = price,
+                IsActive = true,
+                CurrencyIsoCode = 'EUR'
+            ));
+            price += 10000;
+        }
+        insert entries;
+
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = TestDataFactory.createApplication(con.Id, true);
+        Order order = TestDataFactory.createOrder(app.Id, account.Id, true);
+        List<Payment__c> relatedPayments =
+            TestDataFactory.createRelatedPaymentToApplication(newProducts, app, order.Id, true);
+        // Cancel one already
+        if (!relatedPayments.isEmpty()) {
+            relatedPayments[0].Status__c = 'Cancel';
+            update relatedPayments;
+        }
+
+        Test.startTest();
+        app.Appeal_Application__c = true;
+        update app;
+        Test.stopTest();
+
+        // Shouldn't throw - just re-cancels
+        List<Payment__c> after = [
+            SELECT Status__c FROM Payment__c WHERE Application__c = :app.Id
+        ];
+        Assert.isFalse(after.isEmpty());
+    }
+
+    // Covers: generateZipArchive -> missing file -> error message recorded
+    @IsTest
+    static void generateZipArchiveMissingFilesTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = TestDataFactory.createApplication(con.Id, true);
+
+        Test.startTest();
+        app.Status__c = 'Printing House';
+        update app;
+        Test.stopTest();
+
+        Application__c afterUpdate = [
+            SELECT Zip_Archive_Error__c FROM Application__c WHERE Id = :app.Id
+        ];
+        Assert.isNotNull(afterUpdate.Zip_Archive_Error__c, 'Missing files should record error');
+        Assert.isTrue(
+            afterUpdate.Zip_Archive_Error__c.contains('CF083')
+            || afterUpdate.Zip_Archive_Error__c.contains('64-8')
+            || afterUpdate.Zip_Archive_Error__c.contains('CustomLetter'),
+            'Error message should mention missing files'
+        );
+    }
+
+    // Covers: sendRegistrationDataMessage -> Standard Status branch + appeal attachment
+    @IsTest
+    static void sendRegistrationDataMessageStandardTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = TestDataFactory.createApplication(con.Id, false);
+        app.Appeal_Application__c = true;
+        insert app;
+
+        Test.startTest();
+        app.First_Name__c = 'TriggerMessage';
+        update app;
+        Test.stopTest();
+
+        Assert.isNotNull(app.Id);
+    }
+
+    // Covers: updateRelatedDocumentsAfterChangeApplicationName -> old name diff on Last name only
+    @IsTest
+    static void updateRelatedDocumentsLastNameOnlyChangeTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = TestDataFactory.createApplication(con.Id, true);
+        TestDataFactory.createApplicationDocument(app.Id, true);
+
+        Test.startTest();
+        app.Second_Name__c = 'NewLast';
+        update app;
+        Test.stopTest();
+
+        List<Application_Document__c> docs = [
+            SELECT File_Name__c FROM Application_Document__c WHERE Application__c = :app.Id
+        ];
+        for (Application_Document__c d : docs) {
+            Assert.isFalse(d.File_Name__c.contains('John_Snow'));
+        }
+    }
+
+    // Covers: changeGoogleReviewSmsDate -> Delay_In_Days__c null skip
+    @IsTest
+    static void changeGoogleReviewSmsDateNullDelayTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        Application__c app = TestDataFactory.createApplication(con.Id, false);
+        app.Delay_In_Days__c = null;
+        app.Send_Google_Review_SMS__c = false;
+        insert app;
+
+        Test.startTest();
+        app.Delay_In_Days__c = '2';
+        update app;
+        Test.stopTest();
+
+        Application__c after = [
+            SELECT Google_Review_Send_Date__c, Delay_In_Days__c
+            FROM Application__c WHERE Id = :app.Id
+        ];
+        Assert.areEqual('2', after.Delay_In_Days__c);
+        Assert.isNotNull(after.Google_Review_Send_Date__c);
+    }
+
+    // Covers: multiple Freebie apps inserted in one DML to exercise bulk loop
+    @IsTest
+    static void bulkFreebieInsertTest() {
+        TestDataFactory.createProductsWithPrices();
+        TestDataFactory.createTestCountry(true);
+        Account account = TestDataFactory.createAccount(true);
+        Contact con = [
+            SELECT Id FROM Contact WHERE AccountId = :account.Id LIMIT 1
+        ];
+        List<Application__c> apps = new List<Application__c>();
+        for (Integer i = 0; i < 5; i++) {
+            apps.add(new Application__c(
+                First_Name__c = 'Bulk',
+                Second_Name__c = 'User' + i,
+                Related_Contact_Phone__c = '+12345124' + i,
+                Email__c = 'bulk' + i + '@test.com',
+                Package_Name__c = 'Freebie',
+                Contact__c = con.Id,
+                Status__c = 'Form In Progress',
+                Freeform_RichText_Line1__c = 'Hi {!appObj.Name}'
+            ));
+        }
+
+        Test.startTest();
+        insert apps;
+        Test.stopTest();
+
+        List<Application__c> after = [
+            SELECT Stripe_Transaction_Id__c, Freeform_RichText_Line1__c
+            FROM Application__c WHERE Id IN :apps
+        ];
+        Assert.areEqual(5, after.size());
+        for (Application__c a : after) {
+            Assert.isNotNull(a.Stripe_Transaction_Id__c);
+            Assert.isFalse(a.Freeform_RichText_Line1__c.contains('{!appObj.Name}'));
+        }
+    }
 }

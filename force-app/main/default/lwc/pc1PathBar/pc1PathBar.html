@@ -1,0 +1,29 @@
+<template>
+    <template lwc:if={app}>
+        <div class="slds-p-around_x-small">
+            <div class="path" role="list" aria-label="Application pipeline">
+                <template for:each={steps} for:item="s">
+                    <button
+                        key={s.key}
+                        type="button"
+                        class={s.cls}
+                        title={s.title}
+                        aria-label={s.title}
+                        aria-current={s.currentAttr}
+                        data-dev={s.key}
+                        data-label={s.label}
+                        onclick={handleStepClick}
+                        role="listitem">
+                        <span class="lbl">{s.mark}{s.label}</span>
+                    </button>
+                </template>
+            </div>
+            <template lwc:if={isOffPipeline}>
+                <div class="off-pipeline slds-p-top_x-small">
+                    <span class="slds-badge slds-theme_error">Needs Human</span>
+                    <span class="slds-text-body_small slds-p-left_x-small">Off the standard pipeline — a person needs to act.</span>
+                </div>
+            </template>
+        </div>
+    </template>
+</template>

@@ -1,0 +1,85 @@
+.aa-award { padding: 12px 16px 16px; }
+.aa-award__head {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding-bottom: 8px; border-bottom: 1px solid #ececec;
+    margin-bottom: 12px;
+}
+.aa-award__icon { flex: 0 0 auto; margin-top: 2px; }
+.aa-award__title { font-size: 1rem; font-weight: 600; }
+.aa-award__sub { color: #666; font-size: 0.78rem; margin-top: 2px; }
+
+/* Summary mode ----------------------------------------------------- */
+.aa-award__summary { display: flex; flex-direction: column; gap: 10px; }
+.aa-award__amount-block,
+.aa-award__lump-block,
+.aa-award__fee-block {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 10px 12px; border-radius: 6px;
+    background: #f7f9fb; border: 1px solid #e3e8ee;
+}
+.aa-award__lump-block { background: #fbf9f4; border-color: #e6d9b6; }
+.aa-award__fee-block  { background: #f4fbf6; border-color: #b6e6c1; }
+.aa-award__k     { color: #666; font-size: 0.76rem; }
+.aa-award__amount { font-size: 1.5rem; font-weight: 700; color: #0176d3; }
+.aa-award__lump   { font-size: 1.15rem; font-weight: 600; color: #7a5b00; }
+.aa-award__fee    { font-size: 1.35rem; font-weight: 700; color: #0a7a2f; }
+.aa-award__meta  { color: #666; font-size: 0.76rem; }
+
+/* Input mode ------------------------------------------------------- */
+.aa-award__fields { display: flex; flex-direction: column; gap: 8px; }
+.aa-award__amount-input {}
+.aa-award__lump-input {}
+.aa-award__flag {
+    padding: 6px 10px; border-radius: 4px; font-size: 0.82rem;
+    border: 1px solid transparent;
+}
+.aa-award__flag--warn {
+    background: #fff8ea; border-color: #f2d17a; color: #7d5300;
+}
+.aa-award__actions {
+    display: flex; justify-content: flex-end; align-items: center;
+    margin-top: 6px;
+}
+.aa-award__cta { --sds-c-button-brand-color-background: #0176d3; }
+
+/* Derived fee + lump-vs-fee comparator ---------------------------- */
+.aa-award__derived {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 8px 12px; border-radius: 6px;
+    background: #f4fbf6; border: 1px solid #b6e6c1;
+    margin-top: 4px;
+}
+.aa-award__derived-k { color: #444; font-size: 0.85rem; }
+.aa-award__derived-v { font-size: 1.15rem; font-weight: 700; color: #0a7a2f; }
+.aa-award__coverage {
+    padding: 6px 12px; border-radius: 4px;
+    background: #f7f9fb; border: 1px solid #e3e8ee;
+    color: #444; font-size: 0.82rem; font-weight: 500;
+}
+
+/* Plan block (summary mode) --------------------------------------- */
+.aa-award__plan-block {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 10px 12px; border-radius: 6px;
+    background: #fbf6ff; border: 1px solid #d8c7ea;
+}
+.aa-award__plan  { font-size: 1rem; font-weight: 600; color: #5b2d90; }
+
+/* Plan picker (input mode) --------------------------------------- */
+.aa-award__plan-picker {
+    border: 1px solid #e3e8ee; border-radius: 6px;
+    padding: 8px 12px 10px; margin-top: 4px;
+}
+.aa-award__plan-legend {
+    color: #0176d3; font-size: 0.88rem; font-weight: 600;
+    padding: 0 4px; margin-bottom: 6px;
+}
+.aa-award__override {
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px dashed #e3e8ee;
+}
+.aa-award__plan-breakdown {
+    margin-top: 8px; padding: 6px 10px;
+    background: #f4f8fb; border-radius: 4px;
+    color: #0176d3; font-size: 0.85rem; font-weight: 500;
+}

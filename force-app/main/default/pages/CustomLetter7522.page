@@ -1,0 +1,224 @@
+<apex:page readOnly="true" id="CustomLetter7522" sidebar="false" renderAs="advanced_pdf" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+                @page {
+                    size: 210mm 297mm;
+                    margin-top: 50px;
+                    margin-bottom: 20px;
+                    @bottom-left {
+                        content: element(footer);
+                    }
+                }
+
+                div.footer {
+                    position: running(footer);
+                    width: 100%;
+                    margin-right: 1px;
+                    text-align: center;
+                    color:#808080;
+                    font-size:8pt;
+                    height:20%
+                }
+
+                body {
+                    font-family: "Roboto", sans-serif;
+                    /* font-size: 11px; */
+                }
+
+                /* General table styles for data tables */
+                table.data-table {
+                    border-collapse: collapse;
+                    width:100%;
+                    border-style: solid;
+                }
+
+                table.data-table td, table.data-table th {
+                    border-style: solid;
+                }
+
+                /* Style for the first table (address block) - No borders */
+                table.address-table {
+                    border-collapse: collapse;
+                    width:100%;
+                }
+                table.address-table td {
+                    border: none;
+                }
+
+                th {
+                    text-align:center;
+                }
+
+                h3 {
+                    text-align: center;
+                }
+                .date-col {
+                    text-align: center;
+                }
+                .breakPageAfter{
+                    page-break-after:always;
+                }
+                .output-data {
+                    text-align: justify;
+                }
+                .free-form p {
+                    margin: 0px;
+                }
+                .free-form {
+                    text-align: justify;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="footer">
+                <div>JGBA Ltd, Suite 2/11, Pure Offices, 1 Ainslie Road, Hillington, Glasgow, G52 4RU. Company No: SC349713</div>
+            </div>
+            <div>International Case Worker</div>
+            <div>PT Operations North East England</div>
+            <div>HM Revenue &amp; Customs</div>
+            <div>BX9 1AN, United Kingdom</div>
+            <br/>
+            <div><b>Date:</b> 9/7/26</div>
+            <div><b>Our Ref:</b> A07522</div>
+            <br/>
+            <div style="clear:both">
+                <b>Reference:</b> Mr Adrian McGearty <span><b>National Ins No:</b> SX461647D</span>
+            </div>
+            <br/>
+            <div class="free-form">
+                Dear Sir / Madam
+            </div>
+            <br/>
+            <div class="free-form">
+                25 March 2025, 12:07 pm is when our client registered on the DWP Callback facility to allow submission of this CF83 application after 5 April 2025 deadline as per official guidance.
+            </div>
+            <br/>
+            <div class="free-form">
+                Please find enclosed completed CF83, 64-8 and our client's post-UK work abroad.<br/>
+                Where available, we also enclose social insurance/social security etc records.
+            </div>
+            <br/>
+            <div class="free-form">
+                Please use OUR REFERENCE of 'A07522' in all correspondence.
+            </div>
+            <br/>
+            <div class="free-form">
+                We would appreciate it if you could ensure your assessment of their eligibility to pay Class 2 contributions, a statement of their National Insurance Contributions to date and the Class 2 Table of Voluntary National Insurance Shortfall is sent directly to us at "Suite 2/11, Pure Offices, 1 Ainslie Road, Hillington, Glasgow, G52 4RU" as the enclosed 64-8 authorises us to act as their agent. Our client's work history is below.
+            </div>
+            <div>
+                <br/>
+                <div><b>Last UK Work</b></div>
+                <br/>
+                <table class="data-table">
+                    <tr>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Work</th>
+                    </tr>
+                    <tr>
+                        <td class="date-col" style="width:18%">
+                            01 Sep 2019
+                        </td>
+                        <td class="date-col" style="width:18%">
+                            01 Aug 2020
+                        </td>
+                        <td>
+                            Christ's College<br/>
+                            Larch Avenue, Guildford, Surrey, GU1 1JY
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="date-col" style="width:18%">
+                            01 Aug 2020
+                        </td>
+                        <td class="date-col" style="width:18%">
+                            01 Aug 2021
+                        </td>
+                        <td>
+                            Westfield Academy<br/>
+                            Watford, Hertfordshire, WD18 6NS
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="date-col" style="width:18%">
+                            30 Aug 2021
+                        </td>
+                        <td class="date-col" style="width:18%">
+                            10 Sep 2021
+                        </td>
+                        <td>
+                            The Misbourne School<br/>
+                            Misbourne Drive, Great Missenden, HP16 0BN
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div>
+                <br/>
+                <div><b>After Leaving the UK</b></div>
+                <br/>
+                <table class="data-table">
+                    <tr>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Work</th>
+                    </tr>
+                        <tr>
+                            <td class="date-col" style="width:18%">
+                                15 Sep 2021
+                            </td>
+                            <td class="date-col" style="width:18%">
+                                19 May 2022
+                            </td>
+                            <td>
+                                An Garda Siochana<br/>
+                                Temple More Garda Training College, Templemore, Tipperary, B41H316, Ireland
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="date-col" style="width:18%">
+                                02 Jun 2022
+                            </td>
+                            <td class="date-col" style="width:18%">
+                                Current
+                            </td>
+                            <td>
+                                Dundalk Garda Station<br/>
+                                The Crescent, Townparks, Dundalk, Louth, A91DK46, Ireland
+                            </td>
+                        </tr>
+                </table>
+            </div>
+            
+            <div>
+                <br/>
+                <div>=========================</div>
+                <br/>
+                <div class="free-form">
+                    <b>We believe that our client qualifies to pay Class 2 contributions under HMRC's stated criteria that:</b>
+                    <br/>
+                    <ul>
+                        <li>They were ordinarily employed (/self-employed) immediately before last leaving the UK (which includes unemployment where applicable)</li>
+                        <li>They are in employment which is not employment in respect of earnings from which Class 1 contributions are payable.</li>
+                        <li>They were and continue to be in employment abroad continuously paying social insurance (as verified by the official Govt contributions statement enclosed)</li>
+                        <li>They lived in the UK (/EU) for a continuous 3 year period before the period for which NI contributions are to be paid.</li>
+                        <li>They paid the qualifying amount of contributions in 3 years or more in UK (/EU)</li>
+                    </ul>
+                    <br/>
+                </div>
+                <div class="free-form">
+                    As our client was habitually resident in an EU country and was previously compulsorily insured in the UK, we believe they therefore qualify for voluntary Class 2 contributions under Article 14 of EC Regulation 883/2004 (and Article 32(1)(a) of the EU-UK Withdrawal Agreement Act 2020)
+                </div>
+                <br/>
+                Yours sincerely<br/>
+                JGBA Ltd
+            </div>
+            <br/>
+            <div>
+                <b>Email: </b>payroll@jgbaaccountants.co.uk
+            </div>
+        </body>
+    </html>
+</apex:page>

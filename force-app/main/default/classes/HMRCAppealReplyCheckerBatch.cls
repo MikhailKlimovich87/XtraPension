@@ -1,5 +1,5 @@
 public class HMRCAppealReplyCheckerBatch implements Database.Batchable<SObject>, Database.AllowsCallouts {
-    private final static String AGENT_ADDRESS = 'mihail.klimovich@outlook.com';
+    private final static String AGENT_ADDRESS = 'rob@xtrapension.com';
     private final static OrgWideEmailAddress DEFAULT_ORG_WIDE_EMAIL_ADDRESS {
         get {
             if (DEFAULT_ORG_WIDE_EMAIL_ADDRESS == null) {

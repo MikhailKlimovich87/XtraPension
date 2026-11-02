@@ -1,0 +1,53 @@
+.pc1-va { padding-bottom: 1rem; }
+.pc1-va__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+}
+.pc1-va__title { font-size: 1.1rem; font-weight: 600; }
+.pc1-va__sub { color: #555; font-size: 0.85rem; margin-top: 0.15rem; }
+.pc1-va__empty { color: #777; font-style: italic; }
+.pc1-va__table { padding: 0 1rem; }
+.pc1-va__row {
+    display: grid;
+    grid-template-columns: minmax(120px, 1.5fr) 90px minmax(160px, 2fr) 80px 90px 100px;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #ececec;
+}
+.pc1-va__row--head {
+    font-weight: 600;
+    color: #555;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 2px solid #d0d0d0;
+}
+.pc1-va__row--inactive { opacity: 0.55; }
+.pc1-va__cell { min-width: 0; }
+.pc1-va__share { display: flex; align-items: center; gap: 0.5rem; }
+.pc1-va__bar {
+    flex: 1 1 auto;
+    height: 8px;
+    background: #eef1f6;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.pc1-va__bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #1589ee, #0070d2);
+    transition: width 0.25s ease;
+}
+.pc1-va__pct { font-variant-numeric: tabular-nums; font-size: 0.85rem; color: #333; min-width: 40px; text-align: right; }
+.pc1-va__count { font-variant-numeric: tabular-nums; }
+.pc1-va__actions-col { display: flex; gap: 0.35rem; justify-content: flex-end; }
+.pc1-va__footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0.25rem 0.25rem;
+    color: #555;
+    font-size: 0.85rem;
+}

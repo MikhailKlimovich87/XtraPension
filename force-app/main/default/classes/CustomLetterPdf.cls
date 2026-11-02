@@ -44,38 +44,24 @@ public class CustomLetterPdf {
         		Previous_UK_Address_1__Street__s,
         		Previous_UK_Address_2__Street__s,
         		Previous_UK_Address_3__Street__s,
-        		Previous_UK_Address_4__Street__s,
-        		Previous_UK_Address_5__Street__s,
         		Previous_UK_Address_1__City__s,
         		Previous_UK_Address_2__City__s,
         		Previous_UK_Address_3__City__s,
-        		Previous_UK_Address_4__City__s,
-       			Previous_UK_Address_5__City__s,
         		Previous_UK_Address_1__StateCode__s,
         		Previous_UK_Address_2__StateCode__s,
         		Previous_UK_Address_3__StateCode__s,
-        		Previous_UK_Address_4__StateCode__s,
-        		Previous_UK_Address_5__StateCode__s,
         		Previous_UK_Address_1__CountryCode__s,
         		Previous_UK_Address_2__CountryCode__s,
        			Previous_UK_Address_3__CountryCode__s,
-        		Previous_UK_Address_4__CountryCode__s,
-        		Previous_UK_Address_5__CountryCode__s,
         		Previous_UK_Address_1__PostalCode__s,
         		Previous_UK_Address_2__PostalCode__s,
         		Previous_UK_Address_3__PostalCode__s,
-        		Previous_UK_Address_4__PostalCode__s,
-        		Previous_UK_Address_5__PostalCode__s,
         		Previous_UK_Address_1_Country__c,
         		Previous_UK_Address_2_Country__c,
         		Previous_UK_Address_3_Country__c,
-        		Previous_UK_Address_4_Country__c,
-        		Previous_UK_Address_5_Country__c,
         		Previous_UK_Address1_State__c,
         		Previous_UK_Address2_State__c,
         		Previous_UK_Address3_State__c,
-        		Previous_UK_Address4_State__c,
-        		Previous_UK_Address5_State__c,
         		Previous_UK_Address_End_Date_1__c,
         		Previous_UK_Address_End_Date_2__c,
         		Previous_UK_Address_End_Date_3__c,
@@ -209,32 +195,34 @@ public class CustomLetterPdf {
     	conVer.PathOnClient = FinalTitle+'.pdf';
     	conVer.Title = FinalTitle;
     	conVer.VersionData = pdfBlob;
+		conVer.FirstPublishLocationId = MstrID;
+
 	    insert conVer;
 
-    	ContentVersion conDoc = [SELECT ContentDocumentId, ContentSize FROM ContentVersion WHERE Id =:conVer.Id][0];
+    	// ContentVersion conDoc = [SELECT ContentDocumentId, ContentSize FROM ContentVersion WHERE Id =:conVer.Id][0];
 
-    	ContentDocumentLink conDocLink = New ContentDocumentLink();
-    	conDocLink.LinkedEntityId = MstrID;
-    	conDocLink.ContentDocumentId = conDoc.ContentDocumentId;
-    	conDocLink.shareType = 'V';
-    	conDocLink.Visibility = 'AllUsers';
-    	insert conDocLink;
+    	// ContentDocumentLink conDocLink = New ContentDocumentLink();
+    	// conDocLink.LinkedEntityId = MstrID;
+    	// conDocLink.ContentDocumentId = conDoc.ContentDocumentId;
+    	// conDocLink.shareType = 'V';
+    	// conDocLink.Visibility = 'AllUsers';
+    	// insert conDocLink;
     	update appObj;
 
-    	Application_Document__c appDoc = new Application_Document__c(
-      		Type__c = 'Custom Letter',
-      		Application__c = MstrID,
-      		File_Name__c = FinalTitle,
-      		File_Size__c = conDoc.ContentSize,
-      		Status__c = 'New'
-      	);
-    	insert appDoc;
-    	insert new ContentDocumentLink(
-           	ContentDocumentId = conDoc.ContentDocumentId,
-            LinkedEntityId    = appDoc.Id,
-            ShareType         = 'V',
-      		Visibility        = 'AllUsers'
-        );
+    	// Application_Document__c appDoc = new Application_Document__c(
+      	// 	Type__c = 'Custom Letter',
+      	// 	Application__c = MstrID,
+      	// 	File_Name__c = FinalTitle,
+      	// 	File_Size__c = conDoc.ContentSize,
+      	// 	Status__c = 'New'
+      	// );
+    	// insert appDoc;
+    	// insert new ContentDocumentLink(
+        //    	ContentDocumentId = conDoc.ContentDocumentId,
+        //     LinkedEntityId    = appDoc.Id,
+        //     ShareType         = 'V',
+      	// 	Visibility        = 'AllUsers'
+        // );
 		PageReference pageRef = new PageReference( baseURL+'/lightning/r/Application__c/' + System.currentPageReference().getParameters().get('id')+'/view');
     	pageRef.setRedirect(true);
 	    return pageRef;

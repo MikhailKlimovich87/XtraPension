@@ -1,0 +1,85 @@
+<template>
+    <lightning-card title="Create Reapply" icon-name="utility:refresh">
+        <div class="slds-p-around_medium">
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Processing..." size="medium"></lightning-spinner>
+            </template>
+            
+            <template if:false={isLoading}>
+                <template if:true={hasReapply}>
+                    <div class="slds-m-bottom_medium slds-p-around_small slds-border_around" style="background-color: #f0f8ff;">
+                        <div class="slds-grid slds-grid_align-spread">
+                            <div>
+                                <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                                <span class="slds-text-heading_small slds-m-left_x-small">
+                                    A Reapply record already exists for this Application.
+                                </span>
+                            </div>
+                            <lightning-button 
+                                label="Go to Reapply" 
+                                variant="brand" 
+                                size="x-small"
+                                onclick={handleNavigateToExisting}
+                            ></lightning-button>
+                        </div>
+                        <div class="slds-m-top_x-small slds-text-color_weak">
+                            <lightning-icon icon-name="utility:redirect" size="x-small"></lightning-icon>
+                            You will be redirected automatically...
+                        </div>
+                    </div>
+                </template>
+                
+                <template if:false={hasReapply}>
+                    <div class="slds-text-body_regular slds-m-bottom_medium">
+                        Click the button below to create a Reapply record for this Application.
+                    </div>
+                    
+                    <lightning-button 
+                        label="Create Reapply" 
+                        variant="brand" 
+                        onclick={handleCreateReapply}
+                    ></lightning-button>
+                </template>
+                
+                <!-- Enhanced Error Display -->
+                <template if:true={errorMessage}>
+                    <div class="slds-m-top_small slds-p-around_small slds-border_around slds-text-color_error" style="background-color: #fdf4f4;">
+                        <div class="slds-grid slds-grid_align-spread">
+                            <div>
+                                <lightning-icon icon-name="utility:error" size="small"></lightning-icon>
+                                <span class="slds-text-heading_small slds-m-left_x-small">{errorMessage}</span>
+                            </div>
+                            <lightning-button 
+                                label={debugButtonLabel} 
+                                variant="neutral" 
+                                size="x-small"
+                                onclick={toggleDebugInfo}
+                            ></lightning-button>
+                        </div>
+                        
+                        <template if:true={showDebug}>
+                            <div class="slds-m-top_small slds-p-around_small slds-border_around slds-text-color_weak" style="background-color: #fafafa;">
+                                <p><strong>Record ID:</strong> {recordId}</p>
+                                <p><strong>Error:</strong> {errorMessage}</p>
+                                <template if:true={errorDetails}>
+                                    <p><strong>Details:</strong> {errorDetails}</p>
+                                </template>
+                                <p class="slds-text-color_weak slds-text-body_small">
+                                    <lightning-icon icon-name="utility:info" size="x-small"></lightning-icon>
+                                    Check debug logs for more information
+                                </p>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+                
+                <template if:true={successMessage}>
+                    <div class="slds-m-top_small slds-text-color_success">
+                        <lightning-icon icon-name="utility:success" size="x-small"></lightning-icon>
+                        {successMessage}
+                    </div>
+                </template>
+            </template>
+        </div>
+    </lightning-card>
+</template>

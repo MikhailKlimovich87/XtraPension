@@ -1,0 +1,8 @@
+.aa-feemodal__body { display: flex; flex-direction: column; gap: 12px; padding: 4px 0; }
+.aa-feemodal__prompt { font-size: 1rem; }
+.aa-feemodal__context { color: #444; font-size: 0.9rem; }
+.aa-feemodal__notice {
+    padding: 10px 12px; border-radius: 6px; font-size: 0.86rem;
+    background: #fff8ea; border: 1px solid #f2d17a; color: #7d5300;
+}
+.aa-feemodal__checks { display: flex; flex-direction: column; gap: 6px; }

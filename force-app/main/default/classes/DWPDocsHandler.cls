@@ -1,4 +1,4 @@
-public class DWPDocsHandler {
+public without sharing class DWPDocsHandler {
     private static final List<String> DWP_FILE_NAMES = new List<String> {
         'DWP 2 - Summary',
         'DWP 3 - Work History'
@@ -32,39 +32,18 @@ public class DWPDocsHandler {
     }
 
     private static Id saveDocument(String docName, Blob contentData, Application__c currentApplication) {
-        List<ContentDocumentLink> currentDocs = Database.query (
-            'SELECT ' +
-                'ContentDocumentId, ' +
-                'ContentDocument.Title, ' +
-                'ContentDocument.LatestPublishedVersionId, ' +
-                'LinkedEntityId ' +
-            'FROM ContentDocumentLink ' +
-            'WHERE ContentDocument.Title LIKE \'%' + docName +'%\' AND ' +
-                   'LinkedEntityId = \'' + currentApplication.Id + '\''
-        );
-        String title = docName + ' - ' + currentApplication.Name + '_' + currentApplication.First_Name__c + '_' + currentApplication.Second_Name__c;
+        String title = docName + ' - ' + currentApplication.Name + '_' +
+                   currentApplication.First_Name__c + '_' +
+                   currentApplication.Second_Name__c;
+
         ContentVersion conVer = new ContentVersion();
-        // if (currentDocs.isEmpty()) {
-            conVer.ContentLocation = 'S';
-            conVer.PathOnClient = title + '.pdf';
-            conVer.Title = title;
-            conVer.VersionData = contentData;
-            insert conVer;
+        conVer.ContentLocation        = 'S';
+        conVer.PathOnClient           = title + '.pdf';
+        conVer.Title                  = title;
+        conVer.VersionData            = contentData;
+        conVer.FirstPublishLocationId = currentApplication.Id;
+        insert conVer;
 
-            ContentVersion conDoc = [SELECT ContentDocumentId, ContentSize FROM ContentVersion WHERE Id =:conVer.Id][0];
-
-            ContentDocumentLink conDocLink = new ContentDocumentLink();
-            conDocLink.LinkedEntityId = currentApplication.Id;
-            conDocLink.ContentDocumentId = conDoc.ContentDocumentId;
-            conDocLink.shareType = 'V';
-            conDocLink.Visibility = 'AllUsers';
-            insert conDocLink;
-        // } else {
-        //     conVer.ContentDocumentId = currentDocs[0].ContentDocumentId;
-        //     conVer.VersionData = contentData;
-        //     conVer.PathOnClient = title + '.pdf';
-        //     insert conVer;
-        // }
         return conVer.Id;
     }
 }

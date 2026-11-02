@@ -4,7 +4,7 @@ public class HRMCReplyPdf {
     public String MstrId{get;set;}
     public String fieldName{get;set;}
     public String bodyData{get;set;}
-
+    
     public HRMCReplyPdf(ApexPages.StandardController Controller) {
         baseURL = URL.getSalesforceBaseUrl().toExternalForm();
         MstrId = ApexPages.currentPage().getParameters().get('id');
@@ -14,10 +14,6 @@ public class HRMCReplyPdf {
                 Name,
                 NINO_Template__c,
                 Custom_Reply_Template__c,
-                Appeal_Template__c,
-                Current_Job_Reply_Template__c,
-                EU_Residency_Appeal_Template__c,
-                Maiden_Name_Template__c,
                 EU_Residency_Letter_Template__c,
                 Class_3_Appeal_Despite_3_Years_Template__c,
                 Bad_Error_In_C2_Decision_Template__c,
@@ -27,6 +23,7 @@ public class HRMCReplyPdf {
                 CF83_NOT_Received_letter_again_Template__c,
                 Late_Payment_Appeal_Template__c,
                 Reply_to_EU_C2_C3_Rejection_Template__c,
+                C2_Client_Rejection_Template__c,
                 HMRC_Ref__c,
                 National_Insurance_Number__c,
                 Second_Name__c,

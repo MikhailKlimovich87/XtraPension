@@ -1,62 +1,26 @@
 public class PrintingHouseReplyModalController {
 
-    @AuraEnabled
-    public static void sendEmail(String toAddress, String subject, String body, List<Id> contentDocumentIds) {
-        if (String.isBlank(toAddress)) {
-            throw new AuraHandledException('Recipient email is required.');
-        }
-
-        Messaging.SingleEmailMessage email = new Messaging.SingleEmailMessage();
-        email.setToAddresses(new String[] { toAddress });
-        email.setSubject(subject);
-        email.setHtmlBody(body);
-
-        List<Messaging.EmailFileAttachment> fileAttachments = new List<Messaging.EmailFileAttachment>();
-
-        if (!contentDocumentIds.isEmpty()) {
-            List<ContentVersion> versions = [
-                SELECT Id, Title, FileType, VersionData
-                FROM ContentVersion
-                WHERE ContentDocumentId IN :contentDocumentIds
-                AND IsLatest = true
-            ];
-
-            for (ContentVersion v : versions) {
-                Messaging.EmailFileAttachment efa = new Messaging.EmailFileAttachment();
-                efa.setFileName(v.Title + '.' + v.FileType);
-                efa.setBody(v.VersionData);
-                fileAttachments.add(efa);
-            }
-            email.setFileAttachments(fileAttachments);
-        }
-
-        Messaging.SendEmailResult[] results = Messaging.sendEmail(new Messaging.SingleEmailMessage[] { email });
-
-        if (!results[0].isSuccess()) {
-            throw new AuraHandledException('Email failed: ' + results[0].getErrors()[0].getMessage());
-        }
-    }
-
     @AuraEnabled(cacheable=false)
     public static InitialFilesWrapper getAvailableDocuments(Id appId) {
         InitialFilesWrapper wrapper = new InitialFilesWrapper();
         for(ContentDocumentLink link : [
             SELECT
                 ContentDocumentId,
-                ContentDocument.Title
+                ContentDocument.Title,
+                ContentDocument.LatestPublishedVersionId
             FROM ContentDocumentLink
             WHERE
                 LinkedEntityId = :appId AND
                 ContentDocument.FileType != 'SNOTE'
         ]) {
             wrapper.allAvailableFiles.add(link);
-            if(link.ContentDocument.Title.contains('REPLY')) wrapper.replyFiles.add(link);
+            if(link.ContentDocument.Title.contains('REPLY') || link.ContentDocument.Title.contains('UPLOAD')) wrapper.replyFiles.add(link);
         }
         return wrapper;
     }
 
     @AuraEnabled(cacheable=false)
-    public static ResultWrapper sendDocs(Id appId, List<Id> attachFiles, Id fileIdToHMRC) {
+    public static ResultWrapper sendDocs(Id appId, List<Id> attachFiles, List<Id> filesIdToHMRC) {
         ResultWrapper wrapper = new ResultWrapper();
         List<SObject> appealDate = new List<SObject>();
         appealDate.add(
@@ -72,12 +36,20 @@ public class PrintingHouseReplyModalController {
         appealDate.add(reply);
         try {
             upsert appealDate;
-            insert new ContentDocumentLink(
-                LinkedEntityId = reply.Id,
-                ContentDocumentId = fileIdToHMRC,
-                ShareType = 'V',
-                Visibility = 'AllUsers'
-            );
+            List<ContentDocumentLink> replyLinks = new List<ContentDocumentLink>();
+            for (Id replyId : filesIdToHMRC) {
+                replyLinks.add(
+                    new ContentDocumentLink(
+                        LinkedEntityId = reply.Id,
+                        ContentDocumentId = replyId,
+                        ShareType = 'V',
+                        Visibility = 'AllUsers'
+                    )
+                );
+            }
+            if (replyLinks.size() > 0) {
+                insert replyLinks;
+            }
             wrapper.isSent = true;
         } catch (Exception ex) {
             wrapper.errorMessage = ex.getMessage();

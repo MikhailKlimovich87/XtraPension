@@ -77,4 +77,35 @@ public with sharing class GeneratePDFCalloutTest {
         System.assertEquals('Completed', job.Status, 'Job Status should be Completed');
         System.assertEquals(0, job.NumberOfErrors, 'NumberOfErrors should be 0');
     }
+
+    @IsTest
+    static void executeMethodTestCase3_ResponseError() {
+        Application__c testApp = [
+            SELECT Id
+            FROM Application__c
+            LIMIT 1
+        ];
+        Test.setMock(HttpCalloutMock.class, new GeneratePDFErrorMock());
+        GeneratePDFCallout testPdfCallout = new GeneratePDFCallout(testApp.Id);
+        Test.startTest();
+        Id jobId = System.enqueueJob(testPdfCallout);
+        Test.stopTest();
+        System.assertNotEquals(null, jobId, 'Job Id must be not null');
+        Application__c updatedApp = [
+            SELECT Id, Heroku_Request__c
+            FROM Application__c
+            WHERE Id = :testApp.Id
+        ];
+        System.assertEquals('Mock error response body', updatedApp.Heroku_Request__c,
+            'Heroku_Request__c should contain the error response body');
+    }
+
+    private class GeneratePDFErrorMock implements HttpCalloutMock {
+        public HTTPResponse respond(HTTPRequest req) {
+            HttpResponse res = new HttpResponse();
+            res.setStatusCode(500);
+            res.setBody('Mock error response body');
+            return res;
+        }
+    }
 }

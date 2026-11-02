@@ -1,0 +1,222 @@
+<apex:page renderAs="pdf"
+            showHeader="false"
+            sidebar="false"
+            applyBodyTag="false"
+            applyHtmlTag="false"
+            controller="BP_ClientSummaryPdfController"
+            standardStylesheets="false"
+            readOnly="true"
+           >
+
+<html>
+     <head>
+        <style>
+            @page {
+                size: A4;
+                margin: 20px 20px 20px 60px;
+            }
+        </style>
+        
+    </head>
+            
+<body style="font-family:Times,serif;font-size:12pt;line-height:1.1;">
+<div style="text-align:center;font-size:14pt;font-weight:bold;margin-bottom:20px;">
+    State Pension <u>LETTER OF AUTHORITY</u> to Dept of Work &amp; Pensions (DWP)
+</div>
+
+<table style="width:100%;border-collapse:collapse;">
+
+    <tr>
+        <td colspan="2"
+            style="padding:6px;font-weight:bold;">
+            <u>Client Details</u>
+        </td>
+
+        <td colspan="2"
+            style="padding:6px;font-weight:bold;">
+            <u>Representative Details</u>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:5px;font-weight:bold;width:18%;">
+            Nat Ins No:
+        </td>
+        <td style="padding:5px;width:32%;">
+            {!ninoString}
+        </td>
+
+        <td style="padding:5px;font-weight:bold;width:18%;">
+            Company Name:
+        </td>
+        <td style="padding:5px;width:32%;">
+            XtraPension Ltd
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:5px;font-weight:bold;">
+            Full Name:
+        </td>
+        <td style="padding:5px;">
+            {!client.First_Name__c} {!client.Last_Name__c}
+        </td>
+
+        <td style="padding:5px;font-weight:bold;">
+            Irish Co Number:
+        </td>
+        <td style="padding:5px;">
+            749802
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:5px;font-weight:bold;">
+            Date of Birth:
+        </td>
+        <td style="padding:5px;">
+            <apex:outputText value="{0,date,dd/MM/yyyy}">
+                <apex:param value="{!client.Claimant_dob__c}"/>
+            </apex:outputText>
+        </td>
+
+        <td style="padding:5px;font-weight:bold;">
+            Email:
+        </td>
+        <td style="padding:5px;">
+            claims@xtrapension.com
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:5px;font-weight:bold;">
+            Email:
+        </td>
+        <td style="padding:5px;">
+            {!client.Email__c}
+        </td>
+
+        <td style="padding:5px;font-weight:bold;">
+            Tel:
+        </td>
+        <td style="padding:5px;">
+            +353 91 335 583
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:5px;font-weight:bold;vertical-align:top;">
+            Tel:
+            <br/>
+            <br/>
+            Address:
+        </td>
+        <td style="padding:5px;vertical-align:top;">
+            {!client.Phone__c}
+            <br/>
+            <br/>
+            <apex:repeat value="{!addressLines}" var="line">
+                <span>{!line} </span> <br/>
+            </apex:repeat>
+        </td>
+
+        <td style="padding:5px;font-weight:bold;vertical-align:top;">
+            Address:
+        </td>
+
+        <td style="padding:5px;">
+            Gray Office Park<br/>
+            Headford Rd<br/>
+            Galway, H91 WC1P<br/>
+            Ireland
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:5px;font-weight:bold;vertical-align:top;">
+
+        </td>
+
+        <td style="padding:5px;">
+            
+        </td>
+
+        <td style="padding:5px;">
+        </td>
+        <td style="padding:5px;">
+            
+        </td>
+    </tr>
+
+</table>
+
+<div style="margin-top:20px;font-weight:bold;">
+    <u>1. Authorisation &amp; Scope</u>
+</div>
+
+<div style="margin-top:8px;">
+    I authorise <b>XtraPension Ltd</b> and its staff to act as my representative regarding my State Pension entitlements.
+</div>
+
+<div style="margin-top:8px;">
+    I explicitly authorise the <b>Department for Work and Pensions (DWP)</b> to discuss my records and share full copies of my personal data, pension forecasts, and all calculations / DWP decisions regarding them.
+</div>
+
+<div style="margin-top:8px;">
+    This authority covers:
+</div>
+
+<div style="margin-left:18px;margin-top:5px;">
+    • State Pension claims, forecasts, deferred lump sums, official errors and underlying workings.<br/>
+    • SERPS, S2P, Graduated Retirement Benefit, and Additional Pension components relating to me and/or my spouse where applicable.<br/>
+    • National Insurance records (including contribution gaps, HRP, and credits).<br/>
+    • Enquiries, disputes, mandatory reconsiderations, and appeals (SSCS1).
+</div>
+
+<div style="margin-top:20px;font-weight:bold;">
+    <u>2. Exclusions</u>
+</div>
+
+<div style="margin-top:8px;">
+    This authority is strictly limited to information sharing, calculations, and representation.<br/>
+    <b>It does not authorise XtraPension Ltd to:</b>
+</div>
+
+<div style="margin-left:18px;margin-top:5px;">
+    • Receive any payments, arrears, lump sums, or benefits on my behalf.<br/>
+    • Change my bank details held by the DWP.<br/>
+    • Act as my appointee, attorney, or deputy.
+</div>
+
+<div style="margin-top:20px;font-weight:bold;">
+    <u>3. Duration &amp; Revocation</u>
+</div>
+
+<div style="margin-top:8px;">
+    This authority remains valid until my state pension claim and/or all related matters are fully resolved.
+</div>
+
+<div style="margin-top:5px;">
+    I reserve the right to revoke this authority at any time in writing or by phone.
+</div>
+
+<div style="margin-top:80px; position:relative;">
+    Client Signature:
+    <span style="position:absolute; left:180px; top:0; color:white;">
+        \s1\
+    </span>
+    _____________________
+</div>
+
+<div style="margin-top:30px; position:relative;">
+    Date:
+    <span style="position:absolute; left: 100px; top:0; color:white;">
+        \d1\
+    </span>
+    _____________________
+</div>
+
+</body>
+</html>
+
+</apex:page>

@@ -1,0 +1,154 @@
+<template>
+    <div class="slds-card aa-ddstatus">
+        <header class="aa-ddstatus__head">
+            <lightning-icon icon-name="standard:money" size="small" class="aa-ddstatus__icon"></lightning-icon>
+            <div>
+                <h2 class="aa-ddstatus__title">Direct Debit</h2>
+                <p class="aa-ddstatus__sub">Direct Debit agreement status for later fee collection.</p>
+            </div>
+        </header>
+
+        <div class="aa-ddstatus__section">
+            <!-- STATE 1 — No Direct Debit agreement yet -->
+            <template if:true={isNoMandate}>
+                <div class={bannerClass}>
+                    <strong>Not set up.</strong> {gatingHint}
+                </div>
+                <template if:true={canCreate}>
+                    <div class="aa-ddstatus__actions">
+                        <lightning-button
+                            variant="brand"
+                            label="Create Direct Debit"
+                            icon-name="utility:add"
+                            onclick={handleCreateMandate}
+                            disabled={creating}
+                            class="aa-ddstatus__cta">
+                        </lightning-button>
+                        <p class="aa-ddstatus__hint">
+                            The client will receive an email confirming the Direct Debit; it
+                            stays waiting for their bank to confirm (usually the same working day).
+                        </p>
+                    </div>
+                </template>
+            </template>
+
+            <!-- STATE 1b — Created at GoCardless, mandate PDF still missing -->
+            <template if:true={isPdfPending}>
+                <div class="aa-ddstatus__banner aa-ddstatus__banner--warn">
+                    <strong>Direct Debit created, mandate document pending.</strong>
+                    The welcome email and the fee charge wait for the document.
+                </div>
+                <div class="aa-ddstatus__actions">
+                    <lightning-button
+                        variant="brand"
+                        label="Retry mandate document"
+                        icon-name="utility:refresh"
+                        onclick={handleCreateMandate}
+                        disabled={creating}
+                        class="aa-ddstatus__cta">
+                    </lightning-button>
+                </div>
+            </template>
+
+            <!-- STATE 2 — Waiting for bank confirmation -->
+            <template if:true={isPending}>
+                <div class={bannerClass}>
+                    <strong>Waiting for the bank to confirm</strong> ({prettyStatus}).
+                </div>
+                <div class="aa-ddstatus__meta">
+                    <div class="aa-ddstatus__row">
+                        <span class="aa-ddstatus__k">Reference</span>
+                        <span class="aa-ddstatus__v aa-ddstatus__mono">{maskedMandateId}</span>
+                    </div>
+                    <template if:true={createdAtDisplay}>
+                        <div class="aa-ddstatus__row">
+                            <span class="aa-ddstatus__k">Created</span>
+                            <span class="aa-ddstatus__v">{createdAtDisplay}</span>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- STATE 3 — Active -->
+            <template if:true={isActive}>
+                <div class={bannerClass}>
+                    <strong>Active</strong>
+                    <template if:true={activatedAtDisplay}>
+                        &nbsp;since {activatedAtDisplay}
+                    </template>
+                </div>
+                <div class="aa-ddstatus__meta">
+                    <div class="aa-ddstatus__row">
+                        <span class="aa-ddstatus__k">Reference</span>
+                        <span class="aa-ddstatus__v aa-ddstatus__mono">{maskedMandateId}</span>
+                    </div>
+                </div>
+            </template>
+
+            <!-- STATE 4 — Failed / cancelled -->
+            <template if:true={isFailed}>
+                <div class={bannerClass}>
+                    <strong>{prettyStatus}</strong>
+                    <template if:true={failureReason}>
+                        <span class="aa-ddstatus__reason-inline">&nbsp;Reason: {failureSnippet}.</span>
+                    </template>
+                    <div class="aa-ddstatus__next-action">
+                        Call the client, confirm the account details, and re-enter them in the
+                        Bank Account section above. Then click <em>Create a new Direct Debit</em> below.
+                    </div>
+                </div>
+                <div class="aa-ddstatus__meta">
+                    <div class="aa-ddstatus__row">
+                        <span class="aa-ddstatus__k">Reference</span>
+                        <span class="aa-ddstatus__v aa-ddstatus__mono">{maskedMandateId}</span>
+                    </div>
+                </div>
+                <template if:true={canRecreate}>
+                    <div class="aa-ddstatus__actions">
+                        <lightning-button
+                            variant="brand"
+                            label="Create a new Direct Debit"
+                            icon-name="utility:add"
+                            onclick={handleRecreateMandate}
+                            disabled={creating}
+                            class="aa-ddstatus__cta">
+                        </lightning-button>
+                    </div>
+                </template>
+                <template if:true={recreateBlockedHint}>
+                    <p class="aa-ddstatus__hint">{recreateBlockedHint}</p>
+                </template>
+            </template>
+
+            <!-- STATE 4b — Failed / cancelled before the mandate document landed
+                 (no reference stored). A new one needs the client's agreement. -->
+            <template if:true={isDeadNoId}>
+                <div class="aa-ddstatus__banner aa-ddstatus__banner--err">
+                    <strong>{prettyStatus}</strong>
+                    <template if:true={failureReason}>
+                        <span class="aa-ddstatus__reason-inline">&nbsp;Reason: {failureSnippet}.</span>
+                    </template>
+                    <div class="aa-ddstatus__next-action">
+                        This Direct Debit ended before it was completed. Only set up a new one if the client
+                        agrees again: read them the Direct Debit terms, then click <em>Create a new Direct Debit</em> below.
+                    </div>
+                </div>
+                <template if:true={canRecreateNoId}>
+                    <div class="aa-ddstatus__actions">
+                        <lightning-button
+                            variant="brand"
+                            label="Create a new Direct Debit"
+                            icon-name="utility:add"
+                            onclick={handleRecreateMandate}
+                            disabled={creating}
+                            class="aa-ddstatus__cta">
+                        </lightning-button>
+                    </div>
+                </template>
+                <template if:false={canRecreateNoId}>
+                    <p class="aa-ddstatus__hint">{gatingHint}</p>
+                </template>
+            </template>
+        </div>
+    </div>
+</template>

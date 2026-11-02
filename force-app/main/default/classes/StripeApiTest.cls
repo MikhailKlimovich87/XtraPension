@@ -139,6 +139,42 @@ public class StripeApiTest {
     }
 
     @IsTest
+    static void getCustomerDataTest() {
+        Test.setMock(HttpCalloutMock.class, new PaymentServiceMock());
+
+        Test.startTest();
+        String customerData = StripeApiService.getCustomerData('cus_test');
+        Test.stopTest();
+
+        System.assert(customerData.contains('"payment_method"'));
+    }
+
+    @IsTest
+    static void getCustomerDataErrorTest() {
+        Test.setMock(HttpCalloutMock.class, new PaymentServiceErrorMock());
+
+        Test.startTest();
+        String customerData = StripeApiService.getCustomerData('cus_test');
+        Test.stopTest();
+
+        System.assertEquals('Error', customerData);
+    }
+
+    @IsTest
+    static void createPaymentIntentForMissingPaymentTest() {
+        Test.setMock(HttpCalloutMock.class, new PaymentServiceMock());
+
+        Test.startTest();
+        try {
+            StripeApiService.createPaymentIntentForBatch(new Map<String, String>(), null);
+            System.assert(false, 'A missing payment should throw an exception');
+        } catch (StripeApiService.StripeApiException error) {
+            System.assertEquals('Don\'t exist payment method', error.getMessage());
+        }
+        Test.stopTest();
+    }
+
+    @IsTest
     static void errorResponseTest() {
         Test.setMock(HttpCalloutMock.class, new PaymentServiceErrorMock());
         Payment__c payment = [
@@ -228,6 +264,31 @@ public class StripeApiTest {
     }
 
     @IsTest
+    static void createPaymentIntentForBatchHandlesMissingCardDataTest() {
+        Test.setMock(HttpCalloutMock.class, new MissingCardDataMock());
+        Payment__c payment = [SELECT Id, Customer_Id__c, Payment_Method__c FROM Payment__c LIMIT 1];
+
+        Test.startTest();
+        StripeApiService.createPaymentIntentForBatch(
+            new Map<String, String>{
+                'customer' => payment.Customer_Id__c,
+                'payment_method' => payment.Payment_Method__c
+            },
+            payment.Id
+        );
+        Test.stopTest();
+
+        Payment__c updatedPayment = [
+            SELECT Status__c, Payment_Intent__c, Card_Data__c
+            FROM Payment__c
+            WHERE Id = :payment.Id
+        ];
+        System.assertEquals('Paid', updatedPayment.Status__c);
+        System.assertEquals('pi_missing_card_test', updatedPayment.Payment_Intent__c);
+        System.assertEquals(null, updatedPayment.Card_Data__c);
+    }
+
+    @IsTest
     static void createPaymentIntentForBatchCase2Test() {
         Test.setMock(HttpCalloutMock.class, new PaymentServiceErrorMock());
         Payment__c payment = [
@@ -274,6 +335,40 @@ public class StripeApiTest {
     }
 
     @IsTest
+    static void createPaymentIntentForBatchPreservesRetryDatesTest() {
+        Test.setMock(HttpCalloutMock.class, new PaymentServiceErrorMock());
+        Payment__c payment = [
+            SELECT Id, Customer_Id__c, Payment_Method__c, Repeated_Payment_Date_1__c,
+                Repeated_Payment_Date_2__c, Repeated_Payment_Date_3__c
+            FROM Payment__c
+            LIMIT 1
+        ];
+        payment.Repeated_Payment_Date_1__c = Date.today().addDays(-8);
+        payment.Repeated_Payment_Date_2__c = Date.today().addDays(-4);
+        payment.Repeated_Payment_Date_3__c = Date.today();
+        update payment;
+
+        Test.startTest();
+        StripeApiService.createPaymentIntentForBatch(
+            new Map<String, String>{
+                'customer' => payment.Customer_Id__c,
+                'payment_method' => payment.Payment_Method__c
+            },
+            payment.Id
+        );
+        Test.stopTest();
+
+        Payment__c updatedPayment = [
+            SELECT Repeated_Payment_Date_1__c, Repeated_Payment_Date_2__c, Repeated_Payment_Date_3__c
+            FROM Payment__c
+            WHERE Id = :payment.Id
+        ];
+        System.assertEquals(Date.today().addDays(-8), updatedPayment.Repeated_Payment_Date_1__c);
+        System.assertEquals(Date.today().addDays(-4), updatedPayment.Repeated_Payment_Date_2__c);
+        System.assertEquals(Date.today(), updatedPayment.Repeated_Payment_Date_3__c);
+    }
+
+    @IsTest
     static void updatePaymentCardDataTest() {
         Test.setMock(HttpCalloutMock.class, new PaymentMethodMock());
         Payment__c payment = [
@@ -308,6 +403,23 @@ public class StripeApiTest {
         System.assertEquals('visa - 4242', updatePayment.Card_Data__c, 'Card Data field value don\'t match');
     }
 
+    @IsTest
+    static void updatePaymentCardDataErrorTest() {
+        Test.setMock(HttpCalloutMock.class, new PaymentServiceErrorMock());
+        Payment__c payment = [SELECT Id FROM Payment__c LIMIT 1];
+
+        Test.startTest();
+        StripeApiService.updatePaymentCardData(payment.Id);
+        Test.stopTest();
+
+        Payment__c unchangedPayment = [
+            SELECT Card_Data__c
+            FROM Payment__c
+            WHERE Id = :payment.Id
+        ];
+        System.assertEquals(null, unchangedPayment.Card_Data__c);
+    }
+
     private class PaymentMethodMock implements HttpCalloutMock {
         public HTTPResponse respond(HTTPRequest req) {
             // Create a fake response
@@ -323,6 +435,22 @@ public class StripeApiTest {
                 '}');
             res.setStatusCode(200);
             return res;
+        }
+    }
+
+    private class MissingCardDataMock implements HttpCalloutMock {
+        public HTTPResponse respond(HTTPRequest req) {
+            HttpResponse response = new HttpResponse();
+            response.setHeader('Content-Type', 'application/json');
+            if (req.getEndpoint().contains('/payment_methods/')) {
+                response.setBody('{"id":"pm_test","type":"link"}');
+            } else {
+                response.setBody(
+                    '{"id":"pi_missing_card_test","latest_charge":"ch_missing_card_test","payment_method":"pm_test"}'
+                );
+            }
+            response.setStatusCode(200);
+            return response;
         }
     }
 

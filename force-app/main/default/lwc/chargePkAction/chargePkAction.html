@@ -1,0 +1,40 @@
+<template>
+    <lightning-card title="Register user">
+        <div class="action-wrapper slds-is-relative">
+            <div lwc:if={isRegistrateCustomer}>
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            </div>
+            <template if:false={isScheduleView}>
+                <div class="action-container">
+                    Would you like to charge Pension Keeper payment right now or schedule registration?
+                </div>
+                <div class="action-container">
+                    <lightning-combobox
+                        name="agent"
+                        label="PK Sales Agents"
+                        value={salesAgent}
+                        placeholder="Select PK Sales Agent"
+                        options={options}
+                        onchange={handleChange}
+                        style="width:100%;">
+                    </lightning-combobox>
+                </div>
+                <div class="button-block">
+                    <lightning-button label="Charge Now" variant="brand" onclick={handleCharge} disabled={disableCharge}></lightning-button>
+                    <lightning-button label="Update CC" class="slds-m-left_small" onclick={openUpdateCCPage} disabled={disableCharge}></lightning-button>
+                    <lightning-button label="Schedule Registration" class="slds-m-left_small" onclick={openSchedulePage} disabled={disableCharge}></lightning-button>
+                </div>
+            </template>
+            <template if:true={isScheduleView}>
+                <div class="action-container">
+                    Please, choose registration date!
+                </div>
+                <lightning-input type="date" label="Registration Date" class="date-input" onchange={handleChangeDate} date-style="short"></lightning-input>
+                <div class="button-block">
+                    <lightning-button label="Schedule" variant="brand" onclick={handleSchedule}></lightning-button>
+                    <lightning-button label="Cancel" class="slds-m-left_small" onclick={closeModal}></lightning-button>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

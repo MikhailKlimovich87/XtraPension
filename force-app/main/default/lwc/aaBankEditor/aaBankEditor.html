@@ -1,0 +1,162 @@
+<template>
+    <div class="slds-card aa-be">
+        <header class="aa-be__head">
+            <div>
+                <h2 class="aa-be__title">Bank Account</h2>
+                <p class="aa-be__sub">
+                    UK sort code + account for benefit payments and later fee collection.
+                    The bank check confirms the account is real and can receive Direct Debits.
+                </p>
+            </div>
+            <template if:false={editing}>
+                <lightning-button
+                    icon-name="utility:edit"
+                    label="Edit"
+                    variant="brand-outline"
+                    onclick={handleEdit}>
+                </lightning-button>
+            </template>
+        </header>
+
+        <!-- READ MODE ---------------------------------------------------- -->
+        <template if:false={editing}>
+            <template if:false={hasAny}>
+                <div class="aa-be__empty">
+                    No bank account on file. Click <em>Edit</em> to add one.
+                </div>
+            </template>
+            <template if:true={hasAny}>
+                <div class="aa-be__display">
+                    <div class="aa-be__row">
+                        <span class="aa-be__k">Sort code</span>
+                        <span class="aa-be__v aa-be__mono">{original.sort}</span>
+                    </div>
+                    <div class="aa-be__row">
+                        <span class="aa-be__k">Account</span>
+                        <span class="aa-be__v aa-be__mono">{maskedAccount}</span>
+                    </div>
+                    <div class="aa-be__row">
+                        <span class="aa-be__k">Holder</span>
+                        <span class="aa-be__v">{original.holder}</span>
+                    </div>
+                    <template if:true={original.roll}>
+                        <div class="aa-be__row">
+                            <span class="aa-be__k">Roll number</span>
+                            <span class="aa-be__v aa-be__mono">{original.roll}</span>
+                        </div>
+                    </template>
+                    <template if:true={original.bankName}>
+                        <div class="aa-be__row">
+                            <span class="aa-be__k">Bank</span>
+                            <span class="aa-be__v">{original.bankName}</span>
+                        </div>
+                    </template>
+                    <div class="aa-be__row">
+                        <span class="aa-be__k">Status</span>
+                        <span class={statusBadgeClass}>{original.status}</span>
+                    </div>
+                    <template if:true={verifiedAtDisplay}>
+                        <div class="aa-be__row aa-be__meta">
+                            Last verified: {verifiedAtDisplay}
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Big Verify Button + status message ---------------- -->
+                <div class="aa-be__verify-block">
+                    <lightning-button
+                        variant="brand"
+                        label="Verify Account"
+                        icon-name="utility:check"
+                        onclick={handleVerify}
+                        disabled={verifying}
+                        class="aa-be__verify-btn">
+                    </lightning-button>
+                    <template if:true={verifyMsg}>
+                        <div class={verifyClass}>{verifyMsg}</div>
+                    </template>
+                    <!-- FLAG: verbal read-back re-wire point. When the verbal
+                         confirm flow is re-enabled (see handleVerify() +
+                         openVerbalConfirm() in the .js), the trigger button
+                         goes here, shown only on an amber name-match outcome:
+
+                         <lightning-button
+                             variant="brand-outline"
+                             label="Confirm verbally"
+                             icon-name="utility:call"
+                             onclick={openVerbalConfirm}
+                             class="aa-be__verify-btn">
+                         </lightning-button>
+
+                         Left out by default — verbal confirm was retired
+                         2026-08-18, so the live page stays Tier-1-only with no
+                         orphan buttons. -->
+                </div>
+            </template>
+        </template>
+
+        <!-- EDIT MODE ---------------------------------------------------- -->
+        <template if:true={editing}>
+            <div class="aa-be__fields">
+                <lightning-input
+                    label="Sort code" required
+                    value={draft.sort} data-key="sort"
+                    onchange={handleFieldChange}
+                    placeholder="20-00-00" max-length="8"></lightning-input>
+                <lightning-input
+                    label="Account number" required
+                    value={draft.account} data-key="account"
+                    onchange={handleFieldChange}
+                    placeholder="12345678" max-length="10"></lightning-input>
+                <lightning-input
+                    label="Account holder (exactly as on statement)" required
+                    value={draft.holder} data-key="holder"
+                    onchange={handleFieldChange}
+                    placeholder="MR JOHN SMITH" max-length="100"></lightning-input>
+                <lightning-input
+                    label="Roll number (building society only)"
+                    value={draft.roll} data-key="roll"
+                    onchange={handleFieldChange}
+                    max-length="18"></lightning-input>
+
+                <div class="aa-be__verify-block">
+                    <lightning-button
+                        variant="brand"
+                        label="Verify Account"
+                        icon-name="utility:check"
+                        onclick={handleVerify}
+                        disabled={verifying}
+                        class="aa-be__verify-btn">
+                    </lightning-button>
+                    <template if:true={verifyMsg}>
+                        <div class={verifyClass}>{verifyMsg}</div>
+                    </template>
+                </div>
+
+                <template if:true={draft.bankName}>
+                    <div class="aa-be__found">
+                        Bank identified: <strong>{draft.bankName}</strong>
+                    </div>
+                </template>
+
+                <template if:true={showLiveMandateWarning}>
+                    <div class="aa-be__status aa-be__status--warn">
+                        A Direct Debit is already set up on the current account. Saving new details does not
+                        move it: the fee would still be collected from the old account until the Direct Debit
+                        is replaced.
+                    </div>
+                </template>
+            </div>
+
+            <footer class="aa-be__foot">
+                <lightning-button label="Cancel" onclick={handleCancel} disabled={saving}></lightning-button>
+                <lightning-button
+                    class="slds-m-left_x-small"
+                    variant="brand"
+                    label="Save"
+                    onclick={handleSave}
+                    disabled={saveDisabled}></lightning-button>
+            </footer>
+        </template>
+    </div>
+</template>

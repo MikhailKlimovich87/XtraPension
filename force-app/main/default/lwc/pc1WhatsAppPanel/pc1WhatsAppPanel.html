@@ -1,0 +1,205 @@
+<template>
+  <lightning-card icon-name="standard:messaging_conversation" title="WhatsApp">
+    <div slot="actions" class="pc1-wa__actions">
+      <template lwc:if={optIn}>
+        <span class="pc1-wa__live" title="Polling every 30s"></span>
+      </template>
+      <lightning-button-icon icon-name={collapseIcon} variant="bare" alternative-text="Toggle" onclick={handleToggleCollapse} class="slds-m-left_xx-small"></lightning-button-icon>
+    </div>
+
+    <div class="pc1-wa" style={bodyStyle}>
+      <div class="pc1-wa__subtitle slds-p-horizontal_medium slds-p-bottom_x-small">
+        {headerSubtitle}
+      </div>
+
+      <!-- Opt-in banner -->
+      <template lwc:if={showOptInBanner}>
+        <div class="pc1-wa__banner slds-notify slds-notify_alert slds-theme_warning slds-m-horizontal_medium slds-m-bottom_small" role="alert">
+          <span class="slds-assistive-text">warning</span>
+          <lightning-icon icon-name="utility:warning" size="x-small" variant="inverse" class="slds-m-right_x-small"></lightning-icon>
+          <span class="pc1-wa__banner-text">Client has not opted in to WhatsApp. Confirm consent before granting.</span>
+          <button class="slds-button slds-button_neutral slds-m-left_small pc1-wa__banner-btn" onclick={handleGrantOptIn}>Grant opt-in</button>
+        </div>
+      </template>
+
+      <!-- Load error -->
+      <template lwc:if={loadError}>
+        <div class="slds-notify slds-notify_alert slds-theme_error slds-m-horizontal_medium slds-m-bottom_small" role="alert">
+          <lightning-icon icon-name="utility:error" size="x-small" variant="inverse" class="slds-m-right_x-small"></lightning-icon>
+          {loadError}
+        </div>
+      </template>
+
+      <!-- Message thread -->
+      <div class="pc1-wa__thread" role="log" aria-live="polite" onscroll={handleThreadScroll}>
+        <template lwc:if={loading}>
+          <div class="pc1-wa__loading">
+            <div class="pc1-wa__skeleton is-in"></div>
+            <div class="pc1-wa__skeleton is-out"></div>
+            <div class="pc1-wa__skeleton is-in"></div>
+          </div>
+        </template>
+
+        <template lwc:if={isEmpty}>
+          <div class="pc1-wa__empty">
+            <lightning-icon icon-name="utility:chat" size="large" alternative-text="No messages" variant="warning"></lightning-icon>
+            <p class="slds-m-top_small">No WhatsApp messages yet.</p>
+            <p class="slds-text-body_small slds-text-color_weak">Send the first message below.</p>
+          </div>
+        </template>
+
+        <template lwc:if={hasMessages}>
+          <template for:each={messages} for:item="m">
+            <div key={m.key} class="pc1-wa__msg-wrap">
+              <template lwc:if={m.showDay}>
+                <div class="pc1-wa__day">{m.dayLabel}</div>
+              </template>
+              <div class={m.bubbleClass}>
+                <template lwc:if={m.showTopLabel}>
+                  <div class="pc1-wa__sender">{m.topLabel}</div>
+                </template>
+                <template lwc:if={m.hasAttachment}>
+                  <template lwc:if={m.isImage}>
+                    <a href={m.attachmentUrl} target="_blank" rel="noopener">
+                      <img src={m.attachmentUrl} class="pc1-wa__img" alt={m.attachmentFilename}/>
+                    </a>
+                  </template>
+                  <template lwc:elseif={m.isAudio}>
+                    <audio class="pc1-wa__audio" controls preload="metadata" src={m.attachmentUrl}></audio>
+                  </template>
+                  <template lwc:else>
+                    <div class="pc1-wa__attach">
+                      <a href={m.attachmentUrl} target="_blank" rel="noopener">
+                        <lightning-icon icon-name="utility:attach" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                        {m.attachmentFilename}
+                      </a>
+                    </div>
+                  </template>
+                </template>
+                <template lwc:if={m.text}>
+                  <div class="pc1-wa__text">{m.text}</div>
+                </template>
+                <div class="pc1-wa__meta">
+                  <template lwc:if={m.metaSender}>
+                    <span class="pc1-wa__by">{m.metaSender} ·</span>
+                  </template>
+                  <span class="pc1-wa__time">{m.timeLabel}</span>
+                  <template lwc:if={m.isOut}>
+                    <span class="pc1-wa__status">{m.statusLabel}</span>
+                  </template>
+                </div>
+                <template lwc:if={m.failed}>
+                  <button class="pc1-wa__retry" data-key={m.key} onclick={handleRetry}>Retry</button>
+                </template>
+              </div>
+            </div>
+          </template>
+        </template>
+      </div>
+
+      <!-- Attachment preview chip (when a file is picked before send) -->
+      <template lwc:if={pendingFile}>
+        <div class="pc1-wa__pending">
+          <lightning-icon icon-name="utility:attach" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+          <span class="pc1-wa__pending-name">{pendingFile.name}</span>
+          <span class="pc1-wa__pending-size">({pendingFile.sizeLabel})</span>
+          <button class="pc1-wa__pending-x" onclick={handleCancelFile} title="Remove attachment">✕</button>
+        </div>
+      </template>
+
+<!-- Emoji picker overlay -->
+      <template lwc:if={showEmojiPicker}>
+        <c-pc1-emoji-picker onpick={handleEmojiPick} onclose={handleEmojiClose}></c-pc1-emoji-picker>
+      </template>
+
+      <!-- SF Files picker — full-screen modal with search -->
+      <template lwc:if={showSfPicker}>
+        <div class="pc1-wa__modal-overlay" onclick={handleSfModalOverlayClick}>
+          <div class="pc1-wa__modal" onclick={handleStopPropagation}>
+            <div class="pc1-wa__modal-header">
+              <h3>Attach from Salesforce Files</h3>
+              <button class="pc1-wa__x" onclick={handleToggleSfPicker} type="button" title="Close">✕</button>
+            </div>
+            <div class="pc1-wa__modal-search">
+              <input type="text" placeholder="Search by name, type…" value={sfSearchQuery} oninput={handleSfSearchInput} class="pc1-wa__modal-searchbox" />
+              <span class="pc1-wa__modal-count">{filteredSfFilesCountLabel}</span>
+            </div>
+            <div class="pc1-wa__modal-body">
+              <template lwc:if={hasFilteredSfFiles}>
+                <ul class="pc1-wa__sf-list">
+                  <template for:each={filteredSfFiles} for:item="f">
+                    <li key={f.contentVersionId} class="pc1-wa__sf-item" data-id={f.contentVersionId} onclick={handleSfFilePick}>
+                      <lightning-icon icon-name={f.icon} size="small" class="slds-m-right_small"></lightning-icon>
+                      <div class="pc1-wa__sf-info">
+                        <div class="pc1-wa__sf-name">{f.title}</div>
+                        <div class="pc1-wa__sf-meta">{f.fileType} · {f.sizeLabel} · {f.dateLabel}</div>
+                      </div>
+                      <span class="pc1-wa__sf-pick">Attach →</span>
+                    </li>
+                  </template>
+                </ul>
+              </template>
+              <template lwc:elseif={loadingSfFiles}>
+                <div class="pc1-wa__sf-empty">Loading…</div>
+              </template>
+              <template lwc:elseif={hasSfSearchQuery}>
+                <div class="pc1-wa__sf-empty">No files match "{sfSearchQuery}".</div>
+              </template>
+              <template lwc:else>
+                <div class="pc1-wa__sf-empty">No files linked to this application yet.<br>Upload one to the Files section of PC00xxx first.</div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Composer: textarea full-width on top, action strip below -->
+      <div class="pc1-wa__composer" lwc:if={showComposer}>
+        <textarea
+          class="pc1-wa__ta"
+          placeholder={composerPlaceholder}
+          value={composerText}
+          oninput={handleComposeInput}
+          onkeydown={handleKeydown}
+          disabled={disableAll}
+          rows="2"
+          maxlength="4096"
+          aria-label="WhatsApp message"
+        ></textarea>
+        <div class="pc1-wa__actionrow">
+          <div class="pc1-wa__leftactions">
+            <button class="pc1-wa__iconbtn" title="Emoji" onclick={handleToggleEmoji} disabled={disableAll} type="button">😊</button>
+            <div class="pc1-wa__plus-wrap">
+              <button class="pc1-wa__iconbtn" title="Attach a file" onclick={handleTogglePlusMenu} disabled={disableAll} type="button">
+                <lightning-icon icon-name="utility:add" size="x-small"></lightning-icon>
+              </button>
+              <template lwc:if={showPlusMenu}>
+                <div class="pc1-wa__plus-menu">
+                  <button class="pc1-wa__plus-item" onclick={handleClickUploadFromDevice} type="button">
+                    <lightning-icon icon-name="utility:upload" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                    Upload from computer
+                  </button>
+                  <button class="pc1-wa__plus-item" onclick={handleClickFromSf} type="button">
+                    <lightning-icon icon-name="doctype:attachment" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                    From Salesforce Files
+                  </button>
+                </div>
+              </template>
+            </div>
+          </div>
+          <button class="slds-button slds-button_brand pc1-wa__send" disabled={sendDisabled} onclick={handleSend} type="button">
+            <template lwc:if={sending}>
+              <lightning-spinner alternative-text="Sending" size="x-small" variant="inverse"></lightning-spinner>
+            </template>
+            <template lwc:else>
+              Send
+            </template>
+          </button>
+        </div>
+
+        <!-- Native hidden file input triggered by the "+" menu -->
+        <input type="file" class="pc1-wa__native-file" onchange={handleNativeFileChange} accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.mp3,.m4a,.ogg,.mp4" />
+      </div>
+    </div>
+  </lightning-card>
+</template>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>60.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>PC Call Schedule History (Full Page)</masterLabel>
+    <description>Full-page listing of all PC1_Call_Schedule__c rows for one PC Application. Reads recordId from URL param c__recordId. Hosted by FlexiPage PC1_Call_Schedule_History_Page.</description>
+    <targets>
+        <target>lightning__AppPage</target>
+    </targets>
+</LightningComponentBundle>

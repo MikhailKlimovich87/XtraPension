@@ -16,8 +16,7 @@ public class DWPOldApplicationSchedulerHandlerTest {
         Id personContactId = currentContact[0].Id;
         Application__c testApplication = TestDataFactory.createApplication(personContactId, false);
         testApplication.Status__c = 'Posted';
-        Date oldDate = Date.today().addYears(-66);
-        testApplication.Date_Of_Birth__c = oldDate;
+        testApplication.Date_Of_Birth__c = Date.newInstance(1955, 9, 30);
         insert testApplication;
     }
 

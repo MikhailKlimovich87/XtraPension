@@ -13,6 +13,7 @@ export default class LeftBlockCheckModule extends LightningElement {
     sentToValues = [];
     checkAgent;
     isDisabledCheckAgent = true;
+    isVisible = true;
 
     @track
     checkReply = {
@@ -71,6 +72,7 @@ export default class LeftBlockCheckModule extends LightningElement {
     }
 
     handleSave() {
+        this.isVisible = !this.isVisible;
         let isValid = this.handleValidation();
         if(!isValid) return;
         this.dispatchEvent(

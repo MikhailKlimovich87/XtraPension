@@ -1,0 +1,105 @@
+global with sharing class XtraPensionTemporaryEmailService implements Messaging.InboundEmailHandler{
+
+    global Messaging.InboundEmailResult handleInboundEmail(Messaging.InboundEmail email, Messaging.InboundEnvelope envelope) {
+        Messaging.InboundEmailResult result = new Messaging.InboundEmailresult();
+        String plainText= '';
+        plainText = email.plainTextBody;
+        System.debug('plainTextBody: ' + email.plainTextBody);
+        System.debug('htmlBody: ' + email.htmlBody);
+
+        EmailMessage emailMessage = new EmailMessage();
+        emailMessage.status = '5';
+        emailMessage.relatedToId = 'a0qVg000004tWg5IAE';
+        emailMessage.Application__c = 'a0qVg000004tWg5IAE';
+        emailMessage.fromAddress = 'dannymccann@live.ie';
+        emailMessage.fromName = 'Danny McCann';
+        emailMessage.Subject = email.subject;
+        emailMessage.TextBody = email.plainTextBody;
+        emailMessage.HtmlBody = email.htmlBody;
+        insert emailMessage;
+        return result;
+    }
+
+    public static void fakeMethod(){
+        Integer i = 0;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+    }
+}

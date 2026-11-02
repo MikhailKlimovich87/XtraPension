@@ -1,0 +1,94 @@
+<apex:page renderAs="pdf" standardController="Application__c" extensions="DWP_HMRC_C2_RejectionPdf" id="StatusCheck" sidebar="false" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+                @page {
+                    size: 210mm 300mm;
+					margin: 5mm 5mm 5mm 20mm;
+                    @bottom-left {
+                        content: element(footer);
+                    }
+                }
+                div.footer {
+            		position: running(footer);
+                    width: 100%;
+                    margin-right: 1px;
+                    text-align: center;
+				}
+				body {
+					font-family: "Roboto", sans-serif;
+					font-size: 14px;
+				}
+                h3 {
+					text-align: center;
+                }
+                .inline {
+                    display: inline-block;
+                    vertical-align: top;
+                }
+                .block-data {
+                    margin: 20px 0 20px 0;
+                }
+                p {
+					margin-bottom: 0px;
+					margin-top: 0px;
+				}
+                table {
+					border-collapse: collapse;
+					width:100%;
+				}
+				.empl-data td, th {
+					border-width: 1px;
+					border-style: solid;
+				}
+				th {
+					text-align:center;
+				}
+            </style>
+        </head>
+        <body>
+            <div>
+                <table border="0" width="100%">
+                    <tr>
+                        <td width="20%"></td>
+                        <td width="20%"></td>
+                        <td width="20%"></td>
+                        <td width="20%"></td>
+                        <td style="text-align:right">
+                            <apex:outputText escape="false" value="{!appObj.Full_Current_Address_Abroad__c}"/>
+                        </td>
+                    </tr>
+                </table>
+                <br/>
+                <br/>
+                <div>
+                    <b>The Pension Service 11</b><br/>
+                    Mail Handling Site A<br/>
+                    WOLVERHAMPTON<br/>
+                    WV98 1LW<br/>
+                    United Kingdom
+                </div>
+                <br/>
+                <apex:outputText value="{0, date,dd MMMM yyyy}">
+                    <b>Date:</b><apex:param value="{!appObj.HMRC_Reply_Doc_Generate_Date__c}"/>
+                </apex:outputText>
+                <br/>
+                <br/>
+                <div style="{!IF(ISBLANK(appObj.HMRC_Ref__c), 'display:none', null)};"><b>HMRC Ref:</b> {!appObj.HMRC_Ref__c}</div>
+                <div style="{!IF(NOT(ISBLANK(appObj.HMRC_Ref__c)), 'display:none', null)};"><b>HMRC Ref:</b> N/A</div>
+                <br/>
+                <p><b>NI Number:</b> {!appObj.National_Insurance_Number__c}</p>
+                <p><b>Name:</b> {!appObj.First_Name__c} {!appObj.Second_Name__c}</p>
+                <br/>
+                <br/>
+                <br/>
+			    <apex:outputText styleClass="output-data" escape="false" value="{!bodyData}" style="margin-top:0px;text-align: justify; bottom-border-width: 0px"></apex:outputText>
+			    <br/>
+			    <div>Yours sincerely</div>
+			    <br/>
+			    <div>______________</div>
+			    <div>{!appObj.First_Name__c} {!appObj.Second_Name__c}</div>
+            </div>
+        </body>
+    </html>
+</apex:page>

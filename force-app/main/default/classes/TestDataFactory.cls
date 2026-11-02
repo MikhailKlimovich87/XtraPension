@@ -74,6 +74,24 @@ public class TestDataFactory {
         return application;
     }
 
+    public static Refund__c createRefund(Id contactId, Boolean isInsertOrNone) {
+        Refund__c testRefund = new Refund__c(
+            First_Name__c                          = 'John',
+            Last_Name__c                           = 'Snow',
+            Payment_Method__c                      = 'pm_123456789',
+            Stripe_Customer_Id__c                  = 'cus_123456789',
+            Stripe_Transaction_Id__c               = '1111111111111111111',
+            Contact__c                             = contactId,
+            Phone__c                               = '+12345678912',
+            Email__c                               = 'john.snow@gmail.com',
+            CurrencyIsoCode                        = 'GBP'
+        );
+        if (isInsertOrNone) {
+            insert testRefund;
+        }
+        return testRefund;
+    }
+
     public static ContentVersion createTestContentVersion(Boolean isInsertOrNone) {
         ContentVersion cv = new ContentVersion();
         cv.Title = 'Test_UPLOAD';
@@ -287,6 +305,9 @@ public class TestDataFactory {
         setting.Person_Account_Record_Type_Id__c = '012fdsaerqwasdf1';
         setting.SFTP_Upload_File_Link__c = 'https://test.com/upload/data';
         setting.Twilio_Account__c = 'AC4567891234568789';
+        setting.RE_Pdf_File_Link__c = 'https://test.com/pdf';
+        setting.RE_Pdf_RVN_File_Link__c = 'https://test.com/pdf/rvn';
+        setting.RE_Correct_Date_Position__c = 'https://test.com/pdf/correct';
         if (isInsertOrNone == true) {
             insert setting;
         }
@@ -362,4 +383,68 @@ public class TestDataFactory {
         }
         return testCheckRequest;
     }
+
+    // public static Frequently_Asked_Question__c createFrequentlyAskedQuestion(Boolean isInsertOrNone) {
+    //     Frequently_Asked_Question__c testFaq = new Frequently_Asked_Question__c(
+    //         Question__c = 'What is this FAQ about?',
+    //         Answer__c = 'This is a test answer for FAQ.',
+    //         Topic__c = 'General',
+    //         Is_Active__c = true
+    //     );
+    //     if (isInsertOrNone) {
+    //         insert testFaq;
+    //     }
+    //     return testFaq;
+    // }
+
+    // public static List<Frequently_Asked_Question__c> createFrequentlyAskedQuestions(Integer numberOfRecords, Boolean isInsertOrNone) {
+    //     List<Frequently_Asked_Question__c> testFaqs = new List<Frequently_Asked_Question__c>();
+    //     for (Integer i = 0; i < numberOfRecords; i++) {
+    //         testFaqs.add(new Frequently_Asked_Question__c(
+    //             Question__c = 'Test Question ' + i,
+    //             Answer__c = 'Test Answer ' + i,
+    //             Topic__c = 'Topic ' + Math.mod(i, 3),
+    //             Is_Active__c = true
+    //         ));
+    //     }
+    //     if (isInsertOrNone) {
+    //         insert testFaqs;
+    //     }
+    //     return testFaqs;
+    // }
+
+    public static Reapply__c createReapplyRecord(Id applicationId, Boolean isInsertOrNone) {
+        List<Application__c> apps = [
+            SELECT
+                Id,
+                Name,
+                First_Name__c,
+                Second_Name__c,
+                Email__c,
+                Related_Contact_Phone__c,
+                Salutation__c,
+                National_Insurance_Number__c,
+                Date_Of_Birth__c
+            FROM Application__c
+            WHERE Id = :applicationId
+        ];
+        Application__c app = apps[0];
+        Reapply__c newReapply = new Reapply__c();
+        newReapply.Application__c = applicationId;
+        newReapply.Application__c = app.Id;
+        newReapply.Name = 'RE' + app.Name.substring(1);
+        newReapply.First_Name__c = app.First_Name__c;
+        newReapply.Second_Name__c = app.Second_Name__c;
+        newReapply.Email__c = app.Email__c;
+        newReapply.Phone__c = app.Related_Contact_Phone__c;
+        newReapply.Salutation__c = app.Salutation__c;
+        newReapply.NINO__c = app.National_Insurance_Number__c?.replace(' ', '');
+        newReapply.Date_of_birth__c = app.Date_Of_Birth__c;
+
+        if (isInsertOrNone) {
+            insert newReapply;
+        }
+        return newReapply;
+    }
+   
 }

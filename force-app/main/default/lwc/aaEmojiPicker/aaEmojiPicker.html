@@ -1,0 +1,25 @@
+<template>
+  <div class="aa-ep">
+    <div class="aa-ep__header">
+      <input class="aa-ep__search" type="text" placeholder="Search emojis…" value={query} oninput={handleSearch} />
+      <button class="aa-ep__x" onclick={handleClose} type="button" title="Close">✕</button>
+    </div>
+    <div class="aa-ep__cats">
+      <template for:each={categories} for:item="c">
+        <button key={c.key} class={c.btnCls} data-i={c.i} onclick={handleCat} type="button" title={c.label}>
+          {c.icon}
+        </button>
+      </template>
+    </div>
+    <div class="aa-ep__grid">
+      <template lwc:if={hasResults}>
+        <template for:each={visibleEmojis} for:item="e">
+          <button key={e.key} class="aa-ep__emoji" data-char={e.char} onclick={handlePick} type="button">{e.char}</button>
+        </template>
+      </template>
+      <template lwc:else>
+        <div class="aa-ep__empty">No emojis match "{query}"</div>
+      </template>
+    </div>
+  </div>
+</template>

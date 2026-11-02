@@ -10,8 +10,20 @@ import X1_FOLLOW_UP_CALL from '@salesforce/schema/Application__c.X1st_Follow_Up_
 import X2_FOLLOW_UP_CALL from '@salesforce/schema/Application__c.X2nd_Follow_Up_Call__c';
 import X3_FOLLOW_UP_CALL from '@salesforce/schema/Application__c.X3rd_Follow_Up_Call__c';
 import CALL_FOLLOW_UP_CALL_CHANGE_USER from '@salesforce/schema/Application__c.Call_Follow_Up_Change_User__c';
+import USER_NAME_FIELD from '@salesforce/schema/User.Name';
+import X1_FOLLOW_UP_CALL_CHANGED_DATE from '@salesforce/schema/Application__c.X1st_Esign_Follow_Up_Call_Changed_Date__c';
+import X2_FOLLOW_UP_CALL_CHANGED_DATE from '@salesforce/schema/Application__c.X2nd_Esign_Follow_Up_Call_Changed_Date__c';
+import X3_FOLLOW_UP_CALL_CHANGED_DATE from '@salesforce/schema/Application__c.X3rd_Esign_Follow_Up_Call_Changed_Date__c';
 
-const FIELDS = [X1_FOLLOW_UP_CALL, X2_FOLLOW_UP_CALL, X3_FOLLOW_UP_CALL,CALL_FOLLOW_UP_CALL_CHANGE_USER];
+const FIELDS = [
+    X1_FOLLOW_UP_CALL,
+    X2_FOLLOW_UP_CALL,
+    X3_FOLLOW_UP_CALL,
+    CALL_FOLLOW_UP_CALL_CHANGE_USER,
+    X1_FOLLOW_UP_CALL_CHANGED_DATE,
+    X2_FOLLOW_UP_CALL_CHANGED_DATE,
+    X3_FOLLOW_UP_CALL_CHANGED_DATE
+];
 const FOLLOW_FIELD_BY_CHANGED_DATE = new Map([
     ['X1st_Follow_Up_Call__c', 'X1st_Esign_Follow_Up_Call_Changed_Date__c'],
     ['X2nd_Follow_Up_Call__c', 'X2nd_Esign_Follow_Up_Call_Changed_Date__c'],
@@ -23,34 +35,57 @@ export default class CallFollowUpModule extends LightningElement {
     userId = Id;
     loaded = false;
     chooseCheckboxLabel;
+    currentAgentId = '';
+    currentAgent = '';
+    currentFollowUpDateRaw = '';
+    followUpDateValues = {};
     @track options = [
         { label: '1st Follow Up Call', value: 'X1st_Follow_Up_Call__c', checked : false },
         { label: '2nd Follow Up Call', value: 'X2nd_Follow_Up_Call__c', checked : false },
         { label: '3rd Follow Up Call', value: 'X3rd_Follow_Up_Call__c', checked : false }
     ];
+    
     today = new Date();
     @wire(getRecord, { recordId: "$recordId", fields: FIELDS })
     wiredRecords({ error, data }) {
         if (data) {
+            this.currentAgentId = data.fields[CALL_FOLLOW_UP_CALL_CHANGE_USER.fieldApiName]?.value || '';
+            this.currentAgent = '';
+            this.currentFollowUpDateRaw = '';
             this.options.forEach(checkbox => {
                 checkbox.checked = data.fields[checkbox.value].value;
+                const dateFieldApiName = FOLLOW_FIELD_BY_CHANGED_DATE.get(checkbox.value);
+                this.followUpDateValues[checkbox.value] = data.fields[dateFieldApiName]?.value || '';
+                if (checkbox.checked) {
+                    this.currentFollowUpDateRaw = this.followUpDateValues[checkbox.value];
+                    this.chooseCheckboxLabel = checkbox.label;
+                }
             });
         } else if (error) {
             console.log('error === ', error);
         }
     }
 
+    @wire(getRecord, { recordId: '$currentAgentId', fields: [USER_NAME_FIELD] })
+    wiredAgent({ error, data }) {
+        if (data) {
+            this.currentAgent = data.fields.Name.value || '';
+        } else if (error) {
+            this.currentAgent = '';
+        }
+    }
+
     handleChange(event) {
         const selectedCheckboxName = event.target.name;
         this.options.forEach(checkbox => {
-            if (checkbox.value != selectedCheckboxName) {
+            if (checkbox.value !== selectedCheckboxName) {
                 checkbox.checked = false;
             } else {
                 checkbox.checked = true;
                 this.chooseCheckboxLabel = checkbox.label;
+                this.currentFollowUpDateRaw = this.followUpDateValues[checkbox.value] || '';
             }
         });
-        this.updateApplicationData();
     }
 
     updateApplicationData() {
@@ -94,6 +129,20 @@ export default class CallFollowUpModule extends LightningElement {
         });
     }
 
+    get currentFollowUpDateFormatted() {
+        if (!this.currentFollowUpDateRaw) {
+            return '';
+        }
+        const date = new Date(this.currentFollowUpDateRaw);
+        if (Number.isNaN(date.getTime())) {
+            return this.currentFollowUpDateRaw;
+        }
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+
     async handleLogCall() {
         try {
             const taskId = await logCall({
@@ -105,10 +154,11 @@ export default class CallFollowUpModule extends LightningElement {
             this.dispatchEvent(
                 new ShowToastEvent({
                     title: 'Error logging call',
-                    message: error.body.message,
+                    message: error.body?.message || 'Unknown error',
                     variant: 'error'
                 })
             );
         }
     }
+
 }

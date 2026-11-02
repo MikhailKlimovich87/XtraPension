@@ -27,11 +27,14 @@ public without sharing class AgentSalesReportController {
                 Agent_Making_Sale__c,
                 Install_from_Website__c,
                 Appeal_Application__c,
-                CreatedDate
+                CreatedDate,
+                Current_Abroad_Country__c
             FROM Application__c
             WHERE
-                Agent_Making_Sale__c != null AND
-                CreatedDate >= :lastQtrStartDate
+                (Agent_Making_Sale__c != null AND
+                CreatedDate >= :lastQtrStartDate AND
+                Status__c != 'Deposit Refund') OR
+                Name = 'A10286'
         ];
         Schema.SObjectType objSobjectType = Schema.getGlobalDescribe().get(OBJECT_NAME);
         Schema.DescribeSObjectResult objDescribeSobject = objSobjectType.getDescribe();
@@ -69,8 +72,10 @@ public without sharing class AgentSalesReportController {
             agentData.lastQtrCount = 0;
             if (currentAgentApps != null) {
                 for (Application__c app : currentAgentApps) {
-                    Integer count = app.Appeal_Application__c == true ? 2 : 1;
+                    Integer count = app.Appeal_Application__c == true ||
+                                    (app.Agent_Making_Sale__c == 'Megan' && app.Current_Abroad_Country__c == 'South Africa') ? 2 : 1;
                     Date createdDate = app.CreatedDate.date();
+                    if(app.Name == 'A10286') createdDate = Date.newInstance(2026, 7, 8);
                     if (createdDate == todayDate) {
                         agentData.todayCount+=count;
                     }
@@ -144,7 +149,8 @@ public without sharing class AgentSalesReportController {
                 agentsInfo[i].name == 'John R' ||
                 agentsInfo[i].name == 'Daniel' ||
                 agentsInfo[i].name == 'Mike' ||
-                agentsInfo[i].name == 'Gerard') {
+                agentsInfo[i].name == 'Gerard' ||
+                agentsInfo[i].name == 'Adrian') {
             } else {
                 todayWrapper.countData.add(agentsInfo[i].todayCount);
                 yesterdayWrapper.countData.add(agentsInfo[i].yesterdayCount);
@@ -187,7 +193,8 @@ public without sharing class AgentSalesReportController {
                 name == 'John R' ||
                 name == 'Daniel' ||
                 name == 'Mike' ||
-                name == 'Gerard') {
+                name == 'Gerard' ||
+                name == 'Adrian') {
                 continue;
             }
             activeAgents.add(name);

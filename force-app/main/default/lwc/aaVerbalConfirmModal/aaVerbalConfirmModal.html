@@ -1,0 +1,59 @@
+<template>
+    <lightning-modal-header label="Confirm bank details verbally"></lightning-modal-header>
+    <lightning-modal-body>
+        <div class="aa-vcm__body">
+            <p class="aa-vcm__prompt">
+                Read these details back to the client on the call and ask them to
+                confirm each one is correct before you continue.
+            </p>
+
+            <div class="aa-vcm__details">
+                <template if:true={hasBankName}>
+                    <div class="aa-vcm__row">
+                        <span class="aa-vcm__k">Bank</span>
+                        <span class="aa-vcm__v">{bankName}</span>
+                    </div>
+                </template>
+                <div class="aa-vcm__row">
+                    <span class="aa-vcm__k">Sort code</span>
+                    <span class="aa-vcm__v aa-vcm__mono">{sortCode}</span>
+                </div>
+                <div class="aa-vcm__row">
+                    <span class="aa-vcm__k">Account</span>
+                    <span class="aa-vcm__v aa-vcm__mono">{accountNumber}</span>
+                </div>
+                <div class="aa-vcm__row">
+                    <span class="aa-vcm__k">Holder</span>
+                    <span class="aa-vcm__v">{holderDisplay}</span>
+                </div>
+            </div>
+
+            <p class="aa-vcm__notice">
+                The client must give a clear "yes". "Mm" / "I suppose" / silence is
+                not confirmation — re-read the detail and ask again.
+            </p>
+
+            <div class="aa-vcm__checks">
+                <lightning-input
+                    type="checkbox"
+                    label="I read these details back and the client confirmed them verbally"
+                    checked={confirmed}
+                    onchange={handleConfirmedChange}>
+                </lightning-input>
+            </div>
+        </div>
+    </lightning-modal-body>
+    <lightning-modal-footer>
+        <lightning-button
+            label="Cancel"
+            onclick={handleCancel}>
+        </lightning-button>
+        <lightning-button
+            class="slds-m-left_x-small"
+            variant="brand"
+            label="Client confirmed verbally"
+            onclick={handleConfirm}
+            disabled={confirmDisabled}>
+        </lightning-button>
+    </lightning-modal-footer>
+</template>

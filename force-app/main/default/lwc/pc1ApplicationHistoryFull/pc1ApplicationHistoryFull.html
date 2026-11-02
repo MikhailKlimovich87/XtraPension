@@ -1,0 +1,48 @@
+<template>
+    <lightning-card icon-name="standard:record_lookup" title={title}>
+        <div slot="actions">
+            <a href="#" onclick={handleBack}>&larr; Back to record</a>
+        </div>
+
+        <div class="slds-p-around_small">
+            <template if:true={error}>
+                <div class="slds-text-color_error slds-p-around_small">Error: {error}</div>
+            </template>
+
+            <template if:false={hasRows}>
+                <div class="slds-text-color_weak slds-text-align_center slds-p-around_medium">
+                    No changes yet. Field edits will appear here.
+                </div>
+            </template>
+
+            <template if:true={hasRows}>
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th style="width:16%"><div class="slds-truncate">Date</div></th>
+                            <th style="width:18%"><div class="slds-truncate">Field</div></th>
+                            <th style="width:18%"><div class="slds-truncate">User</div></th>
+                            <th style="width:24%"><div class="slds-truncate">Original Value</div></th>
+                            <th style="width:24%"><div class="slds-truncate">New Value</div></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={rows} for:item="r">
+                            <tr key={r.id}>
+                                <td>
+                                    <lightning-formatted-date-time value={r.when} year="numeric" month="2-digit" day="2-digit" hour="2-digit" minute="2-digit"></lightning-formatted-date-time>
+                                </td>
+                                <td><div class="slds-truncate">{r.fieldLabel}</div></td>
+                                <td>
+                                    <a href="#" data-userid={r.userId} onclick={handleUserClick}>{r.userName}</a>
+                                </td>
+                                <td><div class="slds-truncate" title={r.oldValue}>{r.oldValue}</div></td>
+                                <td><div class="slds-truncate" title={r.newValue}>{r.newValue}</div></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </template>
+        </div>
+    </lightning-card>
+</template>

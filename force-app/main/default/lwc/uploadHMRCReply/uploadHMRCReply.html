@@ -1,41 +1,42 @@
 <template>
-
-    <lightning-card title="HMRC reply">
-        <div style="margin: 0.5rem;">
-            <div class="slds-m-top_medium slds-m-bottom_x-large">
-                <template lwc:if={showSpinner}>
-                    <div>
-                        <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
-                    </div>
-                </template>
-                <lightning-combobox name="type" options={typesOfHMRCReply} onchange={handleChangeType} required
-                    label="Type of HMRC Reply:"></lightning-combobox>
-                </br>
-                <lightning-input type="date" label="Letter Date" value={letterDate} onchange={handleChangeLetterDate}
-                    date-style="short" required={isRequiredLetterDate}></lightning-input>
-                <br />
-                <lightning-input type="text" value={hmrcRef} label="HMRC Ref:"
-                    onchange={handleChangeRef}></lightning-input>
-                <br />
-                <lightning-input type="number" label=" Number of Qualifying Years:" step="0.1" value={ukWork}
-                    onchange={handleChangeYear}></lightning-input>
-                <lightning-combobox name="shortfall" options={shortfallData} onchange={handleChangeShortfall}
-                    value={shortfall} label="Shortfall:"></lightning-combobox>
-                <lightning-input type="text" value={caseworker} label="Caseworker"
-                    onchange={handleChangeCaseworker}></lightning-input>
-                <br />
-                <lightning-combobox name="move-to-status" options={moveToStatusData} onchange={handleChangeStatus}
-                    value={moveToStatus} label="Move to Status:"></lightning-combobox>
-                <br />
-                <lightning-input type="date" label="XP Received Date" value={xpReceivedDate} date-style="short"
-                    onchange={handleChangeXPReceivedDate} placeholder={todayPlaceholder}></lightning-input>
-                <br />
-                <lightning-input type="file" accept="image/*, .png, .jpg, .bmp, .pdf" label="&zwnj;"
-                    onchange={handleFilesSelected}></lightning-input>
-                <br />
-                <lightning-button variant="brand" label="Save Reply" onclick={handleUploadFile}
-                    class="slds-m-left_x-small"></lightning-button>
+    <div class="upload-hmrc-reply">
+        <template if:true={showSpinner}>
+            <div class="spinner-overlay">
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
             </div>
-        </div>
-    </lightning-card>
+        </template>
+        <lightning-card title="HMRC reply">
+            <div class="slds-is-relative" style="margin: 0.5rem;">
+                <div class="slds-m-top_medium slds-m-bottom_x-large">
+                    <lightning-combobox name="type" options={typesOfHMRCReply} onchange={handleChangeType} required
+                        label="Type of HMRC Reply:"></lightning-combobox>
+                    </br>
+                    <lightning-input type="date" label="Letter Date" value={letterDate} onchange={handleChangeLetterDate}
+                        date-style="short"></lightning-input>
+                    <br />
+                    <lightning-input type="text" value={hmrcRef} label="HMRC Ref:"
+                        onchange={handleChangeRef}></lightning-input>
+                    <br />
+                    <lightning-input type="number" label=" Number of Qualifying Years:" step="0.1" value={ukWork}
+                        onchange={handleChangeYear}></lightning-input>
+                    <lightning-combobox name="shortfall" options={shortfallData} onchange={handleChangeShortfall}
+                        value={shortfall} label="Shortfall:"></lightning-combobox>
+                    <lightning-input type="text" value={caseworker} label="Caseworker"
+                        onchange={handleChangeCaseworker}></lightning-input>
+                    <br />
+                    <lightning-combobox name="move-to-status" options={moveToStatusData} onchange={handleChangeStatus}
+                        value={moveToStatus} label="Move to Status:"></lightning-combobox>
+                    <br />
+                    <lightning-input type="date" label="XP Received Date" value={xpReceivedDate} date-style="short"
+                        onchange={handleChangeXPReceivedDate} placeholder={todayPlaceholder}></lightning-input>
+                    <br />
+                    <lightning-input type="file" accept=".pdf" label="Upload HMRC Reply"
+                        onchange={handleFilesSelected}></lightning-input>
+                    <br />
+                    <lightning-button variant="brand" label="Save Reply" onclick={handleUploadFile}
+                        class="slds-m-left_x-small"></lightning-button>
+                </div>
+            </div>
+        </lightning-card>
+    </div>
 </template>

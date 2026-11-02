@@ -1,0 +1,56 @@
+<template>
+    <lightning-card title="Call History" icon-name="standard:call_history">
+        <p class="slds-p-horizontal_medium slds-text-body_small slds-text-color_weak pc1-sub">{headerSummary}</p>
+        <div class="slds-p-horizontal_small slds-p-bottom_small">
+            <template lwc:if={hasError}>
+                <div class="slds-text-body_small slds-text-color_error slds-p-around_small" role="alert">{errorText}</div>
+            </template>
+            <template lwc:elseif={hasCalls}>
+                <ul class="call-list">
+                    <template for:each={rows} for:item="r">
+                        <li key={r.id} class="call-item">
+                            <div class="call-head">
+                                <span class="dir-icon" title={r.dirLabel} aria-hidden="true">{r.dirIcon}</span>
+                                <span class="call-when">{r.startedFmt}</span>
+                                <template lwc:if={r.hasDuration}>
+                                    <span class="call-dur">{r.durationFmt}</span>
+                                </template>
+                                <span class={r.badgeCls}>{r.status}</span>
+                                <template lwc:if={r.isVoicemail}>
+                                    <span class="call-badge b-warn">VOICEMAIL</span>
+                                </template>
+                                <span class="spacer"></span>
+                                <button type="button" class="slds-button slds-button_reset link-btn" data-id={r.id} onclick={openCall} title="Open Call Log">Open</button>
+                            </div>
+                            <div class="call-sub">{r.dirLabel}<template lwc:if={r.who}> · {r.who}</template></div>
+                            <template lwc:if={r.hasReschedule}>
+                                <div class="call-sub">{r.rescheduleFmt}</div>
+                            </template>
+                            <template lwc:if={r.hasTask}>
+                                <div class="call-sub"><b>Task:</b> {r.task}</div>
+                            </template>
+                            <template lwc:if={r.hasDetail}>
+                                <div class="call-detail">{r.detail}</div>
+                                <template lwc:if={r.isLong}>
+                                    <button type="button" class="slds-button slds-button_reset link-btn" data-id={r.id} onclick={toggleExpand}>{r.toggleLabel}</button>
+                                </template>
+                            </template>
+                            <template lwc:if={r.hasExtraDetail}>
+                                <div class="call-sub">{r.extraDetail}</div>
+                            </template>
+                            <template lwc:if={r.hasTranscript}>
+                                <a href={r.transcriptUrl} target="_blank" rel="noopener" class="ext-link">Transcript ↗</a>
+                            </template>
+                            <template lwc:if={r.hasRecording}>
+                                <a href={r.recordingUrl} target="_blank" rel="noopener" class="ext-link">Recording ↗</a>
+                            </template>
+                        </li>
+                    </template>
+                </ul>
+            </template>
+            <template lwc:else>
+                <div class="slds-text-body_small slds-text-color_weak slds-p-around_small">{emptyText}</div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

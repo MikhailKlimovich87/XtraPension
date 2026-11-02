@@ -2,7 +2,8 @@ import { LightningElement, wire, api } from 'lwc';
 import { getPicklistValues } from 'lightning/uiObjectInfoApi';
 import { getObjectInfo } from 'lightning/uiObjectInfoApi';
 import { getRecord, getFieldValue } from "lightning/uiRecordApi";
-import uploadFile from '@salesforce/apex/UploadHMRCReplyController.uploadFile'
+import uploadFile from '@salesforce/apex/UploadHMRCReplyController.uploadFile';
+import getDataFromUploadFile from '@salesforce/apex/UploadHMRCReplyController.getTextRecognitionData';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 import APPLICATION_OBJECT from '@salesforce/schema/Application__c';
@@ -28,9 +29,11 @@ export default class UploadHMRCReply extends LightningElement {
     currentCaseworker;
     currentLetterDate;
     currentXPReceivedDate;
+    currentYears;
     fileName;
     moveToStatus = 'Not Move';
     todayDate = new Date();
+    showSpinner = false;
 
     typesOfHMRCReply = [];
 
@@ -137,26 +140,86 @@ export default class UploadHMRCReply extends LightningElement {
         this.currentXPReceivedDate = event.detail.value;
     }
 
-    handleFilesSelected(event) {
-        this.currentFiles = event.target.files[0];
-        let reader = new FileReader();
-        reader.onload = () => {
-            var base64 = reader.result.split(',')[1];
-            this.currentFile =  base64;
-            this.fileName = getFieldValue(this.application.data, FIRST_NAME_FIELD) + '_' +
-                            getFieldValue(this.application.data, SECOND_NAME_FIELD) + '_' +
-                            getFieldValue(this.application.data, NAME_FIELD) + '_' +
-                            this.currentReplyType +
-                            this.currentFiles.name.substring(this.currentFiles.name.lastIndexOf('.'));
+    async handleFilesSelected(event) {
+        this.showSpinner = true;
+        const file = event.target.files[0];
+
+        if (file) {
+            this.convertFileToBase64(file)
+            .then(result => {
+                this.currentFile = result.base64;
+                this.fileName = getFieldValue(this.application.data, FIRST_NAME_FIELD) + '_' +
+                                getFieldValue(this.application.data, SECOND_NAME_FIELD) + '_' +
+                                getFieldValue(this.application.data, NAME_FIELD) + '_' +
+                                this.currentReplyType +
+                                file.name.substring(file.name.lastIndexOf('.'));
+                //this.handleUpload();
+                this.showSpinner = false;
+            })
+            .catch(error => {
+                console.error('Error converting file:', error);
+                this.showSpinner = false;
+            });
         }
-        reader.readAsDataURL(this.currentFiles);
+        this.showSpinner = false;
+    }
+
+    convertFileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                // Extract base64 data (remove data:image/png;base64, prefix)
+                const base64Data = e.target.result.split(',')[1];
+                const fileType = file.type.split("/")[1];
+                resolve({
+                    base64: base64Data,
+                    fileType: fileType,
+                    fileName: file.name,
+                    fileSize: file.size
+                });
+            };
+
+            reader.onerror = function (error) {
+                reject(error);
+            };
+
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async handleUpload() {
+        if (!this.currentFile) {
+            let errorTitle = 'Text recognition didn\'t work.';
+            this.toast(errorTitle, 'error');
+            return;
+        } else {
+            await getDataFromUploadFile({
+                base64 : this.currentFile,
+            }).then(result => {
+                let title = `Text recognition was successful!`;
+                this.hmrcRef = result.extractedData.ourReference;
+                console.log('Result: ', result);
+                console.log('Qualifying Years: ', result.extractedData.qualifyingYears);
+                
+                this.ukWork = result.extractedData.qualifyingYears;
+                this.toast(title, 'success');
+            }).catch(error => {
+                this.toast('Error!!!', 'error');
+                console.log('error === ', error);
+                this.showSpinner = false;
+                let errorTitle = 'Text recognition didn\'t work. The error is ' + error.body.message;
+                
+            })
+            
+        }
+        this.showSpinner = false;
     }
 
     async handleUploadFile() {
-        if (!this.currentFile ||
+        /*if (!this.currentFile ||
             !this.currentReplyType ||
-            (!this.currentLetterDate &&
-             !this.letterDate &&
+            (!this.currentLetterDate  &&
              (this.currentReplyType == '2024ANNUAL' ||
               this.currentReplyType == 'C2' ||
               this.currentReplyType == 'C3' ||
@@ -164,7 +227,7 @@ export default class UploadHMRCReply extends LightningElement {
               this.currentReplyType == 'BadStatement'))) {
             let titleEmptyData = `Please, specify all data before uploading`;
             this.toast(titleEmptyData, 'error');
-        } else {
+        } else {*/
             this.showSpinner = !this.showSpinner;
             let requestData = {
                 "recordId"       : this.recordId,
@@ -176,7 +239,7 @@ export default class UploadHMRCReply extends LightningElement {
                 "shortfall"      : this.currentShortfall ? this.currentShortfall : this.shortfall,
                 "caseworker"     : this.currentCaseworker ? this.currentCaseworker : this.caseworker,
                 "status"         : this.moveToStatus == 'Not Move' ? null : this.moveToStatus,
-                "letterDate"     : this.currentLetterDate,
+                "letterDate"     : this.currentLetterDate ? this.currentLetterDate : this.letterDate,
                 "xpReceivedDate" : this.currentXPReceivedDate ? this.currentXPReceivedDate : this.todayDate,
             };
             await uploadFile({
@@ -194,7 +257,7 @@ export default class UploadHMRCReply extends LightningElement {
                 this.toast(errorTitle, 'error');
                 this.showSpinner = !this.showSpinner;
             })
-        }
+        //}
     }
 
     get todayPlaceholder() {

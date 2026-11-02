@@ -1,0 +1,223 @@
+<template>
+    <div class="slds-card aa-award">
+        <header class="aa-award__head">
+            <lightning-icon icon-name="standard:opportunity" size="small" class="aa-award__icon"></lightning-icon>
+            <div>
+                <h2 class="aa-award__title">DWP Award</h2>
+                <p class="aa-award__sub">Amount granted by DWP + initial back-payment lump sum. Fee (20% of award, VAT included) is auto-recommended as single charge (lump &ge; fee) or 3 monthly (lump &lt; fee). Val team can override.</p>
+            </div>
+        </header>
+
+        <!-- SUMMARY MODE — award is set and we're not editing -->
+        <template if:true={showSummary}>
+            <div class="aa-award__summary">
+                <div class="aa-award__amount-block">
+                    <span class="aa-award__k">Award</span>
+                    <span class="aa-award__amount">
+                        <lightning-formatted-number
+                            value={awardAmount}
+                            format-style="currency"
+                            currency-code="GBP">
+                        </lightning-formatted-number>
+                    </span>
+                </div>
+                <div class="aa-award__lump-block">
+                    <span class="aa-award__k">DWP lump sum received</span>
+                    <span class="aa-award__lump">{lumpSummary}</span>
+                </div>
+                <div class="aa-award__fee-block">
+                    <span class="aa-award__k">Fee (20%)</span>
+                    <span class="aa-award__fee">
+                        <lightning-formatted-number
+                            value={feeAmount}
+                            format-style="currency"
+                            currency-code="GBP">
+                        </lightning-formatted-number>
+                    </span>
+                </div>
+                <div class="aa-award__plan-block">
+                    <span class="aa-award__k">Plan</span>
+                    <span class="aa-award__plan">{planSummary}</span>
+                </div>
+                <template if:true={firstChargeDisplay}>
+                    <div class="aa-award__firstdate-block">
+                        <span class="aa-award__k">First charge</span>
+                        <span class="aa-award__firstdate">{firstChargeDisplay}</span>
+                    </div>
+                </template>
+                <template if:true={lastModifiedDisplay}>
+                    <div class="aa-award__meta">
+                        Last updated {lastModifiedDisplay}
+                    </div>
+                </template>
+                <div class="aa-award__actions">
+                    <lightning-button
+                        label="Edit"
+                        icon-name="utility:edit"
+                        variant="brand-outline"
+                        onclick={handleEdit}>
+                    </lightning-button>
+                </div>
+            </div>
+        </template>
+
+        <!-- INPUT MODE — no award yet, or editing an existing one -->
+        <template if:true={showInput}>
+            <div class="aa-award__fields">
+                <!-- NO formatter="currency" on these two inputs. lightning-input
+                     renders the USER's currency and has no currency-code attribute,
+                     so on this org (corporate currency EUR) it displayed "€10,000.00"
+                     against a "£2,000.00" fee. AA is GBP-only — the stored values
+                     already are (CurrencyIsoCode='GBP' is forced on every insert and
+                     by the trigger), so state the unit in the label instead. -->
+                <lightning-input
+                    class="aa-award__amount-input"
+                    type="number"
+                    step="0.01"
+                    label="Award amount (annual, £)"
+                    value={draftAmount}
+                    onchange={handleAmountChange}
+                    disabled={saving}
+                    required>
+                </lightning-input>
+
+                <template if:true={lowFlag}>
+                    <div class="aa-award__flag aa-award__flag--warn">
+                        That does not look like an annual award. Enter the weekly rate x 52
+                        (2025/26: £3,842.80 lower rate, £5,740.80 higher rate). If you typed the
+                        weekly amount, multiply it by 52.
+                    </div>
+                </template>
+                <template if:true={highFlag}>
+                    <div class="aa-award__flag aa-award__flag--warn">
+                        That is higher than any annual Attendance Allowance award. Enter the
+                        weekly rate x 52, not arrears or a back-payment total.
+                    </div>
+                </template>
+                <template if:true={unusualAmount}>
+                    <lightning-input
+                        type="checkbox"
+                        label="I have checked this amount against the DWP letter and it is correct"
+                        checked={draftConfirmUnusual}
+                        onchange={handleConfirmUnusualChange}
+                        disabled={saving}>
+                    </lightning-input>
+                </template>
+
+                <lightning-input
+                    class="aa-award__lump-input"
+                    type="number"
+                    step="0.01"
+                    label="DWP lump sum received in £ (initial back-payment)"
+                    field-level-help="What the DWP has already paid in one lump. If this covers the fee, we can charge single; if not, we recommend splitting across 3 monthly."
+                    value={draftLumpSum}
+                    onchange={handleLumpSumChange}
+                    disabled={saving}>
+                </lightning-input>
+
+                <lightning-input
+                    class="aa-award__firstdate-input"
+                    type="date"
+                    label="First charge date"
+                    field-level-help="When the first Direct Debit is collected. At least 5 days from today, so the client gets the advance notice first. Later instalments (if any) follow monthly from this date."
+                    value={draftFirstChargeDate}
+                    min={firstChargeDateMin}
+                    max={firstChargeDateMax}
+                    onchange={handleFirstChargeDateChange}
+                    disabled={saving}>
+                </lightning-input>
+                <template if:true={firstChargeDateFlag}>
+                    <div class="aa-award__flag aa-award__flag--warn">{firstChargeDateFlag}</div>
+                </template>
+
+                <lightning-input
+                    type="checkbox"
+                    label="Amount includes VAT (rare, uncheck if not sure)"
+                    checked={draftIncludesVat}
+                    onchange={handleVatChange}
+                    disabled={saving}>
+                </lightning-input>
+
+                <!-- Fee derived line — makes the comparator explicit -->
+                <template if:true={draftFeeDisplay}>
+                    <div class="aa-award__derived">
+                        <span class="aa-award__derived-k">Fee (20% of annual):</span>
+                        <span class="aa-award__derived-v">{draftFeeDisplay}</span>
+                    </div>
+                    <div class="aa-award__coverage">{lumpCoverageMsg}</div>
+                </template>
+
+                <!-- Recommendation + plan picker (auto vs override) -->
+                <fieldset class="aa-award__plan-picker">
+                    <template if:true={recommendationHeadline}>
+                        <legend class="aa-award__plan-legend">{recommendationHeadline}</legend>
+                    </template>
+                    <template if:false={recommendationHeadline}>
+                        <legend class="aa-award__plan-legend">Payment plan</legend>
+                    </template>
+
+                    <!-- Auto-recommend mode (default): shows ONLY the recommended plan.
+                         2x is intentionally NOT here (Fernando: abolished in default UI). -->
+                    <template if:false={draftOverride}>
+                        <lightning-radio-group
+                            name="planPickerAuto"
+                            label=""
+                            variant="label-hidden"
+                            options={planOptionsAuto}
+                            value={autoPlanValue}
+                            type="radio"
+                            disabled={saving}>
+                        </lightning-radio-group>
+                    </template>
+
+                    <!-- Manual override: full 1/2/3 picker -->
+                    <template if:true={draftOverride}>
+                        <lightning-radio-group
+                            name="planPickerOverride"
+                            label="Val-team override — pick any plan"
+                            options={planOptionsOverride}
+                            value={draftPlan}
+                            onchange={handlePlanChange}
+                            type="radio"
+                            disabled={saving}>
+                        </lightning-radio-group>
+                    </template>
+
+                    <div class="aa-award__override">
+                        <lightning-input
+                            type="toggle"
+                            label={overrideToggleLabel}
+                            message-toggle-active="Override active — pick any of 1/2/3"
+                            message-toggle-inactive="Auto-recommend on"
+                            checked={draftOverride}
+                            onchange={handleOverrideToggle}
+                            disabled={saving}>
+                        </lightning-input>
+                    </div>
+
+                    <template if:true={planBreakdown}>
+                        <p class="aa-award__plan-breakdown">{planBreakdown}</p>
+                    </template>
+                </fieldset>
+
+                <div class="aa-award__actions">
+                    <template if:true={editing}>
+                        <lightning-button
+                            label="Cancel"
+                            onclick={handleCancelEdit}
+                            disabled={saving}>
+                        </lightning-button>
+                    </template>
+                    <lightning-button
+                        class="slds-m-left_x-small aa-award__cta"
+                        variant="brand"
+                        label="Record Award & Set Plan"
+                        icon-name="utility:save"
+                        onclick={handleRecord}
+                        disabled={saveDisabled}>
+                    </lightning-button>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>

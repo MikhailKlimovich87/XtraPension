@@ -1,0 +1,36 @@
+.pc1-sub { margin: 0 0 0.5rem 0; }
+
+.timeline { list-style: none; padding: 0; margin: 0; position: relative; }
+.timeline::before {
+    content: ''; position: absolute; left: 15px; top: 0; bottom: 0;
+    width: 2px; background: var(--slds-g-color-neutral-base-80, #ecebea);
+}
+.tl-item {
+    display: flex; gap: 0.75rem; padding: 0.5rem 0.25rem 0.5rem 0;
+    position: relative;
+}
+.actor {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 0.875rem; flex-shrink: 0;
+    z-index: 1;
+}
+.actor.human  { background: var(--slds-g-color-brand-base-50, #0176d3); }
+.actor.mary   { background: var(--slds-g-color-accent-3, #9050e9); }
+.actor.system { background: var(--slds-g-color-neutral-base-50, #939393); }
+
+.tl-body { flex: 1; min-width: 0; }
+.tl-title {
+    font-size: 0.8125rem; font-weight: 600;
+    color: var(--slds-g-color-neutral-base-10, #181818);
+}
+.tl-sub {
+    font-size: 0.6875rem;
+    color: var(--slds-g-color-neutral-base-30, #706e6b);
+    margin-top: 2px;
+}
+.tl-note {
+    font-size: 0.75rem;
+    color: var(--slds-g-color-neutral-base-20, #454545);
+    margin-top: 2px; font-style: italic;
+}

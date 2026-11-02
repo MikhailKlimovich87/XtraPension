@@ -10,6 +10,7 @@ public class BulkUpdatePaymentsBatch implements Database.Batchable<sObject>, Dat
     }
 
     public void execute(Database.BatchableContext bc, List<Payment__c> payments) {
+        if (payments.size() == 0) return;
         List<Payment__c> updatedPayments = new List<Payment__c>();
         for(Payment__c payment : payments){
             Map<String, String> requestParams = new Map<String, String>();
