@@ -1,0 +1,293 @@
+<template>
+    <lightning-card title="Application Data" icon-name="standard:record">
+        <div class="slds-card__body">
+            <template lwc:if={liveOff}>
+                <p class="slds-p-horizontal_medium slds-text-body_small slds-text-color_weak aa-sub">Live updates are off. This card refreshes every 30 seconds.</p>
+            </template>
+            <template lwc:if={flowLoaded}>
+                <lightning-tabset variant="scoped" active-tab-value="path">
+
+                    <!-- ── TAB A · This client's path ────────────────── -->
+                    <lightning-tab label="This client's path" value="path">
+                        <p class="slds-p-horizontal_medium slds-p-top_x-small slds-text-body_small slds-text-color_weak aa-sub">
+                            {pathSummary}
+                        </p>
+                        <template lwc:if={hasPathSections}>
+                            <template for:each={pathSections} for:item="s">
+                                <div key={s.id} class={s.cls}>
+                                    <button
+                                        type="button"
+                                        class="section-head"
+                                        data-part={s.part}
+                                        aria-expanded={s.expandedAttr}
+                                        onclick={toggleSection}>
+                                        <span class="chev" aria-hidden="true">{s.chevron}</span>
+                                        <span class="section-title">{s.part}</span>
+                                        <span class="section-count">{s.headerBadge}</span>
+                                    </button>
+                                    <div class={s.bodyCls}>
+                                        <template for:each={s.fields} for:item="f">
+                                            <div key={f.key} class="field-row">
+                                                <div class="slds-form-element__label flabel">
+                                                    <template lwc:if={f.hasQTag}>
+                                                        <span class="slds-badge qtag">{f.qTag}</span>
+                                                    </template>
+                                                    <span class="qtext">{f.label}</span>
+                                                </div>
+                                                <div class={f.valueCls}>
+                                                    <template lwc:if={f.isEditing}>
+                                                        <div class="editor" data-editor-key={f.editKey} data-fieldid={f.fieldId} data-suffix={f.suffix} data-kind={f.editorSpec.kind} data-fieldtype={f.fieldType} onkeydown={handleEditorKey}>
+                                                            <template lwc:if={f.editorIsText}>
+                                                                <input class="slds-input ed-input" type="text" data-input value={f.editorSpec.value} aria-label={f.label} />
+                                                            </template>
+                                                            <template lwc:if={f.editorIsTextarea}>
+                                                                <textarea class="slds-textarea ed-input" data-input rows="3" value={f.editorSpec.value} aria-label={f.label}></textarea>
+                                                            </template>
+                                                            <template lwc:if={f.editorIsSelect}>
+                                                                <select class="slds-select ed-input" data-input aria-label={f.label}>
+                                                                    <template for:each={f.editorSpec.options} for:item="o">
+                                                                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                                                                    </template>
+                                                                </select>
+                                                            </template>
+                                                            <template lwc:if={f.editorIsCheckboxes}>
+                                                                <div class="chk-list">
+                                                                    <template for:each={f.editorSpec.options} for:item="o">
+                                                                        <label key={o.value} class="chk-item">
+                                                                            <input type="checkbox" value={o.value} checked={o.checked} />
+                                                                            <span>{o.label}</span>
+                                                                        </label>
+                                                                    </template>
+                                                                </div>
+                                                            </template>
+                                                            <template lwc:if={f.editorIsDate}>
+                                                                <div class="date-parts">
+                                                                    <input class="slds-input ed-input day" data-p="day" type="text" placeholder="DD" value={f.editorSpec.day} maxlength="2" aria-label="Day" />
+                                                                    <input class="slds-input ed-input day" data-p="month" type="text" placeholder="MM" value={f.editorSpec.month} maxlength="2" aria-label="Month" />
+                                                                    <input class="slds-input ed-input year" data-p="year" type="text" placeholder="YYYY" value={f.editorSpec.year} maxlength="4" aria-label="Year" />
+                                                                </div>
+                                                            </template>
+                                                            <div class="ed-actions">
+                                                                <button class="slds-button slds-button_brand slds-button_small" data-key={f.key} onclick={saveEditor}>Save</button>
+                                                                <button class="slds-button slds-button_neutral slds-button_small" onclick={cancelEditor}>Cancel</button>
+                                                                <template lwc:if={f.hasHint}>
+                                                                    <span class="ed-hint">{f.hint}</span>
+                                                                </template>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                    <template lwc:else>
+                                                        <template lwc:if={f.isBlocked}>
+                                                            <span class="lock-icon" title={f.blockedReason} aria-label="Locked">&#128274;</span>
+                                                        </template>
+                                                        <span class="value-text">{f.displayValue}</span>
+                                                        <template lwc:if={f.hasSrc}>
+                                                            <span class={f.srcCls}>{f.srcLabel}</span>
+                                                        </template>
+                                                        <template lwc:if={f.hasWarning}>
+                                                            <span class="row-warn" role="note">{f.warning}</span>
+                                                        </template>
+                                                        <template lwc:if={f.hasSuggestedName}>
+                                                            <button
+                                                                type="button"
+                                                                class="slds-button slds-button_outline-brand slds-button_stretch aa-quickfill"
+                                                                title="Fill with the client's name from the record"
+                                                                onclick={handleUseSuggestedName}>
+                                                                Use "{f.suggestedName}"
+                                                            </button>
+                                                        </template>
+                                                        <template lwc:if={f.isDeclDate}>
+                                                            <button
+                                                                type="button"
+                                                                class="slds-button slds-button_outline-brand aa-quickfill"
+                                                                title="Fill with today's date"
+                                                                onclick={handleToday}>
+                                                                Today
+                                                            </button>
+                                                        </template>
+                                                        <template lwc:if={f.canAddEntry}>
+                                                            <button
+                                                                type="button"
+                                                                class="slds-button slds-button_outline-brand aa-quickfill"
+                                                                title="Add another entry to this list"
+                                                                data-group={f.addGroup}
+                                                                data-next={f.addNext}
+                                                                data-part={f.part}
+                                                                onclick={handleAddEntry}>
+                                                                Add another entry
+                                                            </button>
+                                                        </template>
+                                                    </template>
+                                                </div>
+                                                <template lwc:if={f.isEditing}>
+                                                    <span class="pencil-placeholder"></span>
+                                                </template>
+                                                <template lwc:else>
+                                                    <button
+                                                        class={f.pencilCls}
+                                                        type="button"
+                                                        title={f.pencilTitle}
+                                                        aria-label={f.editAriaLabel}
+                                                        data-key={f.editKey}
+                                                        data-blocked={f.isBlocked}
+                                                        data-lockkind={f.lockKind}
+                                                        data-reason={f.blockedReason}
+                                                        onclick={openEditor}>&#9998;</button>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </template>
+                        <template lwc:else>
+                            <div class="slds-p-around_medium slds-text-body_small slds-text-color_weak">{pathEmptyMessage}</div>
+                        </template>
+                    </lightning-tab>
+
+                    <!-- ── TAB B · All possible fields ───────────────── -->
+                    <lightning-tab label="All possible fields" value="all">
+                        <template lwc:if={hasAny}>
+                            <p class="slds-p-horizontal_medium slds-p-top_x-small slds-text-body_small slds-text-color_weak aa-sub">{allSummary}</p>
+                            <p class="slds-p-horizontal_medium slds-text-body_small slds-text-color_weak aa-sub aa-subtitle">{allSubtitle}</p>
+                        </template>
+                        <template lwc:if={hasAny}>
+                            <template for:each={allSections} for:item="s">
+                                <div key={s.id} class={s.cls}>
+                                    <button
+                                        type="button"
+                                        class="section-head"
+                                        data-part={s.part}
+                                        aria-expanded={s.expandedAttr}
+                                        onclick={toggleSection}>
+                                        <span class="chev" aria-hidden="true">{s.chevron}</span>
+                                        <span class="section-title">{s.part}</span>
+                                        <span class="section-count">{s.headerBadge}</span>
+                                    </button>
+                                    <div class={s.bodyCls}>
+                                        <template for:each={s.fields} for:item="f">
+                                            <div key={f.key} class="field-row">
+                                                <div class="slds-form-element__label flabel">
+                                                    <template lwc:if={f.hasQTag}>
+                                                        <span class="slds-badge qtag">{f.qTag}</span>
+                                                    </template>
+                                                    <span class="qtext">{f.label}</span>
+                                                </div>
+                                                <div class={f.valueCls}>
+                                                    <template lwc:if={f.isEditing}>
+                                                        <div class="editor" data-editor-key={f.editKey} data-fieldid={f.fieldId} data-suffix={f.suffix} data-kind={f.editorSpec.kind} data-fieldtype={f.fieldType} onkeydown={handleEditorKey}>
+                                                            <template lwc:if={f.editorIsText}>
+                                                                <input class="slds-input ed-input" type="text" data-input value={f.editorSpec.value} aria-label={f.label} />
+                                                            </template>
+                                                            <template lwc:if={f.editorIsTextarea}>
+                                                                <textarea class="slds-textarea ed-input" data-input rows="3" value={f.editorSpec.value} aria-label={f.label}></textarea>
+                                                            </template>
+                                                            <template lwc:if={f.editorIsSelect}>
+                                                                <select class="slds-select ed-input" data-input aria-label={f.label}>
+                                                                    <template for:each={f.editorSpec.options} for:item="o">
+                                                                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                                                                    </template>
+                                                                </select>
+                                                            </template>
+                                                            <template lwc:if={f.editorIsCheckboxes}>
+                                                                <div class="chk-list">
+                                                                    <template for:each={f.editorSpec.options} for:item="o">
+                                                                        <label key={o.value} class="chk-item">
+                                                                            <input type="checkbox" value={o.value} checked={o.checked} />
+                                                                            <span>{o.label}</span>
+                                                                        </label>
+                                                                    </template>
+                                                                </div>
+                                                            </template>
+                                                            <template lwc:if={f.editorIsDate}>
+                                                                <div class="date-parts">
+                                                                    <input class="slds-input ed-input day" data-p="day" type="text" placeholder="DD" value={f.editorSpec.day} maxlength="2" aria-label="Day" />
+                                                                    <input class="slds-input ed-input day" data-p="month" type="text" placeholder="MM" value={f.editorSpec.month} maxlength="2" aria-label="Month" />
+                                                                    <input class="slds-input ed-input year" data-p="year" type="text" placeholder="YYYY" value={f.editorSpec.year} maxlength="4" aria-label="Year" />
+                                                                </div>
+                                                            </template>
+                                                            <div class="ed-actions">
+                                                                <button class="slds-button slds-button_brand slds-button_small" data-key={f.key} onclick={saveEditor}>Save</button>
+                                                                <button class="slds-button slds-button_neutral slds-button_small" onclick={cancelEditor}>Cancel</button>
+                                                                <template lwc:if={f.hasHint}>
+                                                                    <span class="ed-hint">{f.hint}</span>
+                                                                </template>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                    <template lwc:else>
+                                                        <template lwc:if={f.isBlocked}>
+                                                            <span class="lock-icon" title={f.blockedReason} aria-label="Locked">&#128274;</span>
+                                                        </template>
+                                                        <span class="value-text">{f.displayValue}</span>
+                                                        <template lwc:if={f.hasSrc}>
+                                                            <span class={f.srcCls}>{f.srcLabel}</span>
+                                                        </template>
+                                                        <template lwc:if={f.hasWarning}>
+                                                            <span class="row-warn" role="note">{f.warning}</span>
+                                                        </template>
+                                                        <template lwc:if={f.hasSuggestedName}>
+                                                            <button
+                                                                type="button"
+                                                                class="slds-button slds-button_outline-brand slds-button_stretch aa-quickfill"
+                                                                title="Fill with the client's name from the record"
+                                                                onclick={handleUseSuggestedName}>
+                                                                Use "{f.suggestedName}"
+                                                            </button>
+                                                        </template>
+                                                        <template lwc:if={f.isDeclDate}>
+                                                            <button
+                                                                type="button"
+                                                                class="slds-button slds-button_outline-brand aa-quickfill"
+                                                                title="Fill with today's date"
+                                                                onclick={handleToday}>
+                                                                Today
+                                                            </button>
+                                                        </template>
+                                                        <template lwc:if={f.canAddEntry}>
+                                                            <button
+                                                                type="button"
+                                                                class="slds-button slds-button_outline-brand aa-quickfill"
+                                                                title="Add another entry to this list"
+                                                                data-group={f.addGroup}
+                                                                data-next={f.addNext}
+                                                                data-part={f.part}
+                                                                onclick={handleAddEntry}>
+                                                                Add another entry
+                                                            </button>
+                                                        </template>
+                                                    </template>
+                                                </div>
+                                                <template lwc:if={f.isEditing}>
+                                                    <span class="pencil-placeholder"></span>
+                                                </template>
+                                                <template lwc:else>
+                                                    <button
+                                                        class={f.pencilCls}
+                                                        type="button"
+                                                        title={f.pencilTitle}
+                                                        aria-label={f.editAriaLabel}
+                                                        data-key={f.editKey}
+                                                        data-blocked={f.isBlocked}
+                                                        data-lockkind={f.lockKind}
+                                                        data-reason={f.blockedReason}
+                                                        onclick={openEditor}>&#9998;</button>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </template>
+                        <template lwc:else>
+                            <div class="slds-p-around_medium slds-text-body_small slds-text-color_weak">Flow config loaded but no sections were computed. Check StaticResource aaFlowConfig.</div>
+                        </template>
+                    </lightning-tab>
+                </lightning-tabset>
+            </template>
+            <template lwc:else>
+                <div class="slds-p-around_medium slds-text-body_small">Loading flow…</div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

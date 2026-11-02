@@ -1,0 +1,194 @@
+/* SMS chat panel — iMessage/blue-bubble palette to visually distinguish
+   from the WhatsApp panel above (green). Both sit in the leftsidebar. */
+
+.aa-sms {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 480px;
+}
+
+.aa-sms__actions {
+  display: flex;
+  align-items: center;
+}
+.aa-sms__live {
+  display: inline-block;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #007aff;
+  box-shadow: 0 0 0 rgba(0, 122, 255, 0.5);
+  animation: aa-sms-pulse 2s infinite;
+}
+@keyframes aa-sms-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.5); }
+  70%  { box-shadow: 0 0 0 6px rgba(0, 122, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); }
+}
+
+.aa-sms__subtitle {
+  color: var(--slds-g-color-neutral-base-30, #6b7377);
+  font-size: 0.85rem;
+}
+
+.aa-sms__banner {
+  display: flex;
+  align-items: center;
+}
+.aa-sms__banner-text { flex: 1; font-size: 0.85rem; }
+
+/* Thread */
+.aa-sms__thread {
+  flex: 1 1 auto;
+  min-height: 180px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 12px 16px;
+  background: #f4f6f8;
+  display: flex;
+  flex-direction: column;
+}
+
+.aa-sms__empty {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: var(--slds-g-color-neutral-base-30, #6b7377);
+  text-align: center;
+  padding: 32px 20px;
+}
+
+.aa-sms__loading { display: flex; flex-direction: column; gap: 6px; }
+.aa-sms__skeleton {
+  height: 30px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #dfe4e9 0%, #eef2f6 50%, #dfe4e9 100%);
+  background-size: 200% 100%;
+  animation: aa-sms-shimmer 1.4s infinite;
+  max-width: 60%;
+}
+.aa-sms__skeleton.is-in  { align-self: flex-start; }
+.aa-sms__skeleton.is-out { align-self: flex-end; background-color: #cfe4ff; }
+@keyframes aa-sms-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.aa-sms__day {
+  align-self: center;
+  background: rgba(0, 0, 0, 0.06);
+  color: #54656f;
+  font-size: 0.72rem;
+  padding: 3px 10px;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+.aa-sms__msg-wrap { display: contents; }
+
+.aa-sms__bubble {
+  position: relative;
+  max-width: 78%;
+  padding: 6px 12px 4px;
+  border-radius: 16px;
+  margin-bottom: 4px;
+  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.10);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+.aa-sms__bubble.is-in {
+  align-self: flex-start;
+  background: #ffffff;
+  color: #111b21;
+  border: 1px solid #e6ebef;
+  border-bottom-left-radius: 4px;
+}
+.aa-sms__bubble.is-out {
+  align-self: flex-end;
+  background: #007aff;
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+.aa-sms__bubble.is-sending { opacity: 0.7; }
+.aa-sms__bubble.is-failed  { background: #ef4444; }
+
+.aa-sms__text { white-space: pre-wrap; }
+.aa-sms__meta {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+  font-size: 0.68rem;
+  color: #d4e6ff;
+  margin-top: 2px;
+}
+.aa-sms__bubble.is-in .aa-sms__meta { color: #667781; }
+.aa-sms__status { font-family: ui-monospace, SFMono-Regular, monospace; }
+.aa-sms__status.is-good { color: #b6f5cc; }
+.aa-sms__status.is-bad  { color: #fff; font-weight: 600; }
+.aa-sms__bubble.is-in  .aa-sms__status.is-good { color: #128c7e; }
+.aa-sms__bubble.is-in  .aa-sms__status.is-bad  { color: #e53935; }
+
+.aa-sms__sender {
+  font-size: 0.7rem;
+  color: #d4e6ff;
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+.aa-sms__bubble.is-in .aa-sms__sender { color: #667781; }
+
+.aa-sms__errcode {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  align-self: flex-start;
+  display: inline-block;
+}
+
+/* Composer */
+.aa-sms__composer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid #d4d8db;
+  background: #f0f2f5;
+}
+.aa-sms__ta {
+  width: 100%;
+  resize: none;
+  min-height: 44px;
+  max-height: 140px;
+  padding: 8px 10px;
+  border: 1px solid #d4d8db;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.88rem;
+  background: #fff;
+  box-sizing: border-box;
+}
+.aa-sms__ta:focus {
+  outline: none;
+  border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+.aa-sms__ta:disabled { background: #f4f7f8; color: #6b7377; }
+.aa-sms__actionrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.aa-sms__hint { font-size: 0.72rem; color: #6b7377; }
+.aa-sms__send { min-width: 80px; height: 32px; }
+
+/* Mobile */
+@media (max-width: 768px) {
+  .aa-sms { max-height: 55vh; }
+  .aa-sms__thread { max-height: none; }
+  .aa-sms__bubble { max-width: 85%; }
+}

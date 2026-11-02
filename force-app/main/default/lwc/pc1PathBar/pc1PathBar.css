@@ -1,0 +1,49 @@
+/* pc1PathBar renders a horizontal step indicator. No card chrome — it
+ * sits above the record body like SLDS path does natively. */
+
+.path {
+    display: flex;
+    overflow-x: auto;
+    padding: 4px 0;
+}
+.path .step {
+    position: relative;
+    flex: 1;
+    min-width: 110px;
+    height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--slds-g-color-neutral-base-30, #706e6b);
+    background: var(--slds-g-color-neutral-base-80, #ecebea);
+    margin-right: 3px;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%);
+    padding: 0 16px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.path .step:hover { background: var(--slds-g-color-neutral-base-70, #d8dde6); }
+.path .step:focus-visible {
+    outline: 2px solid var(--slds-g-color-brand-base-50, #0176d3);
+    outline-offset: 2px;
+}
+.path .step .lbl {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 100%; display: block;
+}
+.path .step.done {
+    background: var(--slds-g-color-success-base-30, #04844b);
+    color: #fff;
+}
+.path .step.done:hover { background: #056636; }
+.path .step.current {
+    background: var(--slds-g-color-brand-base-50, #0176d3);
+    color: #fff;
+    box-shadow: 0 0 0 2px rgba(1,118,211,0.25);
+}
+.path .step.current:hover { background: #014486; }
+
+.off-pipeline { display: flex; align-items: center; }

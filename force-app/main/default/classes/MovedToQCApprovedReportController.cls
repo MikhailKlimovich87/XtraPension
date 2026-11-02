@@ -8,7 +8,9 @@ public without sharing class MovedToQCApprovedReportController {
                     WHERE IsActive = true AND
                         (Name = 'Edryl Ranido' OR
                         Name = 'Camille Gittbao'  OR
-                        Name = 'Maria Marmeto')
+                        Name = 'Maria Marmeto' OR
+                        Name = 'Daniel Gatdula' OR
+                        Name = 'John Ring')
                 ];
                 if (!activeUsers.isEmpty()) {
                     ACTIVE_USERS = activeUsers;
@@ -34,7 +36,9 @@ public without sharing class MovedToQCApprovedReportController {
                   Field = 'Status__c' AND (
                   CreatedBy.Name = 'Edryl Ranido' OR
                   CreatedBy.Name = 'Camille Gittbao' OR
-                  CreatedBy.Name = 'Maria Marmeto')
+                  CreatedBy.Name = 'Maria Marmeto' OR
+                  CreatedBy.Name = 'Daniel Gatdula' OR 
+                  CreatedBy.Name = 'John Ring')
             ORDER BY CreatedDate DESC];
         if (historyData.size() == 0) {
             return null;

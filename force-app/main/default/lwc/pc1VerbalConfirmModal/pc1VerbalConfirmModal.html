@@ -1,0 +1,34 @@
+<template>
+    <lightning-modal-header label="Confirm account holder name"></lightning-modal-header>
+    <lightning-modal-body>
+        <div class="pc1-vcm__body">
+            <p class="pc1-vcm__instruction">
+                Read this name back to the client and get their verbal confirmation.
+                Only tick the box if the client explicitly confirmed the exact name.
+            </p>
+            <div class="pc1-vcm__name-box">
+                <span class="pc1-vcm__name-label">Account holder on file</span>
+                <span class="pc1-vcm__name-value">{accountHolder}</span>
+            </div>
+            <lightning-input
+                type="checkbox"
+                label="I read the name back and the client confirmed"
+                checked={ticked}
+                onchange={handleTickChange}>
+            </lightning-input>
+        </div>
+    </lightning-modal-body>
+    <lightning-modal-footer>
+        <lightning-button
+            label="Cancel"
+            onclick={handleCancel}>
+        </lightning-button>
+        <lightning-button
+            class="slds-m-left_x-small"
+            variant="brand"
+            label="Confirm"
+            onclick={handleConfirm}
+            disabled={confirmDisabled}>
+        </lightning-button>
+    </lightning-modal-footer>
+</template>

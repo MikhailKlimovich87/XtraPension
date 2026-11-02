@@ -38,6 +38,7 @@ public class SuccessDocsController {
             'OR ContentDocument.Title LIKE \'%' + PRIVATE_PENSION_DOC_NAME + '%\' ' +
             'OR ContentDocument.Title LIKE \'%' + ANNUAL_SERVICE_DOC_NAME + '%\')'
         );
+        System.debug('Related Docs: ' + relatedDocs);
         Map<String, ContentVersion> newVersionOfDocs = new Map<String, ContentVersion>();
         if (!relatedDocs.isEmpty()) {
             for (ContentDocumentLink doc : relatedDocs) {

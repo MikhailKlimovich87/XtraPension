@@ -1,0 +1,33 @@
+<template>
+    <lightning-card title="Docs">
+        <lightning-tabset variant="scoped" active-tab-value={activeTab} >
+            <template for:each={tabs} for:item="tab">
+                <lightning-tab label={tab.label} value={tab.value} key={tab.value} onactive={handleTabActive}>   
+                    <div style="margin-bottom: 0.5rem;">
+                        <template if:true={showLatest}>
+                            <template for:each={filteredDocs} for:item="doc">
+                                <div class="slds-box slds-theme_default" style="display:block;border:0;font-size:0.875rem;"
+                                    key={doc.documentId}>
+                                    <div
+                                        style="margin-bottom:0.5rem;display: flex;align-items: center;justify-content: space-between">
+                                        <a onclick={navigateToFiles} value={doc.title}>
+                                            <u>{doc.title}</u>
+                                        </a>
+                                    
+                                    </div>
+                                    <div>{doc.createdDate}</div>
+                                </div>
+                            </template>
+                        </template>
+            
+                    </div>
+                </lightning-tab>
+            </template>
+        </lightning-tabset>
+        <div slot="footer">
+            <a class="slds-card__footer-action" onclick={handleDisplayAll}>
+                View All
+            </a>
+        </div>
+    </lightning-card>
+</template>

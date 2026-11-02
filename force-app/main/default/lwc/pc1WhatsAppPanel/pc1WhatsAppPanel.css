@@ -1,0 +1,476 @@
+/* WhatsApp-style chat panel embedded in the PC1_Application record page. */
+
+.pc1-wa {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 520px;
+}
+
+.pc1-wa__actions {
+  display: flex;
+  align-items: center;
+}
+.pc1-wa__live {
+  display: inline-block;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #25D366;
+  box-shadow: 0 0 0 rgba(37, 211, 102, 0.5);
+  animation: pc1-wa-pulse 2s infinite;
+}
+@keyframes pc1-wa-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5); }
+  70%  { box-shadow: 0 0 0 6px rgba(37, 211, 102, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+}
+
+.pc1-wa__subtitle {
+  color: var(--slds-g-color-neutral-base-30, #6b7377);
+  font-size: 0.85rem;
+}
+
+.pc1-wa__banner {
+  display: flex;
+  align-items: center;
+}
+.pc1-wa__banner-text { flex: 1; font-size: 0.85rem; }
+.pc1-wa__banner-btn {
+  background: rgba(255,255,255,0.9);
+  color: #663c00;
+  border: 1px solid rgba(0,0,0,0.15);
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+/* Thread */
+.pc1-wa__thread {
+  flex: 1 1 auto;
+  min-height: 200px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 12px 16px;
+  background: #e5ddd5;   /* WhatsApp cream */
+  background-image: linear-gradient(rgba(229,221,213,0.9), rgba(229,221,213,0.9));
+  display: flex;
+  flex-direction: column;
+}
+
+.pc1-wa__empty {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: var(--slds-g-color-neutral-base-30, #6b7377);
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.pc1-wa__loading { display: flex; flex-direction: column; gap: 6px; }
+.pc1-wa__skeleton {
+  height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #cfc8bf 0%, #eee6dc 50%, #cfc8bf 100%);
+  background-size: 200% 100%;
+  animation: pc1-wa-shimmer 1.4s infinite;
+  max-width: 60%;
+}
+.pc1-wa__skeleton.is-in  { align-self: flex-start; }
+.pc1-wa__skeleton.is-out { align-self: flex-end; background-color: #d9fdd3; }
+@keyframes pc1-wa-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.pc1-wa__day {
+  align-self: center;
+  background: rgba(255, 255, 255, 0.7);
+  color: #54656f;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+/* Message wrapper — display:contents so the bubble's align-self actually
+   participates in the .pc1-wa__thread flex column. Without this the wrapper
+   div took full width and every bubble collapsed to the left. */
+.pc1-wa__msg-wrap {
+  display: contents;
+}
+
+/* Bubbles */
+.pc1-wa__bubble {
+  position: relative;
+  max-width: 78%;
+  padding: 6px 10px 4px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+.pc1-wa__bubble.is-in {
+  align-self: flex-start;
+  background: #ffffff;
+  color: #111b21;
+}
+.pc1-wa__bubble.is-out {
+  align-self: flex-end;
+  background: #d9fdd3;
+  color: #111b21;
+}
+.pc1-wa__bubble.is-sending  { opacity: 0.7; }
+.pc1-wa__bubble.is-failed   { border: 1px solid #e53935; }
+
+.pc1-wa__text {
+  white-space: pre-wrap;
+}
+.pc1-wa__meta {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  align-items: center;
+  font-size: 0.7rem;
+  color: #667781;
+  margin-top: 2px;
+}
+.pc1-wa__status {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  color: #54656f;
+}
+.pc1-wa__by {
+  color: #128c7e;
+  font-weight: 600;
+  font-size: 0.68rem;
+}
+
+.pc1-wa__attach a {
+  display: inline-flex;
+  align-items: center;
+  color: #027eb5;
+  font-size: 0.8rem;
+  padding: 4px 6px;
+  background: rgba(0,0,0,0.03);
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.pc1-wa__retry {
+  display: block;
+  margin-top: 4px;
+  background: none;
+  border: none;
+  color: #e53935;
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+/* Composer — textarea on top full-width, action strip below */
+.pc1-wa__composer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid #d4d8db;
+  background: #f0f2f5;
+  position: relative;
+}
+.pc1-wa__ta {
+  width: 100%;
+  resize: none;
+  min-height: 44px;
+  max-height: 140px;
+  padding: 8px 10px;
+  border: 1px solid #d4d8db;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.88rem;
+  background: #fff;
+  box-sizing: border-box;
+}
+.pc1-wa__ta:focus {
+  outline: none;
+  border-color: #25D366;
+  box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.15);
+}
+.pc1-wa__ta:disabled { background: #f4f7f8; color: #6b7377; }
+.pc1-wa__actionrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.pc1-wa__leftactions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pc1-wa__send {
+  min-width: 80px;
+  height: 32px;
+}
+
+/* Hide the ugly default lightning-file-upload — triggered programmatically */
+.pc1-wa__upload-hidden {
+  position: absolute;
+  left: -10000px;
+  width: 0; height: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+/* Plus menu (upload options) */
+.pc1-wa__plus-wrap {
+  position: relative;
+  display: inline-block;
+}
+.pc1-wa__plus-menu {
+  position: absolute;
+  bottom: 34px;
+  left: 0;
+  min-width: 220px;
+  background: #fff;
+  border: 1px solid #d4d8db;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  z-index: 90;
+  padding: 4px 0;
+}
+.pc1-wa__plus-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #3d3d3d;
+}
+.pc1-wa__plus-item:hover { background: #f4f7f8; }
+
+/* Sender label above outbound bubbles (which SF rep sent it) */
+.pc1-wa__sender {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #128c7e;
+  margin-bottom: 2px;
+}
+.pc1-wa__bubble.is-in .pc1-wa__sender { color: #667781; }
+
+/* Inline attachments */
+.pc1-wa__img {
+  max-width: 240px;
+  max-height: 240px;
+  border-radius: 6px;
+  display: block;
+  margin-bottom: 4px;
+  cursor: zoom-in;
+}
+.pc1-wa__audio {
+  display: block;
+  max-width: 260px;
+  margin-bottom: 4px;
+  height: 32px;
+}
+
+/* Composer icon buttons (emoji + mic) */
+.pc1-wa__iconbtn {
+  background: transparent;
+  border: 0;
+  padding: 6px 8px;
+  font-size: 20px;
+  cursor: pointer;
+  align-self: center;
+  border-radius: 6px;
+  line-height: 1;
+}
+.pc1-wa__iconbtn:hover:not(:disabled) { background: rgba(0,0,0,0.05); }
+.pc1-wa__iconbtn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Hide the ugly default lightning-file-upload UI — expose it as a paperclip
+   button via wrapper style. */
+.pc1-wa__upload {
+  align-self: center;
+}
+.pc1-wa__upload .slds-file-selector__body { display: none; }
+.pc1-wa__upload .slds-file-selector__dropzone {
+  border: 0; padding: 0; background: transparent;
+}
+.pc1-wa__upload .slds-file-selector__button {
+  border: 0; padding: 6px 8px; background: transparent;
+  font-size: 0; cursor: pointer;
+}
+.pc1-wa__upload .slds-file-selector__button::before {
+  content: '📎'; font-size: 20px;
+}
+.pc1-wa__upload .slds-file-selector__button:hover { background: rgba(0,0,0,0.05); border-radius: 6px; }
+
+/* Attachment preview chip */
+.pc1-wa__pending {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #eef8f6;
+  border-top: 1px solid #d4e5e0;
+  font-size: 0.8rem;
+}
+.pc1-wa__pending-name { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc1-wa__pending-size { color: var(--slds-g-color-neutral-base-30, #6b7377); }
+.pc1-wa__pending-x {
+  background: none; border: 0; color: #e53935; cursor: pointer;
+  font-size: 16px; padding: 0 4px;
+}
+
+/* Recording state */
+.pc1-wa__recording {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #ffe6e6;
+  border-top: 1px solid #f5c6c6;
+}
+.pc1-wa__rec-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #e53935;
+  animation: pc1-wa-rec-pulse 1s infinite;
+}
+@keyframes pc1-wa-rec-pulse {
+  0%   { opacity: 1; transform: scale(1); }
+  50%  { opacity: 0.4; transform: scale(0.85); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.pc1-wa__rec-time {
+  flex: 1;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.9rem;
+  color: #c62828;
+  font-weight: 600;
+}
+.pc1-wa__rec-cancel, .pc1-wa__rec-stop {
+  border: 1px solid #ccc;
+  background: #fff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.pc1-wa__rec-stop {
+  background: #e53935;
+  color: #fff;
+  border-color: #c62828;
+  font-weight: 600;
+}
+
+/* Hidden native file input */
+.pc1-wa__native-file { display: none; }
+
+/* SF Files modal (centered overlay w/ search) */
+.pc1-wa__modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.pc1-wa__modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+.pc1-wa__modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+.pc1-wa__modal-header h3 { margin: 0; font-size: 1rem; color: #3d3d3d; }
+.pc1-wa__modal-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #eee;
+  background: #f7f9fb;
+}
+.pc1-wa__modal-searchbox {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d4d8db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  outline: none;
+}
+.pc1-wa__modal-searchbox:focus {
+  border-color: #128c7e;
+  box-shadow: 0 0 0 3px rgba(18, 140, 126, 0.12);
+}
+.pc1-wa__modal-count {
+  font-size: 0.75rem;
+  color: #6b7377;
+  white-space: nowrap;
+}
+.pc1-wa__modal-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 200px;
+}
+.pc1-wa__sf-pick {
+  font-size: 0.75rem;
+  color: #128c7e;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.pc1-wa__sf-item:hover .pc1-wa__sf-pick { opacity: 1; }
+.pc1-wa__x {
+  background: none; border: 0; color: #6b7377; cursor: pointer;
+  font-size: 16px; padding: 0 4px;
+}
+.pc1-wa__sf-list {
+  list-style: none;
+  margin: 0; padding: 0;
+  overflow-y: auto;
+}
+.pc1-wa__sf-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f2f4f5;
+}
+.pc1-wa__sf-item:hover { background: #f4f7f8; }
+.pc1-wa__sf-info { flex: 1; overflow: hidden; }
+.pc1-wa__sf-name { font-weight: 600; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc1-wa__sf-meta { font-size: 0.72rem; color: var(--slds-g-color-neutral-base-30, #6b7377); }
+.pc1-wa__sf-empty {
+  padding: 20px 12px;
+  text-align: center;
+  color: var(--slds-g-color-neutral-base-30, #6b7377);
+  font-size: 0.85rem;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .pc1-wa { max-height: 60vh; }
+  .pc1-wa__thread { max-height: none; }
+  .pc1-wa__bubble { max-width: 85%; }
+}

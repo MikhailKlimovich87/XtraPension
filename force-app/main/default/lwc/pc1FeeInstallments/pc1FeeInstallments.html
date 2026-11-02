@@ -1,0 +1,51 @@
+<template>
+    <template lwc:if={hasRows}>
+        <div class="pc1-inst">
+            <div class="pc1-inst__head">
+                <span class="pc1-inst__title">Installments</span>
+                <template lwc:if={hasFailed}>
+                    <span class="pc1-inst__alert">{failedCount} failed — speak to the client, then retry</span>
+                </template>
+            </div>
+            <div class="pc1-inst__scroll">
+                <table class="pc1-inst__table">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Date</th>
+                            <th scope="col" class="pc1-inst__num">Amount</th>
+                            <th scope="col">Status</th>
+                            <th scope="col"><span class="slds-assistive-text">Action</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={rows} for:item="r">
+                            <tr key={r.id}>
+                                <td>{r.number}</td>
+                                <td>
+                                    <lightning-formatted-date-time value={r.date} day="numeric" month="short" year="numeric" time-zone="UTC">
+                                    </lightning-formatted-date-time>
+                                </td>
+                                <td class="pc1-inst__num">
+                                    <lightning-formatted-number value={r.amount} format-style="currency" currency-code="GBP">
+                                    </lightning-formatted-number>
+                                </td>
+                                <td><span class={r.pillClass}>{r.statusLabel}</span></td>
+                                <td class="pc1-inst__action">
+                                    <template lwc:if={r.canRetry}>
+                                        <lightning-button label="Retry" variant="neutral" size="small"
+                                            data-id={r.id} onclick={handleRetry} disabled={retryingId}>
+                                        </lightning-button>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </template>
+    <template lwc:if={loadError}>
+        <p class="pc1-inst__error">{loadError}</p>
+    </template>
+</template>

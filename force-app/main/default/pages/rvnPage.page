@@ -1,0 +1,249 @@
+<apex:page renderAs="pdf"
+    showHeader="false"
+    sidebar="false"
+    standardStylesheets="false"
+    applyBodyTag="false"
+    applyHtmlTag="false"
+>
+<html>
+<head>
+    <style type="text/css">
+        @page {
+            size: 210mm 297mm;
+            margin-top: 50px;
+            margin-bottom: 20px;
+            @bottom-left {
+                content: element(footer);
+            }
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #262626;
+            font-size: 10pt;
+            line-height: 1.4;
+        }
+        .page {
+            width: 100%;
+            min-height: 297mm;
+            padding: 12mm 14mm 10mm 14mm;
+            position: relative;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+        .gov-header {
+            margin-bottom: 4mm;
+        }
+        .gov-logo {
+            margin-bottom: 2mm;
+        }
+        .document-title {
+            font-size: 13pt;
+            font-weight: bold;
+        }
+        .blue-line {
+            border-top: 1px solid #75aadb;
+            margin-top: 3mm;
+            margin-bottom: 4mm;
+        }
+        .main-box {
+            border: 3px solid #111;
+            width: 100%;
+            margin-bottom: 5mm;
+            text-align: center;
+            padding: 3mm 6mm;
+        }
+        .main-box-title {
+            font-size: 20pt;
+            font-weight: bold;
+        }
+        .section-title {
+            font-size: 13pt;
+            font-weight: bold;
+            margin: 3mm 0 2mm 0;
+        }
+        .sub-title {
+            font-size: 11pt;
+            font-weight: bold;
+            margin: 2mm 0 1.5mm 0;
+        }
+        .field-row {
+            border-bottom: 1px solid #ccc;
+            padding: 1.5mm 0;
+            min-height: 7mm;
+        }
+        .field-label {
+            font-weight: bold;
+            display: block;
+        }
+        .field-value {
+            display: block;
+            padding-left: 1mm;
+        }
+        .address-block {
+            padding: 0 0 1mm 0;
+        }
+        .declaration-text {
+            margin: 2mm 0 4mm 0;
+        }
+        .signature-row {
+            border-bottom: 1px solid #ccc;
+            padding: 1.5mm 0;
+            min-height: 12mm;
+        }
+        .signature-label {
+            font-weight: bold;
+            display: block;
+        }
+        .signature-value {
+            display: block;
+            margin-top: 5mm;
+        }
+        .no-border {
+            border-bottom: none;
+        }
+        .mt-1 { margin-top: 1mm; }
+        .mb-1 { margin-bottom: 1mm; }
+    </style>
+</head>
+<body>
+
+    <div class="page">
+
+        <div class="gov-header">
+            <div class="gov-logo">
+                <apex:image value="{!$Resource.RVN_Title}" alt="UK Gov" width="110" height="35"/>
+            </div>
+            <div class="document-title">
+                Apply to pay voluntary Class 3 National Insurance<br/>
+                contributions for periods abroad
+            </div>
+            <div class="blue-line"></div>
+        </div>
+
+        <div class="main-box">
+            <div class="main-box-title">
+                Apply to pay Class 3<br/>
+                National Insurance<br/>
+                contributions abroad - RVN-<br/>
+                26 TA83
+            </div>
+        </div>
+
+        <div class="section-title">Address</div>
+        <div class="address-block">
+            PT Operations North East England<br/>
+            HM Revenue and Customs<br/>
+            BX9 1AN<br/>
+            United Kingdom
+        </div>
+
+        <div class="section-title">Personal details</div>
+
+        <div class="field-row">
+            <span class="field-label">Paid Voluntary Class 2 or Class 3 National Insurance contributions in 2024 to 2025 or 2025 to 2026 tax years?</span>
+            <span class="field-value">test</span>
+        </div>
+
+        <div class="field-row">
+            <span class="field-label">National Insurance number</span>
+            <span class="field-value">Test</span>
+        </div>
+
+        <div class="field-row">
+            <span class="field-label">Full Name</span>
+            <span class="field-value">Test</span>
+        </div>
+
+        <div class="field-row">
+            <span class="field-label">Date of Birth</span>
+            <span class="field-value">Test</span>
+        </div>
+
+        <div class="field-row">
+            <span class="field-label">Telephone number</span>
+            <span class="field-value">Test</span>
+        </div>
+
+        <div class="field-row">
+            <span class="field-label">Best time to call</span>
+            <span class="field-value">Test</span>
+        </div>
+        <div class="field-row">
+            <span class="field-label">Current address</span>
+            <span class="field-value">Test</span>
+        </div>
+
+        <div class="field-row">
+            <span class="field-label">Is this the address where we can send you post?</span>
+            <span class="field-value">Test</span>
+        </div>
+
+        <div class="field-row">
+            <span class="field-label">Will you be living or working abroad for the full 2026 to 2027 tax year?</span>
+            <span class="field-value">Test</span>
+        </div>
+
+        <div class="field-row">
+            <span class="field-label">Will your employer be paying your voluntary National Insurance contributions while you are abroad?</span>
+            <span class="field-value">Test</span>
+        </div>
+
+        <div class="section-title mt-1">Payment Details</div>
+
+        <div class="field-row">
+            <span class="field-label">How do you want to pay your voluntary Class 3 contributions?</span>
+            <span class="field-value">Test</span>
+        </div>
+
+        <div class="field-row">
+            <span class="field-label">Do you want the annual payment details sent to someone else?</span>
+            <span class="field-value">Test</span>
+        </div>
+
+        <div class="sub-title mt-1">Third-party payment details</div>
+
+        <div class="field-row">
+            <span class="field-label">What is their full name?</span>
+            <span class="field-value">Test</span>
+        </div>
+
+        <div class="field-row">
+            <span class="field-label">JGBA Ltd's full address</span>
+            <span class="field-value">Test</span>
+        </div>
+
+        <div class="field-row">
+            <span class="field-label">JGBA Ltd's telephone number</span>
+            <span class="field-value">Test</span>
+        </div>
+
+        <div class="section-title">Declaration</div>
+
+        <div class="declaration-text">
+            I declare that the information I have given applies to me<br/>
+            and is true to the best of my knowledge and belief.
+        </div>
+
+        <div class="signature-row">
+            <span class="signature-label">Signature:</span>
+            <span class="signature-value">Test</span>
+        </div>
+
+        <div class="signature-row">
+            <span class="signature-label">Full name:</span>
+            <span class="signature-value">Test</span>
+        </div>
+
+        <div class="signature-row">
+            <span class="signature-label">Date signed:</span>
+            <span class="signature-value">Test</span>
+        </div>
+
+    </div>
+
+</body>
+</html>
+</apex:page>

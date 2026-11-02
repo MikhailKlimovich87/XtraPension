@@ -6,6 +6,24 @@
                 <h1 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Edit Custom Letter</h1>
             </div>
             <div class="slds-modal__content slds-p-around_xx-large" id="modal-content-id-1">
+                <template if:true={isReply}>
+                    <table class="address-table" border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td width="20%"> </td>
+                            <td width="20%"> </td>
+                            <td width="20%"> </td>
+                            <td width="20%"> </td>
+                            <td>
+                                JGBA Ltd<br/>
+                                Suite 2/11,<br/>
+                                Pure Offices<br/>
+                                1 Ainslie Road<br/>
+                                Glasgow<br/>
+                                G52 4RU
+                            </td>
+                        </tr>
+                    </table>
+                </template>
                 <div>International Case Worker</div>
                 <div>PT Operations North East England</div>
                 <div>HM Revenue &amp; Customs</div>
@@ -29,7 +47,7 @@
                     </template>
                 </div>
                 <br>
-                <div>
+                <!-- <div>
                     <p>Dear Sir / Madam</p>
                     <br />
                     <template lwc:if={isExistDWPCallbackRequest}>
@@ -45,7 +63,7 @@
                     </p>
                 </div>
                 <br />
-                <div>Please use OUR REFERENCE of ‘{app.Name}’ in all correspondence.</div>
+                <div>Please use OUR REFERENCE of ‘{app.Name}’ in all correspondence.</div> -->
                 <!-- <br />
                 <div>We would appreciate it if you could ensure your assessment of their eligibility to pay Class 2
                     contributions, a statement of their National Insurance Contributions to date and the
@@ -57,7 +75,8 @@
                 <br />-->
                 <!-- <lightning-textarea class="start-letter" onchange={saveStartLetter} value={app.Freeform_Text_Line1__c}>
                 </lightning-textarea> -->
-                <lightning-input-rich-text value={app.Freeform_RichText_Line1__c} onchange={saveStartLetter}>
+                <lightning-input-rich-text value={app.Freeform_RichText_Line1__c} onchange={saveStartLetter} 
+                                           style="height: 400px;min-height: 150px;">
                 </lightning-input-rich-text>
                 <template if:false={app.Is_Know_National_Insurance_Number__c}>
                     <br />
@@ -154,10 +173,17 @@
                         <tr>
                             <td>{lastUkEmployer.startDate}</td>
                             <td>{lastUkEmployer.endDate}</td>
-                            <td>
-                                {lastUkEmployer.employerName}<br>
-                                {lastUkEmployer.addressData}
-                            </td>
+                            <template if:true={lastUkEmployer.isEmployedType}>
+                                <td>
+                                    {lastUkEmployer.employerName}<br>
+                                    {lastUkEmployer.addressData}
+                                </td>
+                            </template>
+                            <template if:false={lastUkEmployer.isEmployedType}>
+                                <td>
+                                    {lastUkEmployer.employerType}
+                                </td>
+                            </template>
                         </tr>
                     </table>
                 </template>

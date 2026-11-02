@@ -1,0 +1,207 @@
+<template>
+    <div class="slds-card pc1-award">
+        <header class="pc1-award__head">
+            <lightning-icon icon-name="standard:opportunity" size="small" class="pc1-award__icon"></lightning-icon>
+            <div>
+                <h2 class="pc1-award__title">DWP Award</h2>
+                <p class="pc1-award__sub">Amount granted by DWP + initial back-payment lump sum. Fee (20% of award, VAT included) is auto-recommended as single charge (lump &ge; fee) or 3 monthly (lump &lt; fee). Val team can override.</p>
+            </div>
+        </header>
+
+        <!-- SUMMARY MODE — award is set and we're not editing -->
+        <template if:true={showSummary}>
+            <div class="pc1-award__summary">
+                <div class="pc1-award__amount-block">
+                    <span class="pc1-award__k">Award</span>
+                    <span class="pc1-award__amount">
+                        <lightning-formatted-number
+                            value={awardAmount}
+                            format-style="currency"
+                            currency-code="GBP">
+                        </lightning-formatted-number>
+                    </span>
+                </div>
+                <div class="pc1-award__lump-block">
+                    <span class="pc1-award__k">DWP lump sum received</span>
+                    <span class="pc1-award__lump">{lumpSummary}</span>
+                </div>
+                <div class="pc1-award__fee-block">
+                    <span class="pc1-award__k">Fee (20%)</span>
+                    <span class="pc1-award__fee">
+                        <lightning-formatted-number
+                            value={feeAmount}
+                            format-style="currency"
+                            currency-code="GBP">
+                        </lightning-formatted-number>
+                    </span>
+                </div>
+                <div class="pc1-award__plan-block">
+                    <span class="pc1-award__k">Plan</span>
+                    <span class="pc1-award__plan">{planSummary}</span>
+                </div>
+                <template if:true={firstChargeDisplay}>
+                    <div class="pc1-award__firstdate-block">
+                        <span class="pc1-award__k">First charge</span>
+                        <span class="pc1-award__firstdate">{firstChargeDisplay}</span>
+                    </div>
+                </template>
+                <template if:true={lastModifiedDisplay}>
+                    <div class="pc1-award__meta">
+                        Last updated {lastModifiedDisplay}
+                    </div>
+                </template>
+                <div class="pc1-award__actions">
+                    <lightning-button
+                        label="Edit"
+                        icon-name="utility:edit"
+                        variant="brand-outline"
+                        onclick={handleEdit}>
+                    </lightning-button>
+                </div>
+            </div>
+        </template>
+
+        <!-- INPUT MODE — no award yet, or editing an existing one -->
+        <template if:true={showInput}>
+            <div class="pc1-award__fields">
+                <lightning-input
+                    class="pc1-award__amount-input"
+                    type="number"
+                    formatter="decimal"
+                    step="0.01"
+                    label="Award amount (annual, £)"
+                    value={draftAmount}
+                    onchange={handleAmountChange}
+                    disabled={saving}
+                    required>
+                </lightning-input>
+
+                <template if:true={lowFlag}>
+                    <div class="pc1-award__flag pc1-award__flag--warn">
+                        That's unusually low, confirm before saving.
+                    </div>
+                </template>
+                <template if:true={highFlag}>
+                    <div class="pc1-award__flag pc1-award__flag--warn">
+                        That's unusually high, double-check.
+                    </div>
+                </template>
+
+                <lightning-input
+                    class="pc1-award__lump-input"
+                    type="number"
+                    formatter="decimal"
+                    step="0.01"
+                    label="DWP lump sum received (initial back-payment, £)"
+                    field-level-help="What the DWP has already paid in one lump. If this covers the fee, we can charge single; if not, we recommend splitting across 3 monthly."
+                    value={draftLumpSum}
+                    onchange={handleLumpSumChange}
+                    disabled={saving}>
+                </lightning-input>
+
+                <lightning-input
+                    class="pc1-award__firstdate-input"
+                    type="date"
+                    label="First charge date"
+                    field-level-help="When the first Direct Debit will be attempted. Defaults to today. Subsequent installments (if any) fire monthly from this date."
+                    value={draftFirstChargeDate}
+                    min={firstChargeDateMin}
+                    max={firstChargeDateMax}
+                    onchange={handleFirstChargeDateChange}
+                    disabled={saving}>
+                </lightning-input>
+                <template if:true={firstChargeDateFlag}>
+                    <div class="pc1-award__flag pc1-award__flag--warn">{firstChargeDateFlag}</div>
+                </template>
+
+                <lightning-input
+                    type="checkbox"
+                    label="Amount includes VAT (rare, uncheck if not sure)"
+                    checked={draftIncludesVat}
+                    onchange={handleVatChange}
+                    disabled={saving}>
+                </lightning-input>
+
+                <!-- Fee derived line — makes the comparator explicit -->
+                <template if:true={draftFeeDisplay}>
+                    <div class="pc1-award__derived">
+                        <span class="pc1-award__derived-k">Fee (20% of annual):</span>
+                        <span class="pc1-award__derived-v">{draftFeeDisplay}</span>
+                    </div>
+                    <div class="pc1-award__coverage">{lumpCoverageMsg}</div>
+                </template>
+
+                <!-- Recommendation + plan picker (auto vs override) -->
+                <fieldset class="pc1-award__plan-picker">
+                    <template if:true={recommendationHeadline}>
+                        <legend class="pc1-award__plan-legend">{recommendationHeadline}</legend>
+                    </template>
+                    <template if:false={recommendationHeadline}>
+                        <legend class="pc1-award__plan-legend">Payment plan</legend>
+                    </template>
+
+                    <!-- Auto-recommend mode (default): shows ONLY the recommended plan.
+                         2x is intentionally NOT here (Fernando: abolished in default UI). -->
+                    <template if:false={draftOverride}>
+                        <lightning-radio-group
+                            name="planPickerAuto"
+                            label=""
+                            variant="label-hidden"
+                            options={planOptionsAuto}
+                            value={autoPlanValue}
+                            type="radio"
+                            disabled={saving}>
+                        </lightning-radio-group>
+                    </template>
+
+                    <!-- Manual override: full 1/2/3 picker -->
+                    <template if:true={draftOverride}>
+                        <lightning-radio-group
+                            name="planPickerOverride"
+                            label="Val-team override — pick any plan"
+                            options={planOptionsOverride}
+                            value={draftPlan}
+                            onchange={handlePlanChange}
+                            type="radio"
+                            disabled={saving}>
+                        </lightning-radio-group>
+                    </template>
+
+                    <div class="pc1-award__override">
+                        <lightning-input
+                            type="toggle"
+                            label={overrideToggleLabel}
+                            message-toggle-active="Override active — pick any of 1/2/3/4/5/6"
+                            message-toggle-inactive="Auto-recommend on"
+                            checked={draftOverride}
+                            onchange={handleOverrideToggle}
+                            disabled={saving}>
+                        </lightning-input>
+                    </div>
+
+                    <template if:true={planBreakdown}>
+                        <p class="pc1-award__plan-breakdown">{planBreakdown}</p>
+                    </template>
+                </fieldset>
+
+                <div class="pc1-award__actions">
+                    <template if:true={editing}>
+                        <lightning-button
+                            label="Cancel"
+                            onclick={handleCancelEdit}
+                            disabled={saving}>
+                        </lightning-button>
+                    </template>
+                    <lightning-button
+                        class="slds-m-left_x-small pc1-award__cta"
+                        variant="brand"
+                        label="Record Award & Set Plan"
+                        icon-name="utility:save"
+                        onclick={handleRecord}
+                        disabled={saveDisabled}>
+                    </lightning-button>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>

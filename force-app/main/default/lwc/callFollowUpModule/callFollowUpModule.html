@@ -1,10 +1,20 @@
 <template>
     <lightning-card title="Sent for ESign Call Follow Up">
-        <div class="slds-p-horizontal_small">
+        <div class="slds-p-horizontal_medium">
+            <div class="row two-column-row slds-m-bottom_medium">
+                <div class="column field-display">
+                    <div class="slds-text-title_bold">ESign Follow Up Made by</div>
+                    <div class="slds-text-body_regular">{currentAgent}</div>
+                </div>
+                <div class="column field-display">
+                    <div class="slds-text-title_bold">ESign Last Follow Up Date</div>
+                    <div class="slds-text-body_regular">{currentFollowUpDateFormatted}</div>
+                </div>
+            </div>
             <div class="checkbox-info">
                 <template for:each={options} for:item="option">
                     <div class="slds-form-element" key={option.value}>
-                        <label class="slds-form-element__label" for="checkbox-unique-id-85">{option.label}</label>
+                        <label class="slds-form-element__label" for="checkbox-unique-id-85"><b>{option.label}</b></label>
                         <div class="slds-form-element__control">
                             <span class="slds-checkbox slds-checkbox_standalone">
                                 <input type="checkbox" name={option.value} value={option.value} checked={option.checked}

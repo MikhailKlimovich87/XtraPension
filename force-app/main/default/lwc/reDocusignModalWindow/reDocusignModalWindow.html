@@ -1,0 +1,32 @@
+<template>
+    <lightning-quick-action-panel header="Claim DocuSign">
+        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+            
+            <!-- Add error display -->
+            <template if:true={error}>
+                <div class="slds-notify slds-notify_alert slds-alert_error slds-m-bottom_medium" role="alert">
+                    <span class="slds-assistive-text">error</span>
+                    <h2>{errorMessage}</h2>
+                </div>
+            </template>
+
+            <template if:true={data}>
+                <p>Do you want to send the following documents for signature?</p>
+                <div style="margin-top: 10px;">
+                    <lightning-datatable key-field="id" data={data} columns={columns} 
+                        hide-checkbox-column="true" show-row-number-column="true">
+                    </lightning-datatable>
+                </div>
+            </template>
+        </div>
+        <div slot="footer">
+            <lightning-button variant="neutral" label="Cancel" onclick={handleCancel}></lightning-button>
+            <lightning-button variant="brand" class="slds-m-left_x-small" label="Send" 
+                onclick={handleSign} disabled={isAvailable}></lightning-button>
+        </div>
+    </lightning-quick-action-panel>
+    
+    <template if:true={showSpinner}>
+        <lightning-spinner alternative-text="Loading" variant="base" size="medium"></lightning-spinner>
+    </template>
+</template>

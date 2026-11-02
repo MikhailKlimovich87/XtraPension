@@ -15,6 +15,7 @@ public class MassSendEmailsBatchTest {
         ];
         Id personContactId = currentContact[0].Id;
         Application__c testApplication = TestDataFactory.createApplication(personContactId, true);
+        TestDataFactory.createCF083ApplicationDocument(testApplication.Id, true);
     }
 
     @IsTest
@@ -25,14 +26,19 @@ public class MassSendEmailsBatchTest {
         ];
         Assert.areEqual(false, testAppsBeforeUpdate[0].Sent_Mass_Email_Message__c);
         Test.startTest();
-        MassSendEmailsBatch ba= new MassSendEmailsBatch('LIMIT 1', 'Test Message', 'Forthcoming UK State Pension Callback');
+        MassSendEmailsBatch ba = new MassSendEmailsBatch(
+            'LIMIT 1',
+            'Test Message',
+            'Forthcoming UK State Pension Callback',
+            'ContentDocument.Title LIKE \'%CF083%\''
+        );
         Id jobid= Database.executeBatch(ba,1);
         Test.stopTest();
         List<Application__c> testAppsAfterUpdate = [
             SELECT Sent_Mass_Email_Message__c
             FROM Application__c
         ];
-        Assert.areNotEqual(testAppsAfterUpdate[0].Sent_Mass_Email_Message__c, testAppsBeforeUpdate[0].Sent_Mass_Email_Message__c);
-        Assert.areEqual(true, testAppsAfterUpdate[0].Sent_Mass_Email_Message__c);
+        Assert.areEqual(testAppsAfterUpdate[0].Sent_Mass_Email_Message__c, testAppsBeforeUpdate[0].Sent_Mass_Email_Message__c);
+        Assert.areEqual(false, testAppsAfterUpdate[0].Sent_Mass_Email_Message__c);
     }
 }

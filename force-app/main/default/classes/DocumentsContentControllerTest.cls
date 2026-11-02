@@ -132,7 +132,7 @@ public class DocumentsContentControllerTest {
         ];
         Application__c testApp = apps[0];
         Test.startTest();
-        String result = DocumentsContentController.pdfAction(testApp.Id);
+        String result = DocumentsContentController.pdfAction(testApp.Id, false);
         System.assertNotEquals(null, result, 'Result must be not empty');
         System.assertEquals('Success', result, 'Result must be true');
         Test.stopTest();
@@ -153,7 +153,7 @@ public class DocumentsContentControllerTest {
         ];
         Application__c testApp = apps[0];
         Test.startTest();
-        String result = DocumentsContentController.pdfAction(testApp.Id);
+        String result = DocumentsContentController.pdfAction(testApp.Id, false);
         System.assertNotEquals(null, result, 'Result must be not empty');
         System.assertEquals('Success', result, 'Result must be true');
         Test.stopTest();
@@ -200,5 +200,116 @@ public class DocumentsContentControllerTest {
         Assert.isNotNull(appsAfterSendMessage[0].Missing_App_Payment_Email_Send_Date__c);
         Assert.areNotEqual(appsBeforeSendMessage[0].Missing_App_Payment_Email_Send_Date__c,
                            appsAfterSendMessage[0].Missing_App_Payment_Email_Send_Date__c);
+    }
+
+    // @isTest
+    // static void getContentDocumentsNullReturnTest() {
+    //     // Test with invalid application Id
+    //     Test.startTest();
+    //     DocumentsContentController.DocumentsData result = DocumentsContentController.getContentDocuments('invalidId');
+    //     Test.stopTest();
+    //     System.assert(result == null, 'Result should be null when application not found');
+    // }
+    
+    @isTest
+    static void getContentDocumentsNoDocumentsTest() {
+        // Create application without any documents
+        Account account = TestDataFactory.createAccount(true);
+        List<Contact> contacts = [SELECT Id, AccountId FROM Contact WHERE AccountId = :account.Id LIMIT 1];
+        Application__c appWithoutDocs = TestDataFactory.createApplication(contacts[0].Id, true);
+        
+        Test.startTest();
+        DocumentsContentController.DocumentsData result = DocumentsContentController.getContentDocuments(appWithoutDocs.Id);
+        Test.stopTest();
+        System.assert(result == null, 'Result should be null when no documents exist');
+    }
+
+    @isTest
+    static void getContentDocumentsNotEmployedTest() {
+        List<Application__c> apps = [SELECT Id FROM Application__c LIMIT 1];
+        Application__c testApp = apps[0];
+        
+        // Update application to 'Not employed'
+        testApp.Type_Of_Employment__c = 'Not employed';
+        update testApp;
+        
+        Test.startTest();
+        DocumentsContentController.DocumentsData result = DocumentsContentController.getContentDocuments(testApp.Id);
+        Test.stopTest();
+        
+        System.assertNotEquals(null, result, 'Result should not be null');
+        System.assert(result.abroadEmployers == null, 'Abroad employers should be null when not employed');
+        System.assert(result.lastUKEmployer == null, 'Last UK employer should be null when not employed');
+    }
+
+    @isTest
+    static void getContentDocumentsWithPreviousAddressesTest() {
+        List<Application__c> apps = [SELECT Id FROM Application__c LIMIT 1];
+        Application__c testApp = apps[0];
+        
+        // Add more previous addresses
+        testApp.Previous_UK_Address_2__Street__s = 'Previous Street 2';
+        testApp.Previous_UK_Address_2__City__s = 'Birmingham';
+        testApp.Previous_UK_Address_2__PostalCode__s = 'B1 1AA';
+        testApp.Previous_UK_Address_2_Country__c = 'GB';
+        testApp.Include_UK_Address2__c = true;
+        update testApp;
+        
+        Test.startTest();
+        DocumentsContentController.DocumentsData result = DocumentsContentController.getContentDocuments(testApp.Id);
+        Test.stopTest();
+        
+        System.assertNotEquals(null, result, 'Result should not be null');
+        System.assertNotEquals(null, result.latestUKAddress, 'Latest UK address should not be null');
+        System.assertEquals(2, result.previousAddresses.size(), 'Should have 2 previous addresses');
+        
+        // Verify address data
+        System.assertEquals('Test street, London, 1as5DS, null', 
+            result.previousAddresses[0].addressData, 'First previous address data mismatch');
+        System.assertEquals(true, result.previousAddresses[0].addToCustomLetter, 
+            'First previous address should be included in custom letter');
+    }
+    @isTest
+    static void getContentDocumentsDocuSignEnvelopeStatusTest() {
+        List<Application__c> apps = [SELECT Id FROM Application__c LIMIT 1];
+        Application__c testApp = apps[0];
+        
+        Test.startTest();
+        DocumentsContentController.DocumentsData result = DocumentsContentController.getContentDocuments(testApp.Id);
+        Test.stopTest();
+        
+        System.assertNotEquals(null, result, 'Result should not be null');
+        
+        // Verify the DocuSign status was processed
+        Boolean foundApplicationForm = false;
+        Boolean foundAgentAuth = false;
+        
+        for (DocumentsContentController.DocumentInfo doc : result.latestDocs) {
+            if (doc.title == 'Application Form') {
+                foundApplicationForm = true;
+                System.assertEquals(false, doc.isCompleteDocusignStatus, 
+                    'Application Form should have completed DocuSign status');
+            }
+            if (doc.title == 'Agent Authorisation') {
+                foundAgentAuth = true;
+                System.assertEquals(true, doc.isCompleteDocusignStatus, 
+                    'Agent Authorisation should have completed DocuSign status');
+            }
+        }
+        System.assert(foundApplicationForm == true, 'Application Form should be in latestDocs');
+        System.assert(foundAgentAuth == false, 'Agent Authorisation should be in latestDocs');
+    }
+
+    private static ContentVersion createContentVersion(String title, Boolean isInsert) {
+        ContentVersion cv = new ContentVersion(
+            Title = title,
+            PathOnClient = title + '.pdf',
+            VersionData = Blob.valueOf('Test Content'),
+            ContentLocation = 'S'
+        );
+        if (isInsert) {
+            insert cv;
+        }
+        return cv;
     }
 }

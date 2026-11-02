@@ -58,7 +58,7 @@
             </style>
         </head>
         <body>
-            <h4 class="title-block">Your Work History</h4>
+            <h4 class="title-block">Work History</h4>
 			<div style="{!IF(ISBLANK(empUKObj), 'display:none', null)};">
 				<br/>
 				<div><b>Last UK Work</b></div>

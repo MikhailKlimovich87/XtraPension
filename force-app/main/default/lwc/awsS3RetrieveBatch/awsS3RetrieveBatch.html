@@ -1,0 +1,240 @@
+<!-- awsS3RetrieveBatch.html -->
+<template>
+    <div class="slds-box slds-box_extension slds-p-around_large">
+        <!-- Header -->
+        <div class="slds-media slds-media_center slds-m-bottom_medium">
+            <div class="slds-media__figure">
+                <lightning-icon icon-name="action:download" size="small"></lightning-icon>
+            </div>
+            <div class="slds-media__body">
+                <h2 class="slds-text-heading_small">AWS S3 Retrieve Files</h2>
+                <p class="slds-text-body_small slds-text-color_weak">
+                    Retrieve files from AWS S3 and link to Salesforce
+                </p>
+            </div>
+        </div>
+
+        <!-- Application Info -->
+        <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
+            <div class="slds-col slds-size_1-of-1">
+                <div
+                    class="slds-box slds-box_extension slds-text-align_center slds-p-around_small"
+                    style="background-color: #f8f9fa"
+                >
+                    <template if:true={isLoadingAppInfo}>
+                        <lightning-spinner size="small" alternative-text="Loading..."></lightning-spinner>
+                    </template>
+                    <template if:false={isLoadingAppInfo}>
+                        <p class="slds-text-body_small">
+                            <span class="slds-text-title_caps">Application:</span>
+                            <span class="slds-text-heading_small">{applicationName}</span>
+                        </p>
+                        <p class="slds-text-body_small slds-text-color_weak">
+                            <span class="slds-text-title_caps">ID:</span>
+                            <span>{applicationId}</span>
+                        </p>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="slds-grid slds-grid_align-center slds-m-bottom_medium">
+            <div class="slds-col slds-size_1-of-1 slds-text-align_center">
+                <lightning-button
+                    label={buttonLabel}
+                    variant="brand"
+                    onclick={handleExecuteBatch}
+                    disabled={isButtonDisabled}
+                    icon-name="action:download"
+                    icon-position="left"
+                    class="slds-m-right_small"
+                >
+                </lightning-button>
+                <lightning-button
+                    label="Reset"
+                    variant="neutral"
+                    onclick={handleReset}
+                    disabled={isLoading}
+                    icon-name="action:refresh"
+                    icon-position="left"
+                >
+                </lightning-button>
+            </div>
+        </div>
+
+        <!-- Loading Spinner during execution -->
+        <template if:true={isLoading}>
+            <div class="slds-m-top_medium slds-text-align_center">
+                <lightning-spinner size="large" alternative-text="Processing..."></lightning-spinner>
+                <p class="slds-text-heading_small slds-m-top_small">Retrieving Files from AWS S3...</p>
+                <p class="slds-text-body_small slds-text-color_weak">
+                    Please wait while files are being retrieved from AWS S3
+                </p>
+            </div>
+        </template>
+
+        <!-- Status Section -->
+        <template if:true={showStatus}>
+            <div class="slds-m-top_medium">
+                <lightning-card variant="narrow" title="Retrieval Status">
+                    <div class="slds-p-around_medium">
+                        <!-- Status Badge -->
+                        <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
+                            <div class="slds-col">
+                                <div class="slds-media slds-media_center">
+                                    <div class="slds-media__figure">
+                                        <lightning-icon
+                                            icon-name={statusIcon}
+                                            variant={statusVariant}
+                                            size="medium"
+                                            alternative-text={batchStatus.status}
+                                        ></lightning-icon>
+                                    </div>
+                                    <div class="slds-media__body">
+                                        <p class="slds-text-title_caps">Status</p>
+                                        <p class="slds-text-heading_small">{batchStatus.status}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-col_bump-left"></div>
+                        </div>
+
+                        <!-- Progress -->
+                        <div class="slds-m-bottom_medium">
+                            <div class="slds-grid slds-grid_align-spread">
+                                <span>Progress</span>
+                                <span>{progressPercentage}%</span>
+                            </div>
+                            <div
+                                class="slds-progress slds-progress_shade slds-m-top_x-small"
+                                role="progressbar"
+                                aria-valuenow={progressPercentage}
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                            >
+                                <div class="slds-progress__meter">
+                                    <span class="slds-progress__value" style={progressStyle}></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Statistics -->
+                        <div class="slds-grid slds-wrap slds-m-bottom_medium">
+                            <div class="slds-col slds-size_1-of-3 slds-medium-size_1-of-4">
+                                <div class="slds-box slds-box_extension slds-text-align_center">
+                                    <p class="slds-text-title_caps">Processed</p>
+                                    <p class="slds-text-heading_medium">{batchStatus.jobItemsProcessed}</p>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-3 slds-medium-size_1-of-4">
+                                <div class="slds-box slds-box_extension slds-text-align_center">
+                                    <p class="slds-text-title_caps">Total</p>
+                                    <p class="slds-text-heading_medium">{batchStatus.totalJobItems}</p>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-3 slds-medium-size_1-of-4">
+                                <div class="slds-box slds-box_extension slds-text-align_center">
+                                    <p class="slds-text-title_caps">Created</p>
+                                    <p class="slds-text-heading_medium">{formattedCreatedDate}</p>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
+                                <div class="slds-box slds-box_extension slds-text-align_center">
+                                    <p class="slds-text-title_caps">Completed</p>
+                                    <p class="slds-text-heading_medium">{formattedCompletedDate}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Extended Status -->
+                        <template if:true={batchStatus.extendedStatus}>
+                            <div class="slds-m-top_small">
+                                <p class="slds-text-title_caps">Details</p>
+                                <p class="slds-text-body_small">{batchStatus.extendedStatus}</p>
+                            </div>
+                        </template>
+                    </div>
+                </lightning-card>
+            </div>
+        </template>
+
+        <!-- Confirmation Dialog -->
+        <template if:true={showConfirmDialog}>
+            <section
+                role="dialog"
+                tabindex="-1"
+                aria-labelledby="modal-heading-01"
+                aria-modal="true"
+                aria-describedby="modal-content-id-1"
+                class="slds-modal slds-fade-in-open"
+            >
+                <div class="slds-modal__container">
+                    <div class="slds-modal__header">
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                            Confirm File Retrieval
+                        </h2>
+                    </div>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <div class="slds-text-body_regular">
+                            <p class="slds-m-bottom_medium">
+                                <lightning-icon
+                                    icon-name="utility:warning"
+                                    size="small"
+                                    variant="warning"
+                                ></lightning-icon>
+                                <span class="slds-p-left_x-small"
+                                    >You are about to retrieve files from AWS S3 for Application:</span
+                                >
+                            </p>
+                            <div
+                                class="slds-box slds-box_extension slds-text-align_center slds-p-around_medium"
+                                style="background-color: #f8f9fa"
+                            >
+                                <p class="slds-text-heading_small">{applicationName}</p>
+                                <p class="slds-text-body_small slds-text-color_weak">ID: {applicationId}</p>
+                            </div>
+                            <p class="slds-m-top_medium slds-text-color_weak">
+                                <lightning-icon icon-name="utility:info" size="x-small"></lightning-icon>
+                                This will retrieve all documents from AWS S3 and link them to this application.
+                            </p>
+                            <p class="slds-text-color_weak">
+                                <lightning-icon icon-name="utility:info" size="x-small"></lightning-icon>
+                                This process may take several minutes depending on the number of documents.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="slds-modal__footer">
+                        <lightning-button label="Cancel" variant="neutral" onclick={handleCancel}></lightning-button>
+                        <lightning-button
+                            label="Confirm & Retrieve"
+                            variant="brand"
+                            onclick={handleConfirm}
+                        ></lightning-button>
+                    </div>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <!-- Closing Message -->
+        <template if:true={isClosing}>
+            <div
+                class="slds-m-top_medium slds-text-align_center slds-p-around_large"
+                style="background-color: #f0f8ff; border-radius: 8px; border: 2px solid #0176d3"
+            >
+                <lightning-icon icon-name="utility:success" size="large" variant="success"></lightning-icon>
+                <p class="slds-text-heading_medium slds-m-top_small">✅ File Retrieval Complete</p>
+                <p class="slds-text-body_regular slds-m-top_x-small">
+                    All documents have been successfully retrieved from AWS S3.
+                </p>
+                <p class="slds-text-body_small slds-text-color_weak slds-m-top_small">
+                    This page will close automatically in a few seconds...
+                </p>
+                <div class="slds-m-top_medium">
+                    <lightning-spinner size="small" alternative-text="Closing..."></lightning-spinner>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>

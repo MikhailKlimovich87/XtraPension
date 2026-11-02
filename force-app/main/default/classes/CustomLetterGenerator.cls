@@ -60,17 +60,18 @@ public class CustomLetterGenerator {
 		conVer.PathOnClient = FinalTitle+'.pdf';
 		conVer.Title = FinalTitle;
 		conVer.VersionData = pdfBlob;
+        conVer.FirstPublishLocationId = app.Id;
 		system.debug('conVer@@ ' + conVer);
 		insert conVer;
 
-		ContentVersion conDoc = [SELECT ContentDocumentId, ContentSize FROM ContentVersion WHERE Id =:conVer.Id][0];
+		// ContentVersion conDoc = [SELECT ContentDocumentId, ContentSize FROM ContentVersion WHERE Id =:conVer.Id][0];
 
-		ContentDocumentLink conDocLink = New ContentDocumentLink();
-		conDocLink.LinkedEntityId = app.Id;
-		conDocLink.ContentDocumentId = conDoc.ContentDocumentId;
-		conDocLink.shareType = 'V';
-        conDocLink.Visibility = 'AllUsers';
-		insert conDocLink;
+		// ContentDocumentLink conDocLink = New ContentDocumentLink();
+		// conDocLink.LinkedEntityId = app.Id;
+		// conDocLink.ContentDocumentId = conDoc.ContentDocumentId;
+		// conDocLink.shareType = 'V';
+        // conDocLink.Visibility = 'AllUsers';
+		// insert conDocLink;
     
     	update new Application__c(Id = app.Id, Contains_new_version_of_Custom_Letter__c = true);
     }

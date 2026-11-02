@@ -1,0 +1,152 @@
+<template>
+    <div class="slds-card pc1-iu">
+        <header class="slds-card__header">
+            <div class="pc1-iu__head">
+                <div>
+                    <h2 class="pc1-iu__title">PC Intake Users</h2>
+                    <p class="pc1-iu__sub">
+                        Login accounts for the Heroku intake portal. Passwords are hashed on
+                        Heroku and never stored in Salesforce. Reset password revokes any
+                        live session for that user.
+                    </p>
+                </div>
+                <div class="pc1-iu__actions">
+                    <lightning-button
+                        variant="brand"
+                        icon-name="utility:add"
+                        label="Add User"
+                        onclick={handleShowAdd}
+                        disabled={saving}>
+                    </lightning-button>
+                </div>
+            </div>
+        </header>
+
+        <template if:true={loading}>
+            <div class="slds-p-around_large slds-align_absolute-center">
+                <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+            </div>
+        </template>
+
+        <template if:true={isEmpty}>
+            <div class="slds-p-around_large slds-align_absolute-center pc1-iu__empty">
+                No intake users yet. Click <em>Add User</em> to create one.
+            </div>
+        </template>
+
+        <template if:true={showTable}>
+            <div class="pc1-iu__table">
+                <div class="pc1-iu__row pc1-iu__row--head">
+                    <div>Username</div>
+                    <div>Role</div>
+                    <div>Status</div>
+                    <div>Last Login (London)</div>
+                    <div>Failed logins</div>
+                    <div class="pc1-iu__actions-col">Actions</div>
+                </div>
+                <template for:each={rows} for:item="r">
+                    <div key={r.id} class={r.rowCls}>
+                        <div class="pc1-iu__cell pc1-iu__username">{r.username}</div>
+                        <div class="pc1-iu__cell">
+                            <span class={r.roleBadgeCls}>{r.role}</span>
+                        </div>
+                        <div class="pc1-iu__cell">
+                            <span class={r.activeBadgeCls}>{r.activeLabel}</span>
+                        </div>
+                        <div class="pc1-iu__cell pc1-iu__lastlogin">{r.lastLoginDisplay}</div>
+                        <div class="pc1-iu__cell pc1-iu__count">{r.failedDisplay}</div>
+                        <div class="pc1-iu__cell pc1-iu__actions-col">
+                            <lightning-button-icon
+                                icon-name="utility:key"
+                                alternative-text="Reset password"
+                                title="Reset password"
+                                variant="border-filled"
+                                data-id={r.id}
+                                onclick={handleResetPassword}
+                                disabled={saving}>
+                            </lightning-button-icon>
+                            <template if:true={r.canDeactivate}>
+                                <lightning-button-icon
+                                    icon-name="utility:ban"
+                                    alternative-text="Deactivate"
+                                    title="Deactivate"
+                                    variant="border-filled"
+                                    data-id={r.id}
+                                    onclick={handleDeactivate}
+                                    disabled={saving}>
+                                </lightning-button-icon>
+                            </template>
+                            <template if:true={r.canActivate}>
+                                <lightning-button-icon
+                                    icon-name="utility:check"
+                                    alternative-text="Reactivate"
+                                    title="Reactivate"
+                                    variant="border-filled"
+                                    data-id={r.id}
+                                    onclick={handleActivate}
+                                    disabled={saving}>
+                                </lightning-button-icon>
+                            </template>
+                            <lightning-button-icon
+                                icon-name="utility:delete"
+                                alternative-text="Delete"
+                                title="Delete user"
+                                variant="border-filled"
+                                data-id={r.id}
+                                onclick={handleDelete}
+                                disabled={saving}>
+                            </lightning-button-icon>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+
+    <template if:true={showAdd}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 class="slds-modal__title slds-hyphenate">Add Intake User</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-input
+                        type="text"
+                        label="Username"
+                        placeholder="e.g. sales"
+                        value={newUsername}
+                        onchange={handleNewUsername}
+                        required
+                        field-level-help="Lower-case, unique. Case-insensitive on login.">
+                    </lightning-input>
+                    <lightning-input
+                        type="password"
+                        label="Password"
+                        value={newPassword}
+                        onchange={handleNewPassword}
+                        required
+                        field-level-help="Minimum 8 characters. Hashed on Heroku, never stored in Salesforce.">
+                    </lightning-input>
+                    <lightning-combobox
+                        label="Role"
+                        value={newRole}
+                        options={roleOptions}
+                        onchange={handleNewRole}
+                        required>
+                    </lightning-combobox>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={handleCloseAdd} disabled={saving}></lightning-button>
+                    <lightning-button
+                        class="slds-m-left_x-small"
+                        variant="brand"
+                        label="Add"
+                        onclick={handleCreate}
+                        disabled={saving}>
+                    </lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

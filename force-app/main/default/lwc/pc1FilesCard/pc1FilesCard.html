@@ -1,0 +1,24 @@
+<template>
+    <lightning-card title="Docs" icon-name="standard:file">
+        <div class="slds-p-horizontal_medium slds-p-bottom_small">
+            <template lwc:if={hasFiles}>
+                <ul class="doc-list">
+                    <template for:each={rows} for:item="r">
+                        <li key={r.id} class="doc-item">
+                            <a href="#" class="doc-title" data-docid={r.id} onclick={handleOpen}>{r.title}</a>
+                            <div class="doc-date">{r.date}</div>
+                        </li>
+                    </template>
+                </ul>
+
+                <div class="doc-view-all">
+                    <a href="#" onclick={handleViewAll}>{viewAllLabel}</a>
+                </div>
+            </template>
+
+            <template lwc:else>
+                <div class="slds-text-body_small slds-text-color_weak slds-p-around_small">{emptyText}</div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

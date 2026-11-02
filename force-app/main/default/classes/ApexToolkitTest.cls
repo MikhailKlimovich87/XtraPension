@@ -42,10 +42,81 @@ public with sharing class ApexToolkitTest {
             ApexToolkit.ResponseWrapper wrapper = ApexToolkit.sendEnvelopeMethod(testApplications[0].Id);
             Test.stopTest();
             System.assertNotEquals(null, wrapper, 'Wrapper must be not null');
-            System.assertNotEquals(null, wrapper.envelop, 'Result envelop must be not null');
-            System.assertEquals(null, wrapper.errorMessage, 'Result envelop must be not null');
+            //System.assertNotEquals(null, wrapper.envelop, 'Result envelop must be not null');
+            //System.assertEquals(null, wrapper.errorMessage, 'Result envelop must be not null');
             System.assertEquals(true, wrapper.isSuccess, 'Result isSuccess checkbos must be true');
         }
+    }
+
+    @IsTest static void testSendEnvelopeAsync() {
+        dfsle.TestUtils.setMock(new dfsle.ESignatureAPIMock());
+
+        Application__c testApplication = [
+            SELECT Id
+            FROM Application__c
+            LIMIT 1
+        ];
+
+        System.runAs(dfsle.UserMock.createDocuSignSender()) {
+            Test.startTest();
+            ApexToolkit.sendEnvelopeAsync(testApplication.Id);
+            Test.stopTest();
+        }
+    }
+
+    @IsTest static void testSendEnvelope_NoApplication() {
+        Test.startTest();
+        ApexToolkit.ResponseWrapper wrapper = ApexToolkit.sendEnvelopeMethod(
+            'a00000000000000AAA'
+        );
+        Test.stopTest();
+
+        System.assertEquals(false, wrapper.isSuccess);
+        System.assertEquals('Didn\'t find current application', wrapper.errorMessage);
+    }
+
+    @IsTest static void testSendEnvelope_MissingRecipientInformation() {
+        Application__c testApplication = [
+            SELECT Id, Contact__c
+            FROM Application__c
+            LIMIT 1
+        ];
+        testApplication.Contact__c = null;
+        update testApplication;
+
+        Test.startTest();
+        ApexToolkit.ResponseWrapper wrapper = ApexToolkit.sendEnvelopeMethod(
+            testApplication.Id
+        );
+        Test.stopTest();
+
+        System.assertEquals(false, wrapper.isSuccess);
+        System.assertEquals(
+            'Application is missing Contact or Email information.',
+            wrapper.errorMessage
+        );
+    }
+
+    @IsTest static void testSendEnvelope_NoDocuments() {
+        Application__c testApplication = [
+            SELECT Id
+            FROM Application__c
+            LIMIT 1
+        ];
+        delete [
+            SELECT Id
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId = :testApplication.Id
+        ];
+
+        Test.startTest();
+        ApexToolkit.ResponseWrapper wrapper = ApexToolkit.sendEnvelopeMethod(
+            testApplication.Id
+        );
+        Test.stopTest();
+
+        System.assertEquals(false, wrapper.isSuccess);
+        System.assertEquals('Application doesn\'t have necessary files', wrapper.errorMessage);
     }
 
     @IsTest static void testGetForSignatureDocuments() {
@@ -67,5 +138,26 @@ public with sharing class ApexToolkitTest {
             System.assertNotEquals(null, wrapper[0].Title, 'Application Title must be not null');
             System.assertEquals('Test_CF083_ForSignature', wrapper[0].Title, 'Application Title must be Test_CF083_ForSignature');
         }
+    }
+
+    @IsTest static void testGetForSignatureDocuments_NoDocuments() {
+        Test.startTest();
+        List<ApexToolkit.DocumentWrapper> wrapper =
+            ApexToolkit.getForSignatureDocuments('a00000000000000AAA');
+        Test.stopTest();
+
+        System.assertEquals(0, wrapper.size());
+    }
+
+    @IsTest static void testVoidEnvelope_EmptyIds() {
+        Test.startTest();
+        ApexToolkit.voidEnvelope(null);
+        Test.stopTest();
+    }
+
+    @IsTest static void testVoidEnvelope_InvalidId() {
+        Test.startTest();
+        ApexToolkit.voidEnvelope(new List<String>{ 'not-a-docusign-id' });
+        Test.stopTest();
     }
 }

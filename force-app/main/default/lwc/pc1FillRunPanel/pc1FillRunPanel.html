@@ -1,0 +1,106 @@
+<template>
+    <!-- Gate mode: app not ready to fill yet (Stage < Data Complete OR
+         declaration not signed) AND no live/succeeded run exists.
+         Renders a friendly precondition message instead of engine errors. -->
+    <template lwc:if={isGated}>
+        <lightning-card title="Latest Fill Run" icon-name="standard:record_lookup">
+            <div class="slds-p-horizontal_medium slds-p-bottom_medium pc1-fillrun">
+                <div class="slds-notify slds-notify_alert pc1-fillrun__gate"
+                     role="status">
+                    <lightning-icon icon-name="utility:info" size="small"
+                                    alternative-text="Waiting"
+                                    class="slds-m-right_small">
+                    </lightning-icon>
+                    <div>
+                        <p class="slds-text-body_regular slds-text-color_default pc1-fillrun__gate-title">
+                            <strong>{gateHeadline}</strong>
+                        </p>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">
+                            {gateMessage}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </lightning-card>
+    </template>
+
+    <template lwc:elseif={hasRun}>
+        <lightning-card title="Latest Fill Run" icon-name="standard:record_lookup">
+            <div class="slds-p-horizontal_medium slds-p-bottom_medium pc1-fillrun">
+
+                <!-- Row 1: status badge + started-at (relative) -->
+                <div class="slds-grid slds-grid_vertical-align-center slds-wrap pc1-fillrun__status-row">
+                    <span class={statusBadgeClass}>{statusLabel}</span>
+                    <template lwc:if={hasStartedAt}>
+                        <span class="slds-text-body_small slds-text-color_weak slds-m-left_small">
+                            Started&nbsp;
+                            <lightning-formatted-date-time
+                                value={startedAt}
+                                year="numeric" month="short" day="2-digit"
+                                hour="2-digit" minute="2-digit">
+                            </lightning-formatted-date-time>
+                        </span>
+                    </template>
+                </div>
+
+                <!-- Row 2: progress bar (only while running / done with %) -->
+                <template lwc:if={hasProgress}>
+                    <div class="slds-progress-bar slds-progress-bar_large pc1-fillrun__bar"
+                         role="progressbar"
+                         aria-valuemin="0"
+                         aria-valuemax="100"
+                         aria-valuenow={percentLabel}>
+                        <span class="slds-progress-bar__value" style={widthStyle}>
+                            <span class="slds-assistive-text">Progress: {percentLabel}%</span>
+                        </span>
+                    </div>
+                </template>
+
+                <!-- Row 3: percent + duration -->
+                <template lwc:if={hasProgressLine}>
+                    <p class="slds-text-body_small slds-text-color_weak pc1-fillrun__meta">
+                        {progressLine}
+                    </p>
+                </template>
+
+                <!-- Row 4: step summary -->
+                <template lwc:if={hasStep}>
+                    <p class="slds-text-body_regular pc1-fillrun__step">{stepSummary}</p>
+                </template>
+                <template lwc:if={hasCurrentPage}>
+                    <p class="slds-text-body_small slds-text-color_weak pc1-fillrun__page">
+                        {currentPage}
+                    </p>
+                </template>
+
+                <!-- Row 5: live view link (only while queued/running) -->
+                <template lwc:if={hasLiveView}>
+                    <p class="pc1-fillrun__live">
+                        <a href={liveViewUrl} target="_blank" rel="noopener">
+                            <lightning-icon icon-name="utility:preview" size="xx-small"
+                                            alternative-text="Live view"
+                                            class="slds-m-right_xx-small">
+                            </lightning-icon>
+                            Open live view
+                        </a>
+                    </p>
+                </template>
+
+                <!-- Row 6: error (only on failed/zombie) -->
+                <template lwc:if={hasError}>
+                    <div class="slds-notify slds-notify_alert slds-alert_error pc1-fillrun__error"
+                         role="alert">
+                        <lightning-icon icon-name="utility:error" size="xx-small"
+                                        alternative-text="Error"
+                                        variant="inverse"
+                                        class="slds-m-right_x-small">
+                        </lightning-icon>
+                        <span class="slds-assistive-text">Error:</span>
+                        <span>{errorMessage}</span>
+                    </div>
+                </template>
+
+            </div>
+        </lightning-card>
+    </template>
+</template>

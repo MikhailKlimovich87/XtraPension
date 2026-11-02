@@ -1,0 +1,12 @@
+<template>
+    <lightning-card title="Form Link" icon-name="standard:link">
+        <div class="slds-p-horizontal_medium slds-p-bottom_small">
+            <template lwc:if={hasUrl}>
+                <a class="pc1-fl-link" href={url} target="_blank" rel="noopener noreferrer">Form Link</a>
+            </template>
+            <template lwc:else>
+                <p class="pc1-fl-empty">No link available yet</p>
+            </template>
+        </div>
+    </lightning-card>
+</template>

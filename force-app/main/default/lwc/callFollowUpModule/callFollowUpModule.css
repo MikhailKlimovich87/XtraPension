@@ -4,3 +4,22 @@
     align-items: flex-start;
     justify-content: space-between;
 }
+
+.two-column-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.column {
+    flex: 1 1 45%;
+    min-width: 200px;
+}
+
+@media (max-width: 600px) {
+    .column {
+        flex: 1 1 100%;
+    }
+}

@@ -1,0 +1,16 @@
+.aa-lc { padding: 12px 16px 14px; }
+.aa-lc__head {
+    padding-bottom: 8px; border-bottom: 1px solid #ececec; margin-bottom: 10px;
+}
+.aa-lc__title { font-size: 1rem; font-weight: 600; }
+
+.aa-lc__grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px;
+}
+.aa-lc__cell {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 6px 8px; background: #fafbfd; border-radius: 4px;
+    border: 1px solid #eef1f5;
+}
+.aa-lc__k { color: #666; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.02em; }
+.aa-lc__v { color: #222; font-size: 0.95rem; font-weight: 500; }

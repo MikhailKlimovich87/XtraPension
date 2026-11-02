@@ -17,10 +17,13 @@
                     class="slds-m-left_x-small">
                 </lightning-button>
             </div>
-            <div class="button-area">
-                <lightning-button variant="brand" label="SAVE" class="slds-m-left_x-small" onclick={handleSave}
-                    disabled={isEmptyListReplies}></lightning-button>
-            </div>
+            <template lwc:if={isVisible}>
+                <div class="button-area">
+                    <lightning-button variant="brand" label="SAVE" class="slds-m-left_x-small" onclick={handleSave}
+                        disabled={isEmptyListReplies}></lightning-button>
+                    </div>
+            </template>
+
         </div>
     </lightning-card>
 </template>

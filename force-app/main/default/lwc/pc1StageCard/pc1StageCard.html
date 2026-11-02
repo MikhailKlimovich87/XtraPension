@@ -1,0 +1,22 @@
+<template>
+    <lightning-card title="Stage" icon-name="standard:record_lookup">
+        <p class="slds-p-horizontal_medium slds-text-body_small slds-text-color_weak pc1-sub">Move this Application through the pipeline</p>
+        <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+            <lightning-combobox
+                label="Stage"
+                value={selected}
+                options={options}
+                onchange={handleSelect}>
+            </lightning-combobox>
+            <div class="slds-var-m-top_small">
+                <lightning-button
+                    label="Change Stage"
+                    variant="brand"
+                    onclick={handleChangeStage}
+                    disabled={changeDisabled}
+                    icon-name="utility:change_record_type">
+                </lightning-button>
+            </div>
+        </div>
+    </lightning-card>
+</template>

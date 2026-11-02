@@ -33,7 +33,7 @@ public class AgentAuthLetterPdfHandlerTest {
                 ContentDocument.Title,
                 LinkedEntityId
             FROM ContentDocumentLink
-            WHERE ContentDocument.Title LIKE '%AgentAuthLetter%' AND
+            WHERE ContentDocument.Title LIKE '%PartialResubmissionLetter%' AND
                   LinkedEntityId = :app.Id
         ];
         Assert.areEqual(0, oldDocuments.size());
@@ -45,70 +45,109 @@ public class AgentAuthLetterPdfHandlerTest {
                 ContentDocument.Title,
                 LinkedEntityId
             FROM ContentDocumentLink
-            WHERE ContentDocument.Title LIKE '%AgentAuthLetter%' AND
+            WHERE ContentDocument.Title LIKE '%PartialResubmissionLetter%' AND
                   LinkedEntityId = :app.Id
         ];
         Assert.areEqual(1, newDocuments.size());
     }
 
-    @IsTest
-    static void generateZipArchiveTest(){
-        List<Application__c> testApps = [
-            SELECT Id
-            FROM Application__c
-            LIMIT 1
-        ];
-        Application__c app = testApps[0];
+@IsTest
+static void generateZipArchiveTest(){
+    List<Application__c> testApps = [
+        SELECT Id
+        FROM Application__c
+        LIMIT 1
+    ];
+    Application__c app = testApps[0];
 
-        ContentVersion cv64_8 = new ContentVersion();
-        cv64_8.Title = 'Test_64-8_ForSignature_completed';
-        cv64_8.PathOnClient = 'Test_64-8_ForSignature_completed.pdf';
-        cv64_8.VersionData = EncodingUtil.base64Decode(EncodingUtil.urlEncode('Unit Test ForSignature Body','UTF-8'));
-        insert cv64_8;
-        ContentDocumentLink cdl1 = new ContentDocumentLink(
-            LinkedEntityId = app.Id,
-            ContentDocumentId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv64_8.Id].ContentDocumentId,
-            ShareType = 'V',
-            Visibility = 'AllUsers'
-        );
-        insert cdl1;
+    ContentVersion cv64_8 = new ContentVersion();
+    cv64_8.Title = 'Test_64-8_ForSignature_completed';
+    cv64_8.PathOnClient = 'Test_64-8_ForSignature_completed.pdf';
+    cv64_8.VersionData = EncodingUtil.base64Decode(EncodingUtil.urlEncode('Unit Test ForSignature Body','UTF-8'));
+    insert cv64_8;
+    ContentDocumentLink cdl1 = new ContentDocumentLink(
+        LinkedEntityId = app.Id,
+        ContentDocumentId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv64_8.Id].ContentDocumentId,
+        ShareType = 'V',
+        Visibility = 'AllUsers'
+    );
+    insert cdl1;
 
-        ContentVersion cvAgentAuth = new ContentVersion();
-        cvAgentAuth.Title = 'Test_AgentAuthLetter';
-        cvAgentAuth.PathOnClient = 'Test_AgentAuthLetter.pdf';
-        cvAgentAuth.VersionData = EncodingUtil.base64Decode(EncodingUtil.urlEncode('Unit Test ForSignature Body','UTF-8'));
-        insert cvAgentAuth;
-        ContentDocumentLink cdl2 = new ContentDocumentLink(
-            LinkedEntityId = app.Id,
-            ContentDocumentId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cvAgentAuth.Id].ContentDocumentId,
-            ShareType = 'V',
-            Visibility = 'AllUsers'
-        );
-        insert cdl2;
+    ContentVersion cvAgentAuth = new ContentVersion();
+    cvAgentAuth.Title = 'Test_PartialResubmissionLetter';
+    cvAgentAuth.PathOnClient = 'Test_PartialResubmissionLetter.pdf';
+    cvAgentAuth.VersionData = EncodingUtil.base64Decode(EncodingUtil.urlEncode('Unit Test ForSignature Body','UTF-8'));
+    insert cvAgentAuth;
+    ContentDocumentLink cdl2 = new ContentDocumentLink(
+        LinkedEntityId = app.Id,
+        ContentDocumentId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cvAgentAuth.Id].ContentDocumentId,
+        ShareType = 'V',
+        Visibility = 'AllUsers'
+    );
+    insert cdl2;
 
-		List<ContentDocumentLink> oldDocuments = [
-            SELECT
-                ContentDocument.Title,
-                LinkedEntityId
-            FROM ContentDocumentLink
-            WHERE ContentDocument.Title LIKE '%_64-8_AgentAuth' AND
-                  LinkedEntityId = :app.Id
-        ];
-        Assert.areEqual(0, oldDocuments.size());
-        Test.startTest();
-        AgentAuthLetterPdfHandler.generateZipArchive(app.Id);
-        Test.stopTest();
+    ContentVersion cvCF083 = new ContentVersion();
+    cvCF083.Title = 'Test_CF083_ForSignature_completed';
+    cvCF083.PathOnClient = 'Test_CF083_ForSignature_completed.pdf';
+    cvCF083.VersionData = EncodingUtil.base64Decode(EncodingUtil.urlEncode('Unit Test ForSignature Body','UTF-8'));
+    insert cvCF083;
+    ContentDocumentLink cdl3 = new ContentDocumentLink(
+        LinkedEntityId = app.Id,
+        ContentDocumentId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cvCF083.Id].ContentDocumentId,
+        ShareType = 'V',
+        Visibility = 'AllUsers'
+    );
+    insert cdl3;
 
-		List<ContentDocumentLink> newDocuments = [
-            SELECT
-                ContentDocument.Title,
-                LinkedEntityId
-            FROM ContentDocumentLink
-            WHERE ContentDocument.Title LIKE '%_64-8_AgentAuth' AND
-                  LinkedEntityId = :app.Id
-        ];
-        Assert.areEqual(1, newDocuments.size());
-    }
+    ContentVersion cvCustomLetter = new ContentVersion();
+    cvCustomLetter.Title = 'Test_CustomLetter_ForSignature';
+    cvCustomLetter.PathOnClient = 'Test_CustomLetter_ForSignature.pdf';
+    cvCustomLetter.VersionData = EncodingUtil.base64Decode(EncodingUtil.urlEncode('Unit Test ForSignature Body','UTF-8'));
+    insert cvCustomLetter;
+    ContentDocumentLink cdl4 = new ContentDocumentLink(
+        LinkedEntityId = app.Id,
+        ContentDocumentId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cvCustomLetter.Id].ContentDocumentId,
+        ShareType = 'V',
+        Visibility = 'AllUsers'
+    );
+    insert cdl4;
+
+    ContentVersion cvUpload = new ContentVersion();
+    cvUpload.Title = 'Test_UPLOAD_ForSignature';
+    cvUpload.PathOnClient = 'Test_UPLOAD_ForSignature.pdf';
+    cvUpload.VersionData = EncodingUtil.base64Decode(EncodingUtil.urlEncode('Unit Test ForSignature Body','UTF-8'));
+    insert cvUpload;
+    ContentDocumentLink cdl5 = new ContentDocumentLink(
+        LinkedEntityId = app.Id,
+        ContentDocumentId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cvUpload.Id].ContentDocumentId,
+        ShareType = 'V',
+        Visibility = 'AllUsers'
+    );
+    insert cdl5;
+
+	List<ContentDocumentLink> oldDocuments = [
+        SELECT
+            ContentDocument.Title,
+            LinkedEntityId
+        FROM ContentDocumentLink
+        WHERE ContentDocument.Title LIKE '%_RESUBMISSION_LETTER_ZIP' AND
+              LinkedEntityId = :app.Id
+    ];
+    Assert.areEqual(0, oldDocuments.size());
+    Test.startTest();
+    AgentAuthLetterPdfHandler.generateZipArchive(app.Id);
+    Test.stopTest();
+
+	List<ContentDocumentLink> newDocuments = [
+        SELECT
+            ContentDocument.Title,
+            LinkedEntityId
+        FROM ContentDocumentLink
+        WHERE ContentDocument.Title LIKE '%_RESUBMISSION_LETTER_ZIP' AND
+              LinkedEntityId = :app.Id
+    ];
+    Assert.areEqual(1, newDocuments.size());
+}
 
     @IsTest
     static void sendAgentAuthZipfileToFtp(){
@@ -121,8 +160,8 @@ public class AgentAuthLetterPdfHandlerTest {
         Application__c app = testAppsBeforeSendToFTP[0];
 
         ContentVersion cvAgentAuthZip = new ContentVersion();
-        cvAgentAuthZip.Title = 'Test_64-8_AgentAuth';
-        cvAgentAuthZip.PathOnClient = 'Test_64-8_AgentAuth.pdf';
+        cvAgentAuthZip.Title = 'Test_RESUBMISSION_LETTER_ZIP';
+        cvAgentAuthZip.PathOnClient = 'Test_RESUBMISSION_LETTER_ZIP.pdf';
         cvAgentAuthZip.VersionData = EncodingUtil.base64Decode(EncodingUtil.urlEncode('Unit Test ForSignature Body','UTF-8'));
         insert cvAgentAuthZip;
         ContentDocumentLink cdl1 = new ContentDocumentLink(

@@ -1,0 +1,43 @@
+/* pc1RecordLayout — the whole PC1 Application record page rendered inside a
+ * single full-width FlexiPage region. We control column proportions entirely
+ * from here (no SF template sidebar reserving 33% of the viewport). */
+
+:host {
+    display: block;
+    width: 100%;
+}
+.pc1-layout {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    box-sizing: border-box;
+}
+.pc1-layout__header > * {
+    display: block;
+}
+.pc1-layout__spacer {
+    height: 0.5rem;
+}
+.pc1-layout__grid {
+    display: grid;
+    grid-template-columns: 22% 56% 22%;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+.pc1-layout__col--left,
+.pc1-layout__col--center,
+.pc1-layout__col--right {
+    min-width: 0; /* let grid columns shrink correctly with wide content */
+}
+.pc1-layout__stack > * {
+    display: block;
+    margin-bottom: 0.75rem;
+}
+.pc1-layout__stack > *:last-child {
+    margin-bottom: 0;
+}
+/* Below 1200px collapse to single column so cards don't overflow. */
+@media (max-width: 1200px) {
+    .pc1-layout__grid {
+        grid-template-columns: 1fr;
+    }
+}

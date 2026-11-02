@@ -1,0 +1,22 @@
+<template>
+    <!-- Confirmation screen (audit F50/F86): the action no longer dials on open. -->
+    <div class="slds-p-around_medium">
+        <h2 class="slds-text-heading_medium slds-m-bottom_small">Call Now</h2>
+        <template lwc:if={calling}>
+            <div class="slds-is-relative slds-p-around_large">
+                <lightning-spinner alternative-text="Requesting call" size="small"></lightning-spinner>
+            </div>
+            <p class="slds-text-align_center">Requesting outbound call…</p>
+        </template>
+        <template lwc:else>
+            <p>Mary will phone this client now. Any scheduled call for this application is replaced by this one.</p>
+            <template lwc:if={offHoursWarning}>
+                <p class="slds-m-top_small slds-text-color_error">{offHoursWarning}</p>
+            </template>
+            <div class="slds-m-top_medium slds-text-align_right">
+                <lightning-button label="Cancel" onclick={handleCancel} class="slds-m-right_x-small"></lightning-button>
+                <lightning-button label="Call now" variant="brand" icon-name="utility:call" onclick={handleConfirm}></lightning-button>
+            </div>
+        </template>
+    </div>
+</template>

@@ -1,0 +1,120 @@
+/* aaFilesFull — full-page Files listing that mimics the standard SF
+ * "Files" related list view Fernando uses on other objects. */
+
+.aa-files-page {
+    padding: 0;
+    background: var(--slds-g-color-neutral-base-100, #fff);
+}
+
+.aa-files-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1rem 1.5rem 0.75rem 1.5rem;
+    border-bottom: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+}
+.aa-files-header__left { min-width: 0; }
+.aa-files-header__right {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+.aa-files-title-row {
+    display: flex;
+    align-items: center;
+    margin-top: 0.25rem;
+}
+.aa-files-title-row h1 {
+    font-weight: 700;
+    margin: 0;
+}
+.aa-files-subtitle {
+    margin: 0.25rem 0 0 0;
+}
+
+.slds-breadcrumb ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.slds-breadcrumb__item {
+    display: inline-flex;
+    align-items: center;
+    color: var(--slds-g-color-brand-base-50, #0176d3);
+    font-size: 0.75rem;
+}
+.slds-breadcrumb__item + .slds-breadcrumb__item::before {
+    content: '>';
+    color: var(--slds-g-color-neutral-base-50, #706e6b);
+    padding-right: 0.5rem;
+    display: inline-block;
+}
+.slds-breadcrumb__item a {
+    color: inherit;
+    text-decoration: none;
+}
+.slds-breadcrumb__item a:hover { text-decoration: underline; }
+
+.aa-files-table {
+    width: 100%;
+    margin: 0;
+}
+.aa-files-table thead th {
+    background: var(--slds-g-color-neutral-base-95, #f3f3f3);
+    padding: 0.5rem 0.75rem;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--slds-g-color-neutral-base-20, #444);
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+}
+.aa-files-th {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: inherit;
+    padding: 0;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.aa-files-th:hover { color: var(--slds-g-color-brand-base-50, #0176d3); }
+.aa-files-sort {
+    color: var(--slds-g-color-brand-base-50, #0176d3);
+    font-size: 0.75rem;
+    min-width: 0.75rem;
+}
+
+.aa-files-col-num  { width: 3rem; text-align: center; color: var(--slds-g-color-neutral-base-30, #706e6b); font-size: 0.75rem; }
+.aa-files-col-menu { width: 3rem; text-align: center; }
+
+.aa-files-row td {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--slds-g-color-neutral-base-10, #181818);
+    border-bottom: 1px solid var(--slds-g-color-neutral-base-95, #f4f4f4);
+    vertical-align: middle;
+}
+.aa-files-row:hover td { background: var(--slds-g-color-neutral-base-95, #fbfcfd); }
+
+.aa-files-title-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+.aa-files-title-cell a {
+    color: var(--slds-g-color-brand-base-50, #0176d3);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+.aa-files-title-cell a:hover { text-decoration: underline; }
+.aa-files-icon { flex-shrink: 0; }

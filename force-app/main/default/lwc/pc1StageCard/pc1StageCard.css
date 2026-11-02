@@ -1,0 +1,3 @@
+/* pc1StageCard uses lightning-card + native lightning-combobox / lightning-button.
+   No custom card styling — inherits the exact look of native record-page cards. */
+.pc1-sub { margin: 0 0 0.5rem 0; }

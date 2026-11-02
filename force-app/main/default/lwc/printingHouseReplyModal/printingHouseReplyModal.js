@@ -13,8 +13,7 @@ export default class PrintingHouseReplyModal extends NavigationMixin(LightningEl
     docs = [];
     replyDocs = [];
     currentStep = 1;
-    selectAttach;
-    selectAttachLabel;
+    selectAttach = [];
     showSpinner = false;
 
     @api
@@ -23,7 +22,7 @@ export default class PrintingHouseReplyModal extends NavigationMixin(LightningEl
         if(this.docs) {
             attachments = this.docs.map( item => ({
                 label : item.ContentDocument.Title,
-                value : item.ContentDocumentId
+                value : item.ContentDocument.LatestPublishedVersionId
 
             }));
         }
@@ -78,7 +77,7 @@ export default class PrintingHouseReplyModal extends NavigationMixin(LightningEl
         sendFilesToHMRC( {
             appId : this.appId,
             attachFiles : this.selectedValues,
-            fileIdToHMRC : this.selectAttach
+            filesIdToHMRC : this.selectAttach
         }).then(result => {
             if(result.isSent) {
                 this.handleAlert(
@@ -107,12 +106,6 @@ export default class PrintingHouseReplyModal extends NavigationMixin(LightningEl
 
     handleSelectAttachment(event) {
         this.selectAttach = event.detail.value;
-        this.selectAttachLabel = this.replyAttachmentOptions.find(item => item.value == this.selectAttach).label;
-    }
-
-    handleRemove() {
-        this.selectAttach = null;
-        this.selectAttachLabel = null;
     }
 
     async handleAlert(titleText, messageText, variant) {
@@ -150,7 +143,7 @@ export default class PrintingHouseReplyModal extends NavigationMixin(LightningEl
     }
 
     get isSelectedHMRCAttachments () {
-        return !this.selectAttach && !this.isNotExistAttachments;
+        return !this.selectAttach.length > 0  && !this.isNotExistAttachments;
     }
 
     goToStepOne() {

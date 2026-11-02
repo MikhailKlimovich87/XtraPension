@@ -1,0 +1,109 @@
+<template>
+    <div class="aa-files-page slds-card">
+        <!-- Header: breadcrumb + title + Add Files button -->
+        <div class="aa-files-header">
+            <div class="aa-files-header__left">
+                <nav class="slds-breadcrumb slds-list_horizontal" aria-label="Breadcrumbs">
+                    <ol class="slds-list_horizontal slds-wrap">
+                        <li class="slds-breadcrumb__item slds-text-title">
+                            <a href="#" onclick={handleBreadcrumb}>Applications</a>
+                        </li>
+                        <li class="slds-breadcrumb__item slds-text-title">
+                            <a href="#" onclick={handleBreadcrumb}>{breadcrumbLabel}</a>
+                        </li>
+                    </ol>
+                </nav>
+                <div class="aa-files-title-row">
+                    <lightning-icon icon-name="standard:file" size="small"></lightning-icon>
+                    <h1 class="slds-text-heading_medium slds-p-left_x-small">Files</h1>
+                </div>
+                <p class="aa-files-subtitle slds-text-body_small slds-text-color_weak">{subtitle}</p>
+            </div>
+            <div class="aa-files-header__right">
+                <lightning-file-upload
+                    label="Add Files"
+                    name="aaAddFiles"
+                    accept={acceptedFormats}
+                    record-id={recordId}
+                    onuploadfinished={handleUploadFinished}
+                    multiple>
+                </lightning-file-upload>
+                <button type="button" class="slds-button slds-button_icon slds-button_icon-border" title="Refresh" onclick={handleRefresh}>
+                    <lightning-icon icon-name="utility:refresh" size="x-small"></lightning-icon>
+                </button>
+            </div>
+        </div>
+
+        <template if:true={error}>
+            <div class="slds-text-color_error slds-p-around_small">Error: {error}</div>
+        </template>
+
+        <template if:false={hasFiles}>
+            <div class="slds-text-color_weak slds-text-align_center slds-p-around_large">
+                No files yet. Call transcripts, DWP screenshots and PDFs will appear here.
+            </div>
+        </template>
+
+        <template if:true={hasFiles}>
+            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_fixed-layout aa-files-table">
+                <thead>
+                    <tr class="slds-line-height_reset">
+                        <th class="aa-files-col-num"><div class="slds-truncate">&nbsp;</div></th>
+                        <th>
+                            <button type="button" class="slds-button slds-button_reset aa-files-th" data-key="title" onclick={handleSort}>
+                                Title <span class="aa-files-sort">{titleSortArrow}</span>
+                            </button>
+                        </th>
+                        <th>
+                            <button type="button" class="slds-button slds-button_reset aa-files-th" data-key="ownerName" onclick={handleSort}>
+                                Owner <span class="aa-files-sort">{ownerSortArrow}</span>
+                            </button>
+                        </th>
+                        <th>
+                            <button type="button" class="slds-button slds-button_reset aa-files-th" data-key="lastModified" onclick={handleSort}>
+                                Last Modified <span class="aa-files-sort">{modifiedSortArrow}</span>
+                            </button>
+                        </th>
+                        <th>
+                            <button type="button" class="slds-button slds-button_reset aa-files-th" data-key="size" onclick={handleSort}>
+                                Size <span class="aa-files-sort">{sizeSortArrow}</span>
+                            </button>
+                        </th>
+                        <th class="aa-files-col-menu"><div class="slds-truncate">&nbsp;</div></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template for:each={sortedFiles} for:item="f" for:index="i">
+                        <tr key={f.id} class="aa-files-row">
+                            <td class="aa-files-col-num">{i}</td>
+                            <td>
+                                <div class="aa-files-title-cell">
+                                    <lightning-icon icon-name={f.iconName} size="small" class="aa-files-icon"></lightning-icon>
+                                    <a href="#" data-docid={f.id} onclick={handleOpen} title={f.title}>{f.title}</a>
+                                </div>
+                            </td>
+                            <td><div class="slds-truncate">{f.ownerName}</div></td>
+                            <td><div class="slds-truncate">{f.lastModifiedFmt}</div></td>
+                            <td><div class="slds-truncate">{f.sizeFmt}</div></td>
+                            <td class="aa-files-col-menu">
+                                <lightning-button-menu
+                                    alternative-text="Actions"
+                                    variant="border-filled"
+                                    icon-size="x-small"
+                                    menu-alignment="right"
+                                    data-docid={f.id}
+                                    onselect={handleRowAction}>
+                                    <lightning-menu-item value="preview"  label="Preview"                  icon-name="utility:preview"></lightning-menu-item>
+                                    <lightning-menu-item value="details"  label="Show file details (Rename / Upload New Version)" icon-name="utility:file"></lightning-menu-item>
+                                    <lightning-menu-item value="download" label="Download"                 icon-name="utility:download"></lightning-menu-item>
+                                    <lightning-menu-divider></lightning-menu-divider>
+                                    <lightning-menu-item value="delete"   label="Delete"                   icon-name="utility:delete"></lightning-menu-item>
+                                </lightning-button-menu>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </template>
+    </div>
+</template>

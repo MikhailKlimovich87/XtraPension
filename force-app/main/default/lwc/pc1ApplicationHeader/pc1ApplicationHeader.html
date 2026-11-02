@@ -1,0 +1,95 @@
+<template>
+    <template lwc:if={app}>
+        <!-- slds-page-header is the exact structure force:highlightsPanel uses -->
+        <div class="slds-page-header slds-page-header_record-home pc1-header">
+            <!-- Row 1: avatar + name + actions -->
+            <div class="slds-page-header__row">
+                <div class="slds-page-header__col-title">
+                    <div class="slds-media">
+                        <div class="slds-media__figure">
+                            <span class="slds-avatar slds-avatar_circle slds-avatar_large pc1-avatar" title={app.Full_Name__c}>
+                                <abbr class="slds-avatar__initials" title={app.Full_Name__c}>{initials}</abbr>
+                            </span>
+                        </div>
+                        <div class="slds-media__body">
+                            <div class="slds-page-header__name">
+                                <div class="slds-page-header__name-title">
+                                    <h1>
+                                        <span class="slds-page-header__title slds-truncate" title={app.Full_Name__c}>{app.Full_Name__c}</span>
+                                    </h1>
+                                </div>
+                            </div>
+                            <p class="slds-page-header__name-meta pc1-meta">
+                                <span>Client</span>
+                                <span class="pc1-dot" aria-hidden="true">&middot;</span>
+                                <span class={stageBadgeClass}>{stageLabel}</span>
+                                <span class="pc1-dot" aria-hidden="true">&middot;</span>
+                                <span>{createdLabel}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slds-page-header__col-actions">
+                    <div class="slds-page-header__controls">
+                        <div class="slds-page-header__control">
+                            <ul class="slds-button-group-list">
+                                <li>
+                                    <lightning-button label="Call Now" variant="neutral" icon-name="utility:call" onclick={handleCallNow}></lightning-button>
+                                </li>
+                                <li>
+                                    <lightning-button label="Edit" variant="neutral" icon-name="utility:edit" onclick={handleEdit}></lightning-button>
+                                </li>
+                                <template lwc:if={canMarkReviewed}>
+                                    <li>
+                                        <lightning-button label="Mark Reviewed" variant="success" icon-name="utility:check" onclick={handleMarkReviewed}></lightning-button>
+                                    </li>
+                                </template>
+                                <li>
+                                    <lightning-button label="Fill on DWP" variant="brand" icon-name="utility:desktop" onclick={handleFill}></lightning-button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: SLDS detail row — this is exactly the native "highlights fields" pattern -->
+            <div class="slds-page-header__row slds-page-header__row_gutters">
+                <div class="slds-page-header__col-details">
+                    <ul class="slds-page-header__detail-row">
+                        <li class="slds-page-header__detail-block">
+                            <div class="slds-text-title slds-truncate" title="Phone">Phone</div>
+                            <p class="slds-text-body_regular slds-truncate" title={phone}>{phone}</p>
+                        </li>
+                        <li class="slds-page-header__detail-block">
+                            <div class="slds-text-title slds-truncate" title="Email">Email</div>
+                            <p class="slds-text-body_regular slds-truncate" title={email}>{email}</p>
+                        </li>
+                        <li class="slds-page-header__detail-block">
+                            <div class="slds-text-title slds-truncate" title="Address">Address</div>
+                            <p class="slds-text-body_regular slds-truncate" title={address}>{address}</p>
+                        </li>
+                        <li class="slds-page-header__detail-block">
+                            <div class="slds-text-title slds-truncate" title="Date of birth">Date of birth</div>
+                            <p class="slds-text-body_regular slds-truncate" title={dob}>{dob}</p>
+                        </li>
+                        <li class="slds-page-header__detail-block">
+                            <div class="slds-text-title slds-truncate" title="Next call">Next call</div>
+                            <p class="slds-text-body_regular slds-truncate" title={nextCall}>{nextCall}</p>
+                        </li>
+                        <li class="slds-page-header__detail-block">
+                            <div class="slds-text-title slds-truncate" title="Data collected">Data collected</div>
+                            <div class="pc1-progress">
+                                <div class="pc1-progress__track">
+                                    <div class="pc1-progress__fill" style={progressBarStyle}></div>
+                                </div>
+                                <span class="pc1-progress__pct">{progressText}</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </template>
+</template>

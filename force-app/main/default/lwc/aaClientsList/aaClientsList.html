@@ -1,0 +1,94 @@
+<template>
+    <article class="slds-card aa-clients-card">
+        <div class="slds-card__header slds-grid aa-clients-head">
+            <div class="aa-clients-head__title">
+                <h2 class="slds-text-heading_medium">{headerTitle}</h2>
+            </div>
+            <div class="aa-clients-head__actions">
+                <lightning-button label="Refresh"    icon-name="utility:refresh" onclick={handleRefresh}></lightning-button>
+                <lightning-button label="New Client" variant="brand" icon-name="utility:add" onclick={handleNew}></lightning-button>
+            </div>
+        </div>
+
+        <div class="slds-card__body">
+            <div class="aa-filters slds-var-p-around_x-small">
+                <template for:each={filters} for:item="f">
+                    <button key={f.key} class={f.cls} data-filter={f.key} onclick={handleFilterClick}>{f.label}</button>
+                </template>
+            </div>
+
+            <template lwc:if={loading}>
+                <div class="slds-var-p-around_medium">
+                    <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                </div>
+            </template>
+
+            <template lwc:if={isEmpty}>
+                <div class="slds-var-p-around_medium slds-text-body_regular slds-text-color_weak slds-text-align_center">
+                    No clients match this filter.
+                </div>
+            </template>
+
+            <template lwc:if={showTable}>
+                <div class="aa-table-wrap">
+                    <table class="aa-table">
+                        <thead>
+                            <tr>
+                                <th class="col-ref">App No.</th>
+                                <th class="col-name">Name</th>
+                                <th class="col-phone">Phone</th>
+                                <th class="col-stage">Stage</th>
+                                <th class="col-nextcall">Next Call</th>
+                                <th class="col-progress">Progress</th>
+                                <th class="col-created">Created</th>
+                                <th class="col-actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={rows} for:item="r">
+                                <tr key={r.id} class="aa-row" data-id={r.id} onclick={handleRowClick}>
+                                    <td class="col-ref">
+                                        <a class="aa-link aa-ref" data-id={r.id} onclick={handleView}>{r.name}</a>
+                                    </td>
+                                    <td class="col-name">
+                                        <a class="aa-link" data-id={r.id} onclick={handleView}>{r.displayName}</a>
+                                        <template lwc:if={r.hasDescriptor}>
+                                            <span class="aa-descriptor"> ({r.descriptor})</span>
+                                        </template>
+                                    </td>
+                                    <td class="col-phone">{r.phoneDisplay}</td>
+                                    <td class="col-stage">
+                                        <span class={r.stageCls}>{r.stage}</span>
+                                    </td>
+                                    <td class="col-nextcall">{r.nextCallFmt}</td>
+                                    <td class="col-progress">
+                                        <div class="aa-progress">
+                                            <div class="aa-progress__bar"><div class="aa-progress__fill" style={r.progressStyle}></div></div>
+                                            <span class="aa-progress__text">{r.progressText}</span>
+                                        </div>
+                                    </td>
+                                    <td class="col-created">{r.createdFmt}</td>
+                                    <td class="col-actions">
+                                        <div class="aa-actions">
+                                            <button class="slds-button slds-button_neutral aa-btn-sm" data-id={r.id} onclick={handleView}   title="View">View</button>
+                                            <button class="slds-button slds-button_neutral aa-btn-sm" data-id={r.id} onclick={handleCallNow} title="Call Now">Call</button>
+                                            <template lwc:if={r.canFill}>
+                                                <button class="slds-button slds-button_brand aa-btn-sm" data-id={r.id} onclick={handleFill} title="Fill on DWP">Fill</button>
+                                            </template>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                <template lwc:if={hasMore}>
+                    <div class="slds-var-p-around_small slds-text-align_center">
+                        <lightning-button label="Load more" onclick={handleLoadMore}></lightning-button>
+                    </div>
+                </template>
+            </template>
+        </div>
+    </article>
+</template>

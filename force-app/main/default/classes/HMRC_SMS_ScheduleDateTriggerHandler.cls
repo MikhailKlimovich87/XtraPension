@@ -19,14 +19,11 @@ public class HMRC_SMS_ScheduleDateTriggerHandler {
                 req.setBody('To=' + EncodingUtil.urlEncode(info.phone,'UTF-8') + '&From=' + fromData + '&Body=' + messageBody);
                 try {
                     Http http = new Http();
-                    //if (Test.isRunningTest()) return;
                     HTTPResponse res = http.send(req);
                     System.debug(res.getBody());
                     if(res.getStatusCode() == 201) System.debug('@@@Twilio Success' + info.phone);
                     else {
-                        System.debug('@@@Twilio failed' + info.phone);
                         ErrorResponseWrapper erw =(ErrorResponseWrapper)json.deserialize(res.getBody(), ErrorResponseWrapper.class);
-                        System.debug('@@@Twilio error' + erw.message);
                     }
                 } catch(Exception ex){
                     System.debug('Error message = ' + ex.getMessage());

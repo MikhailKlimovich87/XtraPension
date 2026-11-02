@@ -72,7 +72,7 @@ public class PrintingHouseReplyModalControllerTest {
 
         Test.startTest();
         PrintingHouseReplyModalController.ResultWrapper result =
-            PrintingHouseReplyModalController.sendDocs(testApp.Id, attachFiles, fileIdToHMRC);
+            PrintingHouseReplyModalController.sendDocs(testApp.Id, attachFiles, new List<Id>{fileIdToHMRC});
         Test.stopTest();
 
         // Assertions
@@ -97,46 +97,7 @@ public class PrintingHouseReplyModalControllerTest {
         System.assertEquals(fileIdToHMRC, cdLinks[0].ContentDocumentId, 'Should link correct file');
     }
 
-    @IsTest
-    static void testSendEmail_Success() {
-        // Create test data
-        String toAddress = 'test@example.com';
-        String subject = 'Test Subject';
-        String body = '<p>Test Body</p>';
-        // Get ContentDocumentId for attachment
-        ContentVersion cv = [SELECT ContentDocumentId, Title FROM ContentVersion WHERE Title = 'TestFile1' LIMIT 1];
-        List<Id> contentDocumentIds = new List<Id>{cv.ContentDocumentId};
-        Test.startTest();
-        // Mock the email sending
-        Test.setMock(HttpCalloutMock.class, new MockHttpResponseGenerator());
-        // Call the method - should not throw exception
-        try {
-            PrintingHouseReplyModalController.sendEmail(toAddress, subject, body, contentDocumentIds);
-            System.assert(true, 'Email sent successfully');
-        } catch (Exception e) {
-            System.assert(false, 'Should not throw exception: ' + e.getMessage());
-        }
-        Test.stopTest();
-    }
-
-    @IsTest
-    static void testSendEmail_EmptyRecipient() {
-        String toAddress = '';
-        String subject = 'Test Subject';
-        String body = '<p>Test Body</p>';
-        List<Id> contentDocumentIds = new List<Id>();
-
-        Test.startTest();
-        try {
-            PrintingHouseReplyModalController.sendEmail(toAddress, subject, body, contentDocumentIds);
-            System.assert(false, 'Should have thrown exception for empty recipient');
-        } catch (AuraHandledException e) {
-            System.assertEquals('Script-thrown exception', e.getMessage(), 'Should throw correct exception message');
-        }
-        Test.stopTest();
-    }
-
-        // Test getAvailableDocuments method
+    // Test getAvailableDocuments method
     @IsTest
     static void testGetAvailableDocuments() {
         // Get test Application

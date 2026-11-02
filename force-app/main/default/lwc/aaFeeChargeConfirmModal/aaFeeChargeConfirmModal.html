@@ -1,0 +1,76 @@
+<template>
+    <lightning-modal-header label="Confirm fee collection"></lightning-modal-header>
+    <lightning-modal-body>
+        <div class="aa-feemodal__body">
+            <p class="aa-feemodal__prompt">
+                Schedule&nbsp;
+                <strong>
+                    <lightning-formatted-number
+                        value={firstInstallmentAmount}
+                        format-style="currency"
+                        currency-code="GBP">
+                    </lightning-formatted-number>
+                </strong>
+                &nbsp;from
+                <strong>{clientName}</strong>'s account on <strong>{firstChargeDateDisplay}</strong>?
+            </p>
+            <p class="aa-feemodal__context">
+                This is 20% of the&nbsp;
+                <lightning-formatted-number
+                    value={awardAmount}
+                    format-style="currency"
+                    currency-code="GBP">
+                </lightning-formatted-number>
+                &nbsp;award (VAT included).
+                <template if:true={multiInstallment}>
+                    &nbsp;Installment&nbsp;1 of {installments}. Total fee&nbsp;
+                    <strong>
+                        <lightning-formatted-number
+                            value={feeAmount}
+                            format-style="currency"
+                            currency-code="GBP">
+                        </lightning-formatted-number>
+                    </strong>.
+                </template>
+            </p>
+            <template if:true={multiInstallment}>
+                <p class="aa-feemodal__plan">
+                    The remaining {remainingCount} payment<template if:true={remainingPlural}>s</template>
+                    ({remainingDates}) are collected automatically.
+                </p>
+            </template>
+            <p class="aa-feemodal__notice">
+                Nothing is taken today. The client is emailed a Direct Debit advance notice 5 days before
+                each payment, and the payment is collected on the date that notice gives.
+            </p>
+
+            <div class="aa-feemodal__checks">
+                <lightning-input
+                    type="checkbox"
+                    label="I have verified the award amount against the DWP letter"
+                    checked={verifiedAmount}
+                    onchange={handleVerifiedChange}>
+                </lightning-input>
+                <lightning-input
+                    type="checkbox"
+                    label="I understand this cannot be reversed without going through DD Guarantee refund"
+                    checked={understandIrreversible}
+                    onchange={handleIrreversibleChange}>
+                </lightning-input>
+            </div>
+        </div>
+    </lightning-modal-body>
+    <lightning-modal-footer>
+        <lightning-button
+            label="Cancel"
+            onclick={handleCancel}>
+        </lightning-button>
+        <lightning-button
+            class="slds-m-left_x-small"
+            variant="destructive"
+            label={confirmLabel}
+            onclick={handleConfirm}
+            disabled={canConfirmDisabled}>
+        </lightning-button>
+    </lightning-modal-footer>
+</template>

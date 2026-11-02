@@ -1,0 +1,134 @@
+<template>
+    <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01"
+        class="slds-modal slds-fade-in-open slds-modal_medium">
+        <div class="slds-modal__container main-space">
+            <div class="slds-modal__header">
+                <h1 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Edit HMRC Refund Request</h1>
+            </div>
+            <div class="slds-modal__content slds-p-around_xx-large" id="modal-content-id-1">
+                <div class="content">
+                    <div style="text-align: right;">
+                        <lightning-formatted-rich-text value={fullAddress}></lightning-formatted-rich-text>
+                    </div>
+                    <br/>
+                    <br/>
+                    <div>
+                        International Case<br/>
+                        PT Operations North East England<br/>
+                        HM Revenue &amp; Customs<br/>
+                        BX9 1AN<br/>
+                        United Kingdom
+                    </div>
+                    <br/>
+                    <br/>
+                    <div class="header">
+                        <h1>Request for Refund of National Insurance Contributions</h1>
+                    </div>
+                    <div >
+                         <br/>
+                        <p>To request a refund of your National Insurance contributions, please complete the form below and click Save. Once you have saved the form, you can download a PDF version of your request.</p>
+                        <ol class="slds-list_ordered">
+                            <li>
+                                <p>Personal Details</p>
+                                <table class="main-table" cellspacing="0">
+                                    <tr>
+                                        <td class="first-column">Full Name</td>
+                                        <td>{firstName} {secondName}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="first-column">National Insurance Number</td>
+                                        <td>{nino}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="first-column">Contact Number</td>
+                                        <td>{phone}</td>
+                                    </tr>
+                                </table>
+                            </li>
+                       
+                        <li>
+                        <p>Contribution Details</p>
+                        <table class="main-table" cellspacing="0">
+                            <tr>
+                                <td class="first-column">Amount Paid</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="first-column">Date Payment Was Made</td>
+                                <td>DD ______ MM ______ YYYY ________</td>
+                            </tr>
+                            <tr>
+                                <td class="first-column">Tax Year(s) Related To</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="first-column">Method of Payment</td>
+                                <td></td>
+                            </tr>
+                        </table>
+                    </li>
+                    <li>
+                        <p>Reason for Refund Request</p>
+                        <div class="reason-table-block">
+                            <p>Please explain the reason for your request:</p>
+                            <table class="main-table" cellspacing="0">
+                                <tr>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </li>
+                    <li>
+                        <p>Refund Payment Details</p>
+                        <table class="main-table" cellspacing="0">
+                            <tr>
+                                <td class="first-column">IBAN / Bank Account Number</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="first-column">Sort Code</td>
+                                <td>______ - ______ - ______</td>
+                            </tr>
+                            <tr>
+                                <td class="first-column">Cheque Payable To (if applicable)</td>
+                                <td></td>
+                            </tr>
+                        </table>
+                    </li>
+                    <li>
+                        <p>Declaration</p>
+                        <table class="main-table" cellspacing="0">
+                            <tr>
+                                <td class="first-column">Signature</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="first-column">Date</td>
+                                <td>DD ______ MM ______ YYYY ________</td>
+                            </tr>
+                        </table>
+                    </li>
+                </ol>
+            </div>
+
+                </div>
+            </div>
+            <div class="slds-modal__footer">
+                <button class="slds-button slds-button_neutral" aria-label="Cancel and close"
+                    onclick={closeAction}>Cancel</button>
+                <button class="slds-button slds-button_brand" onclick={handleCreatePDF}>Save</button>
+            </div>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+
+</template>

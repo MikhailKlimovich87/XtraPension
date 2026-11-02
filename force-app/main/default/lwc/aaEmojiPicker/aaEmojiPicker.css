@@ -1,0 +1,95 @@
+.aa-ep {
+    position: absolute;
+    bottom: 100px;
+    left: 12px;
+    width: 380px;
+    max-height: 380px;
+    background: #ffffff;
+    border: 1px solid #d4d8db;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+}
+.aa-ep__header {
+    display: flex;
+    padding: 10px 12px;
+    gap: 8px;
+    border-bottom: 1px solid #eee;
+    align-items: center;
+}
+.aa-ep__search {
+    flex: 1;
+    padding: 7px 12px;
+    border: 1px solid #d4d8db;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    outline: none;
+}
+.aa-ep__search:focus {
+    border-color: #128c7e;
+    box-shadow: 0 0 0 3px rgba(18, 140, 126, 0.12);
+}
+.aa-ep__x {
+    background: none;
+    border: 0;
+    cursor: pointer;
+    font-size: 16px;
+    color: #6b7377;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+.aa-ep__x:hover { background: rgba(0,0,0,0.06); }
+.aa-ep__cats {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 8px;
+    gap: 2px;
+    border-bottom: 1px solid #eee;
+    background: #f7f9fb;
+}
+.aa-ep__cat {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    padding: 6px 4px;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 6px;
+    line-height: 1;
+    opacity: 0.55;
+    transition: opacity 0.15s, background 0.15s;
+}
+.aa-ep__cat:hover { background: rgba(0, 0, 0, 0.05); opacity: 0.85; }
+.aa-ep__cat.is-active {
+    opacity: 1;
+    background: #e6f4f1;
+    box-shadow: inset 0 -2px 0 #128c7e;
+}
+.aa-ep__grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    overflow-y: auto;
+    padding: 10px 8px;
+    max-height: 260px;
+}
+.aa-ep__emoji {
+    background: transparent;
+    border: 0;
+    padding: 4px;
+    font-size: 24px;
+    cursor: pointer;
+    border-radius: 6px;
+    line-height: 1;
+    text-align: center;
+}
+.aa-ep__emoji:hover { background: rgba(0, 0, 0, 0.08); }
+.aa-ep__empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #6b7377;
+    font-size: 0.85rem;
+    padding: 40px 12px;
+}

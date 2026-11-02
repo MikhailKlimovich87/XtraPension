@@ -1,0 +1,754 @@
+<apex:page renderAs="pdf"
+    showHeader="false"
+    sidebar="false"
+    controller="BP_ClientSummaryPdfController">
+
+<html>
+
+<head>
+    <style type="text/css">
+        @page {
+            size: A4;
+            margin: 12mm;
+        }
+    </style>
+</head>
+
+<body style="font-family: Arial, Helvetica, sans-serif; font-size: 16px; color: #000000;">
+
+    <!-- HEADER -->
+    <table width="100%" cellspacing="0" cellpadding="4">
+        <tr>
+            <td style="color:#0A8A7C; text-align: center; font-size:18px; ">
+                <b>Client Summary</b>
+            </td>
+        </tr>
+    </table>
+
+    <div style="text-align:center; font-size:18px; font-style:italic; padding-top:5px;">
+        {!client.First_Name__c} {!client.Last_Name__c}’s information for approval
+    </div>
+    <br/>
+    <br/>
+    <!-- SECTION 1 -->
+    <div style="padding-top:10px;">
+        <div style="background-color:#0A8A7C; color: white; border:1px solid #999; padding:5px; font-weight:bold; font-size:18px;">
+            Section 1 — Friend / Family for Communication
+        </div>
+        <br/>
+        <table style="width:100%; border:1px solid #CCC; border-collapse:collapse;">
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">First Name</td><td style="padding:4px; border:1px solid #CCC;">{!client.Friend_First_Name__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Last Name</td><td style="padding:4px; border:1px solid #CCC;">{!client.Friend_Last_Name__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Tel</td><td style="padding:4px; border:1px solid #CCC;">{!client.Friend_Phone__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Email</td><td style="padding:4px; border:1px solid #CCC;">{!client.Friend_Email__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Relationship to Claimant</td><td style="padding:4px; border:1px solid #CCC;">{!client.Relationship__c}</td></tr>
+        </table>
+    </div>
+    <br/>
+    <!-- SECTION 2 -->
+    <div style="padding-top:10px;">
+        <div style="background-color:#0A8A7C; color: white; border:1px solid #999; padding:5px; font-weight:bold; font-size:18px;">
+            Section 2 — About the Claimant
+        </div>
+        <br/>
+        <table style="width:100%; border:1px solid #CCC; border-collapse:collapse;">
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Title</td><td style="padding:4px; border:1px solid #CCC;">{!client.Claimant_title__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">First Name</td><td style="padding:4px; border:1px solid #CCC;">{!client.First_Name__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Middle Name</td><td style="padding:4px; border:1px solid #CCC;">{!client.Claimant_Middle_Name__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Surname / Family Name</td><td style="padding:4px; border:1px solid #CCC;">{!client.Last_Name__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Other Names in Full</td><td style="padding:4px; border:1px solid #CCC;">{!client.Claimant_other_names__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Date of Birth</td><td style="padding:4px; border:1px solid #CCC;">
+                <apex:outputText value="{0,date,dd/MM/yyyy}">
+                        <apex:param value="{!client.Claimant_dob__c}"/>
+                </apex:outputText>
+            </td></tr>
+            <apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(client.Claimant_maiden_Name__c))}">
+                <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Maiden Name</td><td style="padding:4px; border:1px solid #CCC;">{!client.Claimant_maiden_Name__c}</td></tr>
+            </apex:outputPanel>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Tel</td><td style="padding:4px; border:1px solid #CCC;">{!client.Phone__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Email</td><td style="padding:4px; border:1px solid #CCC;">{!client.Email__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Marital Status</td><td style="padding:4px; border:1px solid #CCC;">{!client.Claimant_marital_Status__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Nationality</td><td style="padding:4px; border:1px solid #CCC;">{!client.Claimant_nationality__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Date of Marriage</td><td style="padding:4px; border:1px solid #CCC;">
+                 <apex:outputText value="{0,date,dd/MM/yyyy}">
+                        <apex:param value="{!client.Claimant_date_Of_Marriage__c}"/>
+                </apex:outputText>
+            </td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Date of Bereavement</td><td style="padding:4px; border:1px solid #CCC;">
+                <apex:outputText value="{0,date,dd/MM/yyyy}">
+                        <apex:param value="{!client.Claimant_date_Of_Bereavement__c}"/>
+                </apex:outputText>
+            </td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Date of Divorce</td><td style="padding:4px; border:1px solid #CCC;">
+                <apex:outputText value="{0,date,dd/MM/yyyy}">
+                        <apex:param value="{!client.Claimant_date_Of_Divorce__c}"/>
+                </apex:outputText>
+            </td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">UK NINO?</td><td style="padding:4px; border:1px solid #CCC;">
+                <apex:outputPanel rendered="{!client.Claimant_hasNino__c}">
+                    <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                    <span style="vertical-align:middle;">Yes</span>
+                    &nbsp;&nbsp;&nbsp;
+                    <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                    <span style="vertical-align:middle;">No</span>
+                </apex:outputPanel>
+                 
+                <apex:outputPanel rendered="{!!client.Claimant_hasNino__c}">
+                    <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                    <span style="vertical-align:middle;">Yes</span>
+                    &nbsp;&nbsp;&nbsp;
+                    <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                    <span style="vertical-align:middle;">No</span>
+                </apex:outputPanel>
+            </td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">National Insurance Number</td><td style="padding:4px; border:1px solid #CCC;">{!client.Claimant_nino__c}</td></tr>
+        </table>
+    </div>
+    <br/>
+    <!-- ADDRESS -->
+    <div style="padding-top:10px;">
+        <div style="background:#D0EFEC; color: #000000; border:none; padding:5px; font-weight:bold;font-size:18px;">Address</div>
+        <br/>
+        <table style="width:100%; border:1px solid #CCC; border-collapse:collapse;border:1px solid #999;">
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Country</td><td style="padding:4px;border:1px solid #CCC;">{!client.Current_Address_Abroad_Country_Name__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Postcode / Eircode</td><td style="padding:4px;border:1px solid #CCC;">{!client.Eircode__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Address 1</td><td style="padding:4px;border:1px solid #CCC;">{!client.Claimant_address1__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Address 2</td><td style="padding:4px;border:1px solid #CCC;">{!client.Claimant_address2__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">City</td><td style="padding:4px;border:1px solid #CCC;">{!client.Claimant_City__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">State / Province </td><td style="padding:4px;border:1px solid #CCC;">{!client.Current_Address_Abroad_State_Name__c}</td></tr>
+        </table>
+    </div>
+    <br/>
+    <!-- ================= UK RESIDENCY ================= -->
+    <div style="padding-top:10px;">
+        <div style="background:#D0EFEC;;color: #000000;border:none;padding:5px;font-weight:bold;font-size:18px;">
+            UK Residency &amp; Employment
+        </div>
+        <br/>
+        <table style="width:100%;border:1px solid #CCC;border-collapse:collapse;margin-top:5px;border:1px solid #999;">
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Ever Live in UK?</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputPanel rendered="{!client.Claimant_ever_Lived_UK__c}">
+                    <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                    <span style="vertical-align:middle;">Yes</span>
+                    &nbsp;&nbsp;&nbsp;
+                    <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                    <span style="vertical-align:middle;">No</span>
+                </apex:outputPanel>
+                 
+                <apex:outputPanel rendered="{!!client.Claimant_ever_Lived_UK__c}">
+                    <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                    <span style="vertical-align:middle;">Yes</span>
+                    &nbsp;&nbsp;&nbsp;
+                    <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                    <span style="vertical-align:middle;">No</span>
+                </apex:outputPanel></td></tr>
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Residency From</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputText value="{0,date,dd/MM/yyyy}">
+                        <apex:param value="{!client.Claimant_lived_UK_From__c}"/>
+                </apex:outputText>
+            </td></tr>
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Residency To</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputText value="{0,date,dd/MM/yyyy}">
+                        <apex:param value="{!client.Claimant_lived_UK_to__c}"/>
+                </apex:outputText>
+            </td></tr>
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Ever Work in UK?</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputPanel rendered="{!client.Claimant_Ever_Worked_UK__c}">
+                    <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                    <span style="vertical-align:middle;">Yes</span>
+                    &nbsp;&nbsp;&nbsp;
+                    <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                    <span style="vertical-align:middle;font-size:16px;">No</span>
+                </apex:outputPanel>
+                 
+                <apex:outputPanel rendered="{!!client.Claimant_Ever_Worked_UK__c}">
+                    <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                    <span style="vertical-align:middle;">Yes</span>
+                    &nbsp;&nbsp;&nbsp;
+                    <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                    <span style="vertical-align:middle;">No</span>
+                </apex:outputPanel></td></tr>
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Employment From</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputText value="{0,date,dd/MM/yyyy}">
+                        <apex:param value="{!client.Claimant_worked_UK_From__c}"/>
+                </apex:outputText>
+            </td></tr>
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Employment To</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputText value="{0,date,dd/MM/yyyy}">
+                        <apex:param value="{!client.Claimant_worked_UK_To__c}"/>
+                </apex:outputText>
+                </td></tr>
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Have Proof of UK Work?</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputPanel rendered="{!client.Claimant_has_Proof_Of_UK_Work__c}">
+                    <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                    <span style="vertical-align:middle;">Yes</span>
+                    &nbsp;&nbsp;&nbsp;
+                    <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                    <span style="vertical-align:middle;">No</span>
+                </apex:outputPanel>
+                 
+                <apex:outputPanel rendered="{!!client.Claimant_has_Proof_Of_UK_Work__c}">
+                    <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                    <span style="vertical-align:middle;">Yes</span>
+                    &nbsp;&nbsp;&nbsp;
+                    <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                    <span style="vertical-align:middle;">No</span>
+                </apex:outputPanel></td></tr>
+        </table>
+    </div>
+    <br/>
+    <!-- ================= REPEATS ================= -->
+<div style="padding-top:10px;">
+    <div style="background:#D0EFEC;;color: #000000;border:none;padding:5px;font-weight:bold;font-size:18px;">
+        Other Country Lived In
+    </div>
+    <br/>
+    <apex:repeat value="{!client.ClaimantCountrieslived__r}" var="country">
+        <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Country</td><td style="padding:4px;border:1px solid #CCC;">{!country.Name}</td></tr>
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">From</td><td style="padding:4px;border:1px solid #CCC;">
+                 <apex:outputText value="{0,date,dd/MM/yyyy}">
+                        <apex:param value="{!country.From_date__c}"/>
+                </apex:outputText></td></tr>
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">To</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputText value="{0,date,dd/MM/yyyy}">
+                        <apex:param value="{!country.To_Date__c}"/>
+                </apex:outputText>
+                <apex:outputPanel rendered="{!ISBLANK(country.To_Date__c)}"> Current </apex:outputPanel>
+                </td></tr>
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Social Security Number</td><td style="padding:4px;border:1px solid #CCC;">{!country.Social_Security_Number__c}</td></tr>
+        </table>
+        <br/>
+    </apex:repeat>
+</div>
+
+    <!-- UK COMPANY WORKED IN -->
+    <div style="padding-top:10px;">
+        <div style="background:#D0EFEC;;color: #000000;border:none;padding:5px;font-weight:bold;font-size:18px;">
+            UK Company Worked In
+        </div>
+        <br/>
+        <apex:repeat value="{!client.Claimant_Companies__r}" var="job">
+            <table style="width:100%;margin-top:8px;border-collapse:collapse;">
+                <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Company Name</td><td style="padding:4px;border:1px solid #CCC;">{!job.Name}</td></tr>
+                <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Address</td><td style="padding:4px;border:1px solid #CCC;">{!job.Address1__c} {!job.Address2__c}</td></tr>
+                <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">From</td><td style="padding:4px;border:1px solid #CCC;">
+                    <apex:outputText value="{0,date,dd/MM/yyyy}">
+                        <apex:param value="{!job.From_Date__c}"/>
+                    </apex:outputText>
+                </td></tr>
+                <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">To</td><td style="padding:4px;border:1px solid #CCC;">
+                    <apex:outputText value="{0,date,dd/MM/yyyy}">
+                        <apex:param value="{!job.To_Date__c}"/>
+                    </apex:outputText></td></tr>
+            </table>
+            <br/>
+        </apex:repeat>
+    </div>
+
+    <!-- ================= IF MARRIED / WIDOWED ================= -->
+    <div style="padding-top:10px;">
+        <div style="background:#D0EFEC;;color: #000000;border:none;padding:5px;font-weight:bold;font-size:18px;">
+            If Married / Widowed
+        </div>
+        <br/>
+        <table style="width:100%;border-collapse:collapse;margin-top:5px;">
+
+            <tr>
+                <td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">
+                    Self Employed in UK since 1978?
+                </td>
+                <td style="padding:4px;border:1px solid #CCC;">
+                    <apex:outputPanel rendered="{!client.Ever_Self_Employed_UK_after_1978__c}">
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Ever_Self_Employed_UK_after_1978__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                </td>
+            </tr>
+
+            <tr>
+                <td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">
+                    Ever Paid Married Woman's Stamp?
+                </td>
+                <td style="padding:4px;border:1px solid #CCC;">
+                    <apex:outputPanel rendered="{!client.Claimant_Ever_Paid_Married_Woman_s_Stam__c}">
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Claimant_Ever_Paid_Married_Woman_s_Stam__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                </td>
+            </tr>
+
+            <tr>
+                <td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">
+                    Minded Kids in UK 1978–2010?
+                </td>
+                <td style="padding:4px;border:1px solid #CCC;">
+                    <apex:outputPanel rendered="{!client.Claimant_Minded_Kids__c}">
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Claimant_Minded_Kids__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                </td>
+            </tr>
+
+        </table>
+    </div>
+    <br/>
+    <apex:outputPanel rendered="{!client.Clamant_Children__r.size > 0}">
+    <div style="padding-top:10px;">
+        <div style="background:#D0EFEC;color: #000000;border:none;padding:5px;font-weight:bold;font-size:18px;">
+            Child Details
+        </div>
+        <br/>
+            <apex:repeat value="{!client.Clamant_Children__r}" var="child">
+                <table style="width:100%;border-collapse:collapse;">
+                    <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Child Name</td><td style="padding:4px;border:1px solid #CCC;">{!child.Name}</td></tr>
+                    <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Date of Birth</td><td style="padding:4px;border:1px solid #CCC;">
+                        <apex:outputText value="{0,date,dd/MM/yyyy}">
+                            <apex:param value="{!child.Dob__c}"/>
+                        </apex:outputText>  
+                    </td></tr>
+                    <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Minded At Home From</td><td style="padding:4px;border:1px solid #CCC;">
+                        <apex:outputText value="{0,date,dd/MM/yyyy}">
+                            <apex:param value="{!child.Minded_From__c}"/>
+                        </apex:outputText></td></tr>
+                    <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Minded At Home To</td><td style="padding:4px;border:1px solid #CCC;">
+                        <apex:outputText value="{0,date,dd/MM/yyyy}">
+                            <apex:param value="{!child.Minded_To__c}"/>
+                        </apex:outputText></td></tr>
+                    <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">NINO</td><td style="padding:4px;border:1px solid #CCC;">{!child.Nino__c}</td></tr>
+                </table>
+                <br/>
+            </apex:repeat>
+    </div>
+    </apex:outputPanel>
+
+    <!-- SECTION 3 -->
+    <div style="padding-top:10px;">
+        <div style="background:#0A8A7C; color: white; border:1px solid #999; padding:5px; font-weight:bold; font-size:18px;">
+            Section 3 — About Your Husband, Wife or Civil Partner
+        </div>
+        <br/>
+        <table style="width:100%; border:1px solid #CCC; border-collapse:collapse;">
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Title</td><td style="padding:4px;border:1px solid #CCC;">{!client.Partner_Title__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Surname / Family Name</td><td style="padding:4px;border:1px solid #CCC;">{!client.Partner_Surname__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Other Names in Full</td><td style="padding:4px;border:1px solid #CCC;">{!client.Partner_First_Name__c} {!client.Partner_Other_Name__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Date of Birth</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputText value="{0,date,dd/MM/yyyy}">
+                    <apex:param value="{!client.Partner_DOB__c}"/>
+                </apex:outputText>
+                    </td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Maiden Name</td><td style="padding:4px;border:1px solid #CCC;">{!client.Partner_Maiden_Name__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">UK NINO?</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputPanel rendered="{!client.Partner_Has_Nino__c}">
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Partner_Has_Nino__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel></td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">National Insurance Number</td><td style="padding:4px;border:1px solid #CCC;">{!client.Partner_Nino__c}</td></tr>
+        </table>
+    </div>
+    
+
+    <!-- ================= PARTNER'S ADDRESS ================= -->
+<div style="padding-top:10px;">
+    <div style="background:#D0EFEC;; color: #000000;border:none;padding:5px;font-weight:bold;">
+        Partner's Address
+    </div>
+    <br/>
+    <table style="width:100%;border:1px solid #CCC;border-collapse:collapse;margin-top:5px;border:1px solid #999;">
+
+        <tr>
+            <td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">
+                Same as Claimant?
+            </td>
+            <td style="padding:4px;border:1px solid #CCC;">
+                    <apex:outputPanel rendered="{!client.Partner_same_as_claimant__c}"> 
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Partner_same_as_claimant__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">
+                Country
+            </td>
+            <td style="padding:4px;border:1px solid #CCC;">
+                {!client.Partner_Country__c}
+            </td>
+        </tr>
+
+        <tr>
+            <td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">
+                Postcode / Eircode
+            </td>
+            <td style="padding:4px;border:1px solid #CCC;">
+                {!client.Partner_Postcode__c}
+            </td>
+        </tr>
+
+        <tr>
+            <td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">
+                Address 1
+            </td>
+            <td style="padding:4px;border:1px solid #CCC;font">
+                {!client.Partner_Address1__c}
+            </td>
+        </tr>
+
+        <tr>
+            <td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">
+                Address 2
+            </td>
+            <td style="padding:4px;border:1px solid #CCC;">
+                {!client.Partner_Address2__c}
+            </td>
+        </tr>
+
+        <tr>
+            <td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">
+                City
+            </td>
+            <td style="padding:4px;border:1px solid #CCC;">
+                {!client.Partner_City__c}
+            </td>
+        </tr>
+        <tr>
+            <td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">
+                State / Province 
+            </td>
+            <td style="padding:4px;border:1px solid #CCC;">
+                {!client.Partner_State_Name__c}
+            </td>
+        </tr>
+
+    </table>
+    </div>
+    <br/>
+    <!-- SECTION 4 -->
+    <div style="padding-top:10px;">
+        <div style="background:#0A8A7C; color: white; border:1px solid #999; padding:5px; font-weight:bold; font-size:18px;">Section 4 — Have You Ever Claimed?</div>
+        <br/>
+        <table style="width:100%; border:1px solid #CCC; border-collapse:collapse;border:1px solid #999;">
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">State Pension</td><td style="padding:4px;border:1px solid #CCC;">
+                    <apex:outputPanel rendered="{!client.Claimant_State_Pension__c}"> 
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Claimant_State_Pension__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel></td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Graduated Retirement Benefit</td><td style="padding:4px;border:1px solid #CCC;">
+                    <apex:outputPanel rendered="{!client.Claimant_Graduated_Retirement_Benefit__c}"> 
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Claimant_Graduated_Retirement_Benefit__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel></td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Widows Benefit</td><td style="padding:4px;border:1px solid #CCC;">
+                    <apex:outputPanel rendered="{!client.Claimant_Widows_Benefit__c}"> 
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Claimant_Widows_Benefit__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel></td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Bereavement Benefit</td><td style="padding:4px;border:1px solid #CCC;">
+                    <apex:outputPanel rendered="{!client.Claimant_Bereavement_Benefit__c}"> 
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Claimant_Bereavement_Benefit__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel></td></tr>
+        </table>
+    </div>
+    <br/>
+    <!-- SECTION 5 -->
+    <div style="padding-top:10px;">
+        <div style="background:#0A8A7C; color: white; border:1px solid #999; padding:5px; font-weight:bold; font-size:18px;">Section 5 — Has Partner Ever Claimed?</div>
+        <br/>
+        <table style="width:100%; border:1px solid #CCC; border-collapse:collapse;border:1px solid #999;">
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">State Pension</td><td style="padding:4px;border:1px solid #CCC;">
+                    <apex:outputPanel rendered="{!client.Partner_State_Pension__c}"> 
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Partner_State_Pension__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel></td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Graduated Retirement Benefit</td><td style="padding:4px;border:1px solid #CCC;">
+                    <apex:outputPanel rendered="{!client.Partner_Graduated_Retirement_Benefit__c}"> 
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Partner_Graduated_Retirement_Benefit__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel></td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Widows Benefit</td><td style="padding:4px;border:1px solid #CCC;">
+                    <apex:outputPanel rendered="{!client.Partner_Widows_Benefit__c}"> 
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Partner_Widows_Benefit__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel></td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Bereavement Benefit</td><td style="padding:4px;border:1px solid #CCC;">
+                    <apex:outputPanel rendered="{!client.Partner_Bereavement_Benefit__c}"> 
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Partner_Bereavement_Benefit__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel></td></tr>
+        </table>
+    </div>
+    <br/>
+    <!-- SECTION 6 -->
+    <div style="padding-top:10px;">
+        <div style="background:#0A8A7C; color: white; border:1px solid #999; padding:5px; font-weight:bold; font-size:18px;">Section 6 — Claiming Pension</div>
+        <br/>
+        <table style="width:100%; border:1px solid #CCC; border-collapse:collapse;border:1px solid #999;">
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Are You Claiming Pension from Today?</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputPanel rendered="{!client.Pension_Claiming_from_Today__c}"> 
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Pension_Claiming_from_Today__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel></td></tr>
+            <!-- <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">When Will You Start Claiming?</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputText value="{0,date,dd/MM/yyyy}">
+                    <apex:param value="{!client.Pension_Start_Date__c}"/>
+                </apex:outputText></td></tr> -->
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Do you intend to work for an employer after reaching state pension age?</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputPanel rendered="{!client.Pension_Work_After_Pension_Age__c}"> 
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Pension_Work_After_Pension_Age__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel></td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Have you already put off getting your State Pension?</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputPanel rendered="{!client.Pension_Deferred_Pension__c}"> 
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Pension_Deferred_Pension__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel></td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">If you have already reached state pension age, have you spent any time in prison since then?</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputPanel rendered="{!client.Pension_Imprisoned_Since_Pension_Age__c}"> 
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!!client.Pension_Imprisoned_Since_Pension_Age__c}">
+                        <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">Yes</span>
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                        <span style="vertical-align:middle;">No</span>
+                    </apex:outputPanel></td></tr>
+        </table>
+    </div>
+    <br/>
+    <!-- SECTION 7 -->
+    <div style="padding-top:10px;">
+        <div style="background:#0A8A7C; color: white; border:1px solid #CCC; padding:5px; font-weight:bold; font-size:18px;">Section 7 — Bank Details</div>
+        <br/>
+        <table style="width:100%; border-collapse:collapse;border:1px solid #CCC;">
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Account Type</td><td style="padding:4px;border:1px solid #CCC;">{!client.Bank_Account_Type__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Account Owner Name</td><td style="padding:4px;border:1px solid #CCC;">{!client.Bank_Account_Owner_Name__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Bank Name</td><td style="padding:4px;border:1px solid #CCC;">{!client.Bank_Name__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Sort Code</td><td style="padding:4px;border:1px solid #CCC;">{!client.Bank_Sort_Code__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">IBAN</td><td style="padding:4px;border:1px solid #CCC;">{!client.Bank_IBAN__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">BIC</td><td style="padding:4px;border:1px solid #CCC;">{!client.Bank_BIC__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Account Number</td><td style="padding:4px;border:1px solid #CCC;">{!client.Bank_Account__c}</td></tr>
+        </table>
+    </div>
+    <br/>
+    <br/>
+
+<!-- SIGNATURE -->
+    <div style="padding-top:40px;">
+
+        <div style="position:relative; width:500px;">
+
+            <!-- Signature -->
+            <div style="width:250px; border-top:1px solid #000; position:relative;">
+                <span style="position:absolute; left:100px; top:-20px; color:white;font-size:18px;">
+                    \s1\
+                </span>
+            </div>
+
+            <div style="padding-top:5px;font-style:italic;font-size:18px;">
+                {!client.First_Name__c} {!client.Last_Name__c}
+            </div>
+
+            <!-- Date -->
+            <div style="position:absolute; left:300px; top:-24px; width:120px; text-align:center;">
+                <div style="font-size:12px; padding-bottom:3px;white;color:white;font-size:18px;">
+                    <span>\d1\</span>
+                </div>
+                <div style="border-top:1px solid #000; width:120px;"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+</body>
+</html>
+
+</apex:page>

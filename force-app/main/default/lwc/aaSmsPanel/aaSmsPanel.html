@@ -1,0 +1,105 @@
+<template>
+  <lightning-card icon-name="utility:sms" title="SMS">
+    <div slot="actions" class="aa-sms__actions">
+      <template lwc:if={appPhone}>
+        <span class="aa-sms__live" title="Polling every 30s"></span>
+      </template>
+      <lightning-button-icon icon-name={collapseIcon} variant="bare" alternative-text="Toggle" onclick={handleToggleCollapse} class="slds-m-left_xx-small"></lightning-button-icon>
+    </div>
+
+    <div class="aa-sms" style={bodyStyle}>
+      <div class="aa-sms__subtitle slds-p-horizontal_medium slds-p-bottom_x-small">
+        {headerSubtitle}
+      </div>
+
+      <!-- No-phone banner -->
+      <template lwc:if={showNoPhoneBanner}>
+        <div class="aa-sms__banner slds-notify slds-notify_alert slds-theme_warning slds-m-horizontal_medium slds-m-bottom_small" role="alert">
+          <lightning-icon icon-name="utility:warning" size="x-small" variant="inverse" class="slds-m-right_x-small"></lightning-icon>
+          <span class="aa-sms__banner-text">No phone number on file. Add Phone__c to send SMS.</span>
+        </div>
+      </template>
+
+      <!-- Load error -->
+      <template lwc:if={loadError}>
+        <div class="slds-notify slds-notify_alert slds-theme_error slds-m-horizontal_medium slds-m-bottom_small" role="alert">
+          <lightning-icon icon-name="utility:error" size="x-small" variant="inverse" class="slds-m-right_x-small"></lightning-icon>
+          {loadError}
+        </div>
+      </template>
+
+      <!-- Thread -->
+      <div class="aa-sms__thread" role="log" aria-live="polite" onscroll={handleThreadScroll}>
+        <template lwc:if={loading}>
+          <div class="aa-sms__loading">
+            <div class="aa-sms__skeleton is-in"></div>
+            <div class="aa-sms__skeleton is-out"></div>
+            <div class="aa-sms__skeleton is-in"></div>
+          </div>
+        </template>
+
+        <template lwc:if={isEmpty}>
+          <div class="aa-sms__empty">
+            <lightning-icon icon-name="utility:sms" size="large" alternative-text="No SMS" variant="warning"></lightning-icon>
+            <p class="slds-m-top_small">No SMS messages yet.</p>
+            <p class="slds-text-body_small slds-text-color_weak">Send the first message below.</p>
+          </div>
+        </template>
+
+        <template lwc:if={hasMessages}>
+          <template for:each={messages} for:item="m">
+            <div key={m.key} class="aa-sms__msg-wrap">
+              <template lwc:if={m.showDay}>
+                <div class="aa-sms__day">{m.dayLabel}</div>
+              </template>
+              <div class={m.bubbleClass}>
+                <template lwc:if={m.showSender}>
+                  <div class="aa-sms__sender">{m.senderName}</div>
+                </template>
+                <div class="aa-sms__text">{m.body}</div>
+                <div class="aa-sms__meta">
+                  <span class="aa-sms__time">{m.timeLabel}</span>
+                  <template lwc:if={m.isOut}>
+                    <span class={m.statusClass}>{m.statusLabel}</span>
+                  </template>
+                </div>
+                <template lwc:if={m.hasError}>
+                  <div class="aa-sms__errcode">
+                    <template lwc:if={m.errorCode}>Twilio error {m.errorCode}</template>
+                    <template lwc:else>Delivery failed</template>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </template>
+      </div>
+
+      <!-- Composer -->
+      <div class="aa-sms__composer">
+        <textarea
+          class="aa-sms__ta"
+          placeholder={composerPlaceholder}
+          value={composerText}
+          oninput={handleComposeInput}
+          onkeydown={handleKeydown}
+          disabled={disableAll}
+          rows="2"
+          maxlength="1600"
+          aria-label="SMS message"
+        ></textarea>
+        <div class="aa-sms__actionrow">
+          <span class="aa-sms__hint">SMS via TwilioSF</span>
+          <button class="slds-button slds-button_brand aa-sms__send" disabled={sendDisabled} onclick={handleSend} type="button">
+            <template lwc:if={sending}>
+              <lightning-spinner alternative-text="Sending" size="x-small" variant="inverse"></lightning-spinner>
+            </template>
+            <template lwc:else>
+              Send
+            </template>
+          </button>
+        </div>
+      </div>
+    </div>
+  </lightning-card>
+</template>

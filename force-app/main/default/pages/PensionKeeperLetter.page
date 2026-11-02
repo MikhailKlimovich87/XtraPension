@@ -1,0 +1,110 @@
+<apex:page readOnly="true" standardController="Application__c" extensions="PensionKeeperLetterPdf" renderAs="pdf" id="PensionKeeperLetter" sidebar="false" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+                @page {
+                    size: 210mm 297mm;
+					margin-top: 30px;
+					margin-bottom: 40px;
+					@bottom-left {
+                        content: element(footer);
+                    }
+                }
+				div.footer {
+            		position: running(footer);
+                    width: 100%;
+                    margin-right: 1px;
+                    text-align: center;
+					color:#808080;
+					font-size:8pt;
+					height:20%
+				}
+				body {
+					font-family: "Roboto", sans-serif;
+				}
+                h4 {
+					text-align: center;
+                    margin-top: 0px !important;
+                    margin-bottom: 0px !important;
+                }
+				.breakPageAfter{
+      				page-break-after: always;
+   				}
+				.free-form p {
+					margin-top: 15px;
+                    margin-bottom: 15px;
+				}
+				.free-form {
+					text-align: justify;
+				}
+                .red-data {
+                    color: red;
+                }
+                .logo {
+                    text-align: center;
+                }
+                .logo-end {
+                    text-align: right;
+                }
+                .login-info {
+                    border: 2px solid black;
+                }
+                .login-header {
+                    margin-top: 0 !important;
+                    padding: 5px 10px;
+                    font-weight: bold;
+                    font-size: 14px;
+                    background-color: #008B7E;
+                    width: 60%;
+                    color: white;
+                }
+                .login-content {
+                    padding-left: 5px;
+                }
+                a {
+                    color: black;
+                }
+            </style>
+        </head>
+        <body>
+			<div class="footer">
+				<div>XtraPension Ltd, Gray Office Park, Headford Road, Galway, H91 WC1P, Ireland</div>
+                <div>Irish Co No: 749802 © 2026 All Rights Reserved. E&amp;OE. XtraPension.com</div>
+    		</div>
+            <div class="logo">
+                <apex:image url="{!$Resource.XtraPensionLogo}" alt="Logo" width="30%"/>
+            </div>
+            <h4>Protect your Valuable UK State Pension - It's Easy to Lose Track!</h4>
+            <div class="free-form">
+                <p>Dear {!appObj.First_Name__c},</p>
+                <p>Thanks for using XtraPension to TopUp up your UK pension. By taking action, you've secured a very valuable asset for your retirement.</p>
+                <p>To ensure your investment stays protected, we invite you to join our <b>Pension Keeper</b> service. For just <b>{!annualAmount} annually</b>, we take the stress out of your UK state pension admin, providing the annual oversight you need to reach your maximum entitlement.</p>
+                <p><b>Why Join Pension Keeper?</b></p>
+                <ul>
+                    <li><b>Keep Updated:</b> <span class="red-data"><u>CRITICAL NEW HMRC rule  </u></span> on 16th March 2026 mean people paying cheaper Class 2 rate <span class="red-data">MUST REAPPLY</span> before 2027 to be able to buy future years at standard Class 3 rate.</li>
+                    <li><b>Stay on Track:</b> We remind you exactly when, how much, and how to pay HMRC every year</li>
+                    <li><b>Expert Oversight:</b> We check that HMRC has correctly allocated your payments. Whether you have changed circumstances or simply need questions answered, we ensure you stay in control. We also help you to claim your UK Pension when the time comes.</li>
+                    <li><b>Spouse Included Free:</b> If your partner also used our TopUp service, they're included at no extra cost when you join!</li>
+                </ul>
+                <div class="login-info">
+                    <p class="login-header">ACTIVATE YOU PENSION KEEPER ACCOUNT NOW</p>
+                    <div class="login-content">
+                        <p>It takes under a minute to access all your details which are waiting now for you.</p>
+                        <p><b>Visit:</b> <a href="https://keeper.xtrapension.com" target="_blank">https://keeper.xtrapension.com</a></p>
+                        <p><b>To log in, use your Application Number:</b> {!appObj.Name}</p>
+                        <p><b>Your Registered Email is:</b> {!appObj.Short_Email__c}</p>
+                    </div>
+                </div>
+                <p>Managing a UK Pension shouldn't be a guessing game. Between annual price hikes and shifting HMRC rules, losing track is a risk most people simply can't afford. You've already done the hard work by starting this process - now, let's make sure we protect what you have for the long term.</p>
+                <p>Thanks again for choosing XtraPension!</p>
+                <p style="margin-bottom:0 !important;">
+                    <apex:image url="{!$Resource.JohnSignature}" alt="Signature" width="15%"/>
+                </p>
+                <div style="margin-top:0 !important;"><b>John Ring, Operations Director</b></div>
+                <p><b>PS:</b> If you didn't already, we'd love a quick Google review. Or, if you're up for sharing a short video testimonial, we'd be happy to pay you for your time! <b>See <a href="https://xpen.uk/review" target="_blank">xpen.uk/review</a></b></p>
+                <div><b>PPS:</b> Get a free year of Pension Keeper! If either of your parents worked in the UK, refer them to us and if we get them a lump sum they didn't know about, you get a year free. <b>See <a href="https://xpen.uk/basic" target="_blank">xpen.uk/basic</a></b></div>
+            </div>
+        </body>
+    </html>
+
+</apex:page>
