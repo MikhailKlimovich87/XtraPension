@@ -300,6 +300,9 @@ public class CheckModuleController {
         message.setSubject(currRequest.Application__r.Name + ' - ' + messageBody);
         message.setPlainTextBody('');
         message.toAddresses = new String[] {AGENT_NAME_BY_EMAIL.get(currRequest.Agent_To_Sent_Notification__c)};
+        if ( AGENT_NAME_BY_EMAIL.get(currRequest.Agent_To_Sent_Notification__c) == null ) {
+            return;
+        }
         lstSingleEmailMessage.add(message);
 
         Messaging.SendEmailResult[] result = Messaging.sendEmail(lstSingleEmailMessage);

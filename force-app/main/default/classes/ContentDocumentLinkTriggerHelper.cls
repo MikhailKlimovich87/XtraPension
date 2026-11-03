@@ -4,6 +4,7 @@ public with sharing class ContentDocumentLinkTriggerHelper {
         try {
             List<ContentDocumentLink> appDocLinksToInsert = new List<ContentDocumentLink>();
             Set<Id> linkIds = new Set<Id>();
+            List<ContentDocumentLink> linksToUpdate = new List<ContentDocumentLink>();
             for(ContentDocumentLink link : newList) {
                 Schema.SObjectType typeOfRecord = Id.valueOf(link.LinkedEntityId).getSobjectType();
                 if(Schema.Application__c.SObjectType == typeOfRecord) {

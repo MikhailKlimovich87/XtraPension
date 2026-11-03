@@ -1,0 +1,49 @@
+<template>
+    <lightning-card title="Data Collection Progress" icon-name="standard:task">
+        <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+            <div class="slds-progress-bar slds-progress-bar_large" role="progressbar">
+                <span class="slds-progress-bar__value" style={widthStyle}>
+                    <span class="slds-assistive-text">Progress: {percent}%</span>
+                </span>
+            </div>
+            <p class="slds-text-body_small slds-p-top_x-small">{summary}</p>
+
+            <template if:true={declarationPending}>
+                <p class="slds-text-body_small slds-text-color_default slds-p-top_small">
+                    All required data collected &#x2713;
+                </p>
+                <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-top_small" role="alert">
+                    <span class="slds-assistive-text">warning</span>
+                    <lightning-icon icon-name="utility:warning" size="x-small" variant="inverse" class="slds-m-right_x-small"></lightning-icon>
+                    <span class="slds-text-body_small">
+                        <b>Declaration pending.</b> The 3 declaration fields (Signature, Signatory Name, Date) must be filled manually before Fill on DWP can run.
+                    </span>
+                </div>
+            </template>
+
+            <template if:true={readyForFill}>
+                <p class="slds-text-body_small slds-text-color_success slds-p-top_small">
+                    All data collected and declaration signed &#x2713; Ready for Fill on DWP.
+                </p>
+            </template>
+
+            <template if:true={showFields}>
+                <p class="slds-text-title slds-p-top_small slds-p-bottom_xx-small">Still missing:</p>
+                <ul class="slds-list_dotted slds-text-body_small">
+                    <template for:each={missingFields} for:item="f">
+                        <li key={f.key}>{f.label}</li>
+                    </template>
+                </ul>
+            </template>
+
+            <template if:true={showSections}>
+                <p class="slds-text-title slds-p-top_small slds-p-bottom_xx-small">Sections still to cover:</p>
+                <ul class="slds-list_dotted slds-text-body_small">
+                    <template for:each={missingSections} for:item="s">
+                        <li key={s.key}>{s.name}</li>
+                    </template>
+                </ul>
+            </template>
+        </div>
+    </lightning-card>
+</template>

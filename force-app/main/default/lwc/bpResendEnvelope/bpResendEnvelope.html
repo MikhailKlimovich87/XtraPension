@@ -1,0 +1,35 @@
+<template>
+    <lightning-card title="Resend Big Envelope (Stage 2)" icon-name="standard:document">
+        <!-- Spinner overlay: shows while the Apex call is running -->
+        <template if:true={isProcessing}>
+            <lightning-spinner
+                alternative-text="Sending to FTP..."
+                size="medium">
+            </lightning-spinner>
+        </template>
+
+        <div class="slds-p-around_medium">
+            <p class="slds-m-bottom_small">
+                Click below to manually resend the Big Envelope (Stage 2 full-form ZIP) to the FTP.
+            </p>
+            
+            <lightning-button 
+                variant="brand" 
+                label={buttonLabel}
+                onclick={handleResend} 
+                disabled={isProcessing}>
+            </lightning-button>
+
+            <template if:true={statusMessage}>
+                <div class="slds-m-top_medium">
+                    <lightning-icon 
+                        icon-name={statusIcon} 
+                        size="small" 
+                        variant={statusVariant}>
+                    </lightning-icon>
+                    <span class="slds-m-left_x-small">{statusMessage}</span>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

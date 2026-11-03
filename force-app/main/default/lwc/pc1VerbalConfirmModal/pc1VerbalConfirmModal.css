@@ -1,0 +1,13 @@
+.pc1-vcm__body { padding: 4px 0 8px; }
+.pc1-vcm__instruction { color: #333; font-size: 0.9rem; margin: 0 0 14px; line-height: 1.4; }
+.pc1-vcm__name-box {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 14px 16px; margin: 0 0 16px;
+    background: #f0f6ff; border: 1px solid #b3d4ff; border-radius: 6px;
+}
+.pc1-vcm__name-label { color: #666; font-size: 0.75rem; text-transform: uppercase; letter-spacing: .04em; }
+.pc1-vcm__name-value {
+    font-size: 1.4rem; font-weight: 600; color: #111;
+    font-family: ui-monospace, Menlo, monospace;
+    word-break: break-word;
+}

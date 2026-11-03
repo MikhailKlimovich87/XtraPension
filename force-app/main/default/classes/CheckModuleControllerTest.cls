@@ -61,7 +61,7 @@ public class CheckModuleControllerTest {
         CheckModuleController.CheckRequestWrapper testWrapper = new CheckModuleController.CheckRequestWrapper();
         testWrapper.checkReplies = new List<CheckModuleController.CheckRequest>();
         testWrapper.checkReplies.add(req);
-        testWrapper.checkAgent = 'Vince';
+        testWrapper.checkAgent = 'Daniel';
 
         Test.startTest();
         List<HMRC_Check__c> results = CheckModuleController.createHMRCCheckRequestRecord(testWrapper);

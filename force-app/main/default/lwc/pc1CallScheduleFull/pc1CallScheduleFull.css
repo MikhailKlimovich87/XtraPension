@@ -1,0 +1,142 @@
+/* pc1CallScheduleFull — full-page Schedule History listing.
+ * Visual mirror of pc1FilesFull (breadcrumb + title + sortable table). */
+
+.pc1-sched-page {
+    padding: 0;
+    background: var(--slds-g-color-neutral-base-100, #fff);
+}
+
+.pc1-sched-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1rem 1.5rem 0.75rem 1.5rem;
+    border-bottom: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+}
+.pc1-sched-header__left { min-width: 0; }
+.pc1-sched-header__right {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+.pc1-sched-title-row {
+    display: flex;
+    align-items: center;
+    margin-top: 0.25rem;
+}
+.pc1-sched-title-row h1 {
+    font-weight: 700;
+    margin: 0;
+}
+.pc1-sched-subtitle {
+    margin: 0.25rem 0 0 0;
+}
+
+.slds-breadcrumb ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.slds-breadcrumb__item {
+    display: inline-flex;
+    align-items: center;
+    color: var(--slds-g-color-brand-base-50, #0176d3);
+    font-size: 0.75rem;
+}
+.slds-breadcrumb__item a { color: inherit; text-decoration: none; }
+.slds-breadcrumb__item a:hover { text-decoration: underline; }
+.slds-breadcrumb__item + .slds-breadcrumb__item::before {
+    content: '\203a';    /* › */
+    color: var(--slds-g-color-neutral-base-50, #706e6b);
+    padding: 0 0.5rem;   /* symmetric spacing on both sides of the separator */
+    display: inline-block;
+    font-weight: 400;
+}
+.slds-breadcrumb__item a {
+    color: inherit;
+    text-decoration: none;
+}
+.slds-breadcrumb__item a:hover { text-decoration: underline; }
+.slds-breadcrumb__item span {
+    color: var(--slds-g-color-neutral-base-30, #706e6b);
+}
+
+/* Table container allows horizontal scroll on narrow viewports */
+.pc1-sched-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.pc1-sched-table {
+    width: 100%;
+    margin: 0;
+    min-width: 60rem;
+}
+.pc1-sched-table thead th {
+    background: var(--slds-g-color-neutral-base-95, #f3f3f3);
+    padding: 0.5rem 0.75rem;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--slds-g-color-neutral-base-20, #444);
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+}
+.pc1-sched-th {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: inherit;
+    padding: 0;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.pc1-sched-th:hover { color: var(--slds-g-color-brand-base-50, #0176d3); }
+.pc1-sched-sort {
+    color: var(--slds-g-color-brand-base-50, #0176d3);
+    font-size: 0.75rem;
+    min-width: 0.75rem;
+}
+
+.pc1-sched-col-num     { width: 3rem;  text-align: center; color: var(--slds-g-color-neutral-base-30, #706e6b); font-size: 0.75rem; }
+.pc1-sched-col-status  { width: 8rem; }
+.pc1-sched-col-actions { width: 7rem;  text-align: center; }
+
+.pc1-sched-row td {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--slds-g-color-neutral-base-10, #181818);
+    border-bottom: 1px solid var(--slds-g-color-neutral-base-95, #f4f4f4);
+    vertical-align: middle;
+}
+.pc1-sched-row:hover td { background: var(--slds-g-color-neutral-base-95, #fbfcfd); }
+
+.pc1-sched-row a {
+    color: var(--slds-g-color-brand-base-50, #0176d3);
+    text-decoration: none;
+}
+.pc1-sched-row a:hover { text-decoration: underline; }
+
+.pc1-sched-empty {
+    color: var(--slds-g-color-neutral-base-50, #a8a8a8);
+}
+
+/* Status badges — sizing matches pc1FillRunPanel exactly */
+.pc1-sched-table .slds-badge {
+    font-size: 0.6875rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.pc1-sched-cancel-btn {
+    padding: 0.125rem 0.75rem;
+    font-size: 0.75rem;
+}

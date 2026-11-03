@@ -1,40 +1,38 @@
 public class CheckAgentDistributorSchedulerHandler {
+    private Map<String, Integer> CHECK_AGENT_BY_EMPTY_APPS;
 
-    private Map<String, Integer> CHECK_AGENT_BY_EMPTY_APPS {
-        get {
-            CHECK_AGENT_BY_EMPTY_APPS = new Map<String, Integer>{
-                'Clydel' => 0,
-                'Daniel' => 0,
-                'Hannah' => 0,
-                'Vince'  => 0
-            };
-            for(Application__c app : [
-	            SELECT
-    	            Name,
-    	            Check_Agent__c,
-                    (SELECT Id FROM HMRC_Check_Requests__r)
-                FROM Application__c
-                WHERE (Status__c = 'Posted' OR
-                       Status__c = '64-8 Bounce' OR
-                       Status__c = 'HMRC Reply 1'  OR
-                       Status__c = 'HMRC Reply 2'  OR
-                       Status__c  = 'DWP Teleclaim' OR
-                       Status__c = 'DWP 2 Emails Sent' OR
-                       Status__c = 'XP Letter Sent') AND
-                       Check_Agent__c != null
-                ]) {
-                if(app.HMRC_Check_Requests__r.size() == 0) {
-    	            Integer countApps = CHECK_AGENT_BY_EMPTY_APPS.get(app.Check_Agent__c);
-    	            if (countApps == null ) CHECK_AGENT_BY_EMPTY_APPS.put(app.Check_Agent__c, 1);
-    	            else CHECK_AGENT_BY_EMPTY_APPS.put(app.Check_Agent__c, ++countApps);
-                }
+    public CheckAgentDistributorSchedulerHandler() {
+        CHECK_AGENT_BY_EMPTY_APPS = new Map<String, Integer>{
+            'Clydel' => 0,
+            'Daniel' => 0,
+            'Hannah' => 0,
+            'Vince'  => 0
+        };
+        for(Application__c app : [
+	        SELECT
+    	        Name,
+    	        Check_Agent__c,
+                (SELECT Id FROM HMRC_Check_Requests__r)
+            FROM Application__c
+            WHERE (Status__c = 'Posted' OR
+                   Status__c = '64-8 Bounce' OR
+                   Status__c = 'HMRC Reply 1'  OR
+                   Status__c = 'HMRC Reply 2'  OR
+                   Status__c  = 'DWP Teleclaim' OR
+                   Status__c = 'DWP 2 Emails Sent' OR
+                   Status__c = 'XP Letter Sent') AND
+                   Check_Agent__c != null
+            ]) {
+            if(app.HMRC_Check_Requests__r.size() == 0) {
+    	        Integer countApps = CHECK_AGENT_BY_EMPTY_APPS.get(app.Check_Agent__c);
+    	        if (countApps == null ) CHECK_AGENT_BY_EMPTY_APPS.put(app.Check_Agent__c, 1);
+    	        else CHECK_AGENT_BY_EMPTY_APPS.put(app.Check_Agent__c, ++countApps);
             }
-            return CHECK_AGENT_BY_EMPTY_APPS;
         }
-        private set;
     }
 
     public void assignedCheckUser() {
+
         Date day2WeeksAgo = Date.today().addDays(-14);
         List<Application__c> postedApps2WeeksAgo = [
             SELECT
@@ -77,5 +75,4 @@ public class CheckAgentDistributorSchedulerHandler {
         }
         return agentName;
     }
-
 }

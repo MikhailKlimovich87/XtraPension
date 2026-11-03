@@ -1,0 +1,118 @@
+<template>
+    <div class="slds-card aa-addr">
+        <header class="aa-addr__head">
+            <div>
+                <h2 class="aa-addr__title">Address</h2>
+                <p class="aa-addr__sub">Loqate-validated UK address. Search finds addresses live; every field is editable if you need to override.</p>
+            </div>
+            <template if:false={editing}>
+                <lightning-button
+                    icon-name="utility:edit"
+                    label="Edit"
+                    variant="brand-outline"
+                    onclick={handleEdit}>
+                </lightning-button>
+            </template>
+        </header>
+
+        <!-- READ MODE ------------------------------------------------- -->
+        <template if:false={editing}>
+            <template if:true={hasAddress}>
+                <div class="aa-addr__display">
+                    <template for:each={displayLines} for:item="line">
+                        <div key={line} class="aa-addr__line">{line}</div>
+                    </template>
+                </div>
+            </template>
+            <template if:false={hasAddress}>
+                <div class="aa-addr__empty">
+                    No address on file yet. Click <em>Edit</em> to search Loqate or type it manually.
+                </div>
+            </template>
+        </template>
+
+        <!-- EDIT MODE ------------------------------------------------- -->
+        <template if:true={editing}>
+            <div class="aa-addr__search-wrap">
+                <label class="slds-form-element__label" for="addr-search">Find address (search Loqate)</label>
+                <div class="aa-addr__search-box">
+                    <input
+                        id="addr-search"
+                        type="text"
+                        value={query}
+                        oninput={handleSearchInput}
+                        placeholder="Start typing postcode or first line…"
+                        class="slds-input"
+                        autocomplete="off" />
+                </div>
+
+                <template if:true={stack.length}>
+                    <div class="aa-addr__crumbs">
+                        <span class="aa-addr__crumb aa-addr__crumb--home" onclick={handleStartOver}>↺ Start over</span>
+                        <template for:each={breadcrumbs} for:item="c">
+                            <span key={c.id}>
+                                <span class="aa-addr__crumb-sep">›</span>
+                                <span class="aa-addr__crumb" data-idx={c.idx} onclick={handleCrumbClick}>{c.text}</span>
+                            </span>
+                        </template>
+                    </div>
+                </template>
+
+                <template if:true={showResults}>
+                    <div class="aa-addr__results">
+                        <template for:each={results} for:item="r" for:index="i">
+                            <div key={r.id} class="aa-addr__result" data-idx={i} onclick={handleResultClick}>
+                                <div class="aa-addr__result-main">
+                                    {r.text}
+                                    <template if:true={r.type}>
+                                        <template if:false={r.description}></template>
+                                    </template>
+                                    <template if:true={r.description}>
+                                        <span class="aa-addr__result-desc"> — {r.description}</span>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <template if:true={lookupStatus}>
+                    <div class="aa-addr__status">{lookupStatus}</div>
+                </template>
+            </div>
+
+            <div class="aa-addr__fields">
+                <lightning-input
+                    label="Address line 1" required
+                    value={draft.line1} data-key="line1"
+                    onchange={handleFieldChange} max-length="255"></lightning-input>
+                <lightning-input
+                    label="Address line 2"
+                    value={draft.line2} data-key="line2"
+                    onchange={handleFieldChange} max-length="255"></lightning-input>
+                <lightning-input
+                    label="Town or city" required
+                    value={draft.city} data-key="city"
+                    onchange={handleFieldChange} max-length="100"></lightning-input>
+                <lightning-input
+                    label="County"
+                    value={draft.county} data-key="county"
+                    onchange={handleFieldChange} max-length="80"></lightning-input>
+                <lightning-input
+                    label="Postcode" required
+                    value={draft.postcode} data-key="postcode"
+                    onchange={handleFieldChange} max-length="20"></lightning-input>
+            </div>
+
+            <footer class="aa-addr__foot">
+                <lightning-button label="Cancel" onclick={handleCancel} disabled={saving}></lightning-button>
+                <lightning-button
+                    class="slds-m-left_x-small"
+                    variant="brand"
+                    label="Save"
+                    onclick={handleSave}
+                    disabled={saveDisabled}></lightning-button>
+            </footer>
+        </template>
+    </div>
+</template>

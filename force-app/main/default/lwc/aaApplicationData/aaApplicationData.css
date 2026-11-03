@@ -1,0 +1,199 @@
+/* Subtitle rendered under the lightning-card title / tab header */
+.aa-sub { margin: 0 0 0.5rem 0; }
+.aa-subtitle {
+    font-style: italic;
+    color: var(--slds-g-color-neutral-base-40, #8b8a89);
+    margin-top: -0.375rem;
+}
+
+/* Lock icon shown next to values whose parent gate is unanswered */
+.lock-icon {
+    display: inline-block;
+    margin-right: 4px;
+    font-size: 0.8125rem;
+    color: var(--slds-g-color-neutral-base-40, #a0a0a0);
+    vertical-align: middle;
+}
+.fvalue.locked .value-text {
+    color: var(--slds-g-color-neutral-base-40, #a0a0a0);
+    font-style: italic;
+}
+.pencil.locked {
+    color: var(--slds-g-color-neutral-base-70, #cfcecd);
+    cursor: not-allowed;
+}
+.pencil.locked:hover {
+    color: var(--slds-g-color-neutral-base-40, #a0a0a0);
+}
+
+.section {
+    border-top: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+}
+.section:first-child { border-top: 0; }
+
+/* Section head is a real <button> so it gets native focus styles */
+.section-head {
+    display: flex; align-items: center; gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    background: var(--slds-g-color-neutral-base-95, #fafaf9);
+    border: 0;
+    cursor: pointer;
+    user-select: none;
+    text-align: left;
+    font: inherit;
+}
+.section-head:hover { background: var(--slds-g-color-neutral-base-90, #f4f6f9); }
+.section-head:focus-visible {
+    outline: 2px solid var(--slds-g-color-brand-base-50, #0176d3);
+    outline-offset: -2px;
+}
+.section-head .chev {
+    color: var(--slds-g-color-neutral-base-30, #706e6b);
+    font-size: 0.6875rem; width: 12px;
+}
+.section-head .section-title {
+    /* SLDS section title look — matches native record page collapsible sections */
+    font-weight: 700;
+    font-size: 0.8125rem;
+    color: var(--slds-g-color-neutral-base-10, #181818);
+    flex: 1;
+}
+.section-head .section-count {
+    font-size: 0.6875rem;
+    color: var(--slds-g-color-neutral-base-30, #706e6b);
+}
+
+.section-body { padding: 2px 0; }
+.section-body.hidden { display: none; }
+
+.field-row {
+    display: grid;
+    grid-template-columns: minmax(160px, 40%) 1fr 28px;
+    gap: 0.5rem;
+    padding: 0.375rem 1rem;
+    border-bottom: 1px solid var(--slds-g-color-neutral-base-95, #f4f4f4);
+    align-items: start;
+}
+.field-row:last-child { border-bottom: 0; }
+.field-row:hover { background: var(--slds-g-color-neutral-base-95, #fbfcfd); }
+.field-row:hover .pencil { opacity: 1; }
+.field-row:focus-within .pencil { opacity: 1; }
+
+/* Field label — matches SLDS form-element__label but without full uppercase
+   (we keep the natural-language question wording readable). */
+.flabel {
+    font-size: 0.75rem;
+    color: var(--slds-g-color-neutral-base-30, #706e6b);
+    text-transform: none;
+    line-height: 1.4;
+    font-weight: 400;
+}
+
+/* Question tag (Q5, Q14 etc). Solid dark background + white text so it
+ * stays readable regardless of Salesforce release theme changes. */
+.qtag.slds-badge,
+.qtag {
+    background-color: var(--slds-g-color-accent-3, #4b1590) !important;
+    color: #ffffff !important;
+    margin-right: 5px;
+    vertical-align: middle;
+    font-weight: 700;
+}
+.qtext { vertical-align: middle; }
+
+.fvalue {
+    font-size: 0.8125rem;
+    color: var(--slds-g-color-neutral-base-10, #181818);
+    word-break: break-word;
+}
+.fvalue.empty {
+    color: var(--slds-g-color-neutral-base-50, #a0a0a0);
+    font-style: italic;
+}
+.value-text { margin-right: 4px; }
+
+/* Source badges reuse SLDS slds-badge look */
+.src-badge {
+    display: inline-block;
+    font-size: 0.625rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: 4px;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+/* Solid dark backgrounds + white text — high contrast regardless of theme. */
+.src-mary    { background: #014486 !important; color: #ffffff !important; }
+.src-human   { background: #454545 !important; color: #ffffff !important; }
+.src-default { background: #6f3aad !important; color: #ffffff !important; }
+.src-form    { background: #2e844a !important; color: #ffffff !important; }
+.src-intake  { background: #8c4b02 !important; color: #ffffff !important; }
+
+.pencil {
+    background: transparent; border: 0; cursor: pointer;
+    color: var(--slds-g-color-neutral-base-50, #b0adab);
+    font-size: 0.875rem; padding: 2px 4px;
+    opacity: 0.15; transition: opacity 0.15s;
+    border-radius: 3px;
+}
+.pencil:hover { color: var(--slds-g-color-brand-base-50, #0176d3); }
+.pencil:focus-visible {
+    opacity: 1;
+    outline: 2px solid var(--slds-g-color-brand-base-50, #0176d3);
+    outline-offset: 1px;
+}
+.pencil-placeholder { display: inline-block; width: 28px; }
+
+/* Declaration quick-fill buttons ("Use <name>" + "Today"). Small, inline,
+ * lightweight — meant to feel like a shortcut next to the value, not a
+ * primary action. */
+.aa-quickfill {
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    padding: 0 0.5rem;
+    height: 1.5rem;
+    vertical-align: middle;
+}
+
+.editor { display: flex; flex-direction: column; gap: 0.375rem; }
+.ed-input {
+    font-family: inherit; font-size: 0.8125rem;
+    width: 100%;
+}
+.date-parts { display: flex; gap: 0.375rem; }
+.date-parts .day { width: 55px; text-align: center; }
+.date-parts .year { width: 80px; text-align: center; }
+.chk-list { display: flex; flex-direction: column; gap: 4px; }
+.chk-list .chk-item {
+    display: flex; gap: 6px; align-items: center;
+    font-size: 0.75rem;
+}
+
+.ed-actions {
+    display: flex; gap: 0.375rem; align-items: center;
+    margin-top: 4px; flex-wrap: wrap;
+}
+.ed-hint {
+    font-size: 0.6875rem;
+    color: var(--slds-g-color-neutral-base-30, #706e6b);
+}
+/* Display-mode warning on a row (home-address-postcode differing from the
+   record postcode, audit F35): must be visible without opening the editor. */
+.row-warn {
+    display: block;
+    flex-basis: 100%;
+    margin-top: 2px;
+    font-size: 0.75rem;
+    color: var(--slds-g-color-error-base-40, #ba0517);
+}
+
+@media (max-width: 900px) {
+    .field-row { grid-template-columns: 1fr 28px; }
+    .fvalue { grid-column: 1; }
+    .flabel { grid-column: 1; }
+    .pencil, .pencil-placeholder { grid-column: 2; grid-row: 1; }
+}

@@ -24,8 +24,8 @@ public class AgentAuthLetterPdfHandler {
             return;
         }
         Application__c currApp = apps[0];
-        PageReference savepage ;
-        savepage = Page.AgentAuthLetter;
+        PageReference savepage;
+        savepage = Page.PartialResubmissionLetter;
         savepage.getParameters().put('id', appId);
         blob pdfBlob;
         if (!Test.isRunningTest()) {
@@ -39,10 +39,10 @@ public class AgentAuthLetterPdfHandler {
                 ContentDocument.Title,
                 LinkedEntityId
             FROM ContentDocumentLink
-            WHERE ContentDocument.Title LIKE '%AgentAuthLetter%' AND
+            WHERE ContentDocument.Title LIKE '%PartialResubmissionLetter%' AND
                   LinkedEntityId = :appId
         ];
-        String finalTitle = currApp.First_Name__c + '_' + currApp.Second_Name__c + '_' + currApp.Name +'_AgentAuthLetter';
+        String finalTitle = currApp.First_Name__c + '_' + currApp.Second_Name__c + '_' + currApp.Name +'_PartialResubmissionLetter';
         if (oldDocuments.size() != 0) {
             insert new ContentVersion (
                 ContentDocumentId = oldDocuments[0].ContentDocumentId,
@@ -80,24 +80,39 @@ public class AgentAuthLetterPdfHandler {
             FROM ContentDocumentLink
             WHERE LinkedEntityId = :appId AND (
                   ContentDocument.Title LIKE '%64-8_ForSignature_completed' OR
-                  ContentDocument.Title LIKE '%AgentAuthLetter'
+                  ContentDocument.Title LIKE '%CF083_ForSignature_completed' OR
+                  ContentDocument.Title LIKE '%CustomLetter_ForSignature' OR
+                  ContentDocument.Title LIKE '%PartialResubmissionLetter' OR
+                  ContentDocument.Title LIKE '%UPLOAD%'
                 )
             ORDER BY ContentDocument.CreatedDate DESC
         ];
         Map<String, ContentDocumentLink> fileKeyWordByLink = new Map<String, ContentDocumentLink>();
         for (ContentDocumentLink link : cdls) {
-            if (link.ContentDocument.Title.contains('64-8') && fileKeyWordByLink.get('64-8') == null) {
+            if (link.ContentDocument.Title.contains('CF083') && fileKeyWordByLink.get('CF083') == null) {
+                fileKeyWordByLink.put('CF083', link);
+            } else if (link.ContentDocument.Title.contains('64-8') && fileKeyWordByLink.get('64-8') == null) {
                 fileKeyWordByLink.put('64-8', link);
-            } else if (link.ContentDocument.Title.contains('AgentAuthLetter') && fileKeyWordByLink.get('AgentAuthLetter') == null) {
-                fileKeyWordByLink.put('AgentAuthLetter', link);
+            } else if (link.ContentDocument.Title.contains('CustomLetter') && fileKeyWordByLink.get('CustomLetter') == null) {
+                fileKeyWordByLink.put('CustomLetter', link);
+            } else if (link.ContentDocument.Title.contains('UPLOAD') && fileKeyWordByLink.get('UPLOAD') == null) {
+                fileKeyWordByLink.put('UPLOAD', link);
+            } else if (link.ContentDocument.Title.contains('PartialResubmissionLetter') && fileKeyWordByLink.get('PartialResubmissionLetter') == null) {
+                fileKeyWordByLink.put('PartialResubmissionLetter', link);
             }
         }
         String errorMessage = '';
         if (fileKeyWordByLink.get('64-8') == null) {
             errorMessage += '64-8_ForSignature_completed.pdf file is missing. \n';
         }
-        if (fileKeyWordByLink.get('AgentAuthLetter') == null) {
-            errorMessage += 'AgentAuthLetter.pdf file is missing. \n';
+        if (fileKeyWordByLink.get('PartialResubmissionLetter') == null) {
+            errorMessage += 'PartialResubmissionLetter.pdf file is missing. \n';
+        }
+        if (fileKeyWordByLink.get('CF083') == null) {
+            errorMessage += 'CF083_ForSignature_completed.pdf file is missing. \n';
+        }
+        if (fileKeyWordByLink.get('CustomLetter') == null) {
+            errorMessage += 'CustomLetter.pdf file is missing. \n';
         }
 
         if (String.isNotBlank(errorMessage)) {
@@ -110,7 +125,17 @@ public class AgentAuthLetterPdfHandler {
         Compression.ZipWriter writer = new Compression.ZipWriter();
 
         Set<Id> contentDocumentIds = new Set<Id>();
-        contentDocumentIds.add(fileKeyWordByLink.get('AgentAuthLetter').ContentDocumentId);
+
+        if (fileKeyWordByLink.get('PartialResubmissionLetter') != null) {
+            contentDocumentIds.add(fileKeyWordByLink.get('PartialResubmissionLetter').ContentDocumentId);
+        }
+        contentDocumentIds.add(fileKeyWordByLink.get('CF083').ContentDocumentId);
+        contentDocumentIds.add(fileKeyWordByLink.get('CustomLetter').ContentDocumentId);
+        Boolean isContainUploadFile = false;
+        if (fileKeyWordByLink.get('UPLOAD') != null) {
+            contentDocumentIds.add(fileKeyWordByLink.get('UPLOAD').ContentDocumentId);
+            isContainUploadFile = true;
+        }
         contentDocumentIds.add(fileKeyWordByLink.get('64-8').ContentDocumentId);
 
         Map<String, Id> currVers = new Map<String, Id>();
@@ -133,7 +158,7 @@ public class AgentAuthLetterPdfHandler {
                 ContentDocument.Title
             FROM ContentDocumentLink
             WHERE LinkedEntityId = :appId AND
-                  ContentDocument.Title LIKE '%64-8_AgentAuth'
+                  ContentDocument.Title LIKE '%RESUBMISSION_LETTER_ZIP'
         ];
 
         List<Application__c> apps = [
@@ -148,7 +173,7 @@ public class AgentAuthLetterPdfHandler {
         if(apps.size() == 0) return;
         Application__c currentApplication = apps[0];
         String finalTitle = currentApplication.First_Name__c + '_' + currentApplication.Second_Name__c + '_' +
-        currentApplication.Name + '_64-8_AgentAuth';
+        currentApplication.Name + '_RESUBMISSION_LETTER_ZIP';
         if (zipDoc.size() != 0) {
             insert new ContentVersion (
                 ContentDocumentId = zipDoc[0].ContentDocumentId,
@@ -192,7 +217,7 @@ public class AgentAuthLetterPdfHandler {
                     ContentDocument.LatestPublishedVersion.FileExtension,
                     ContentDocument.LatestPublishedVersion.ContentSize
                 FROM ContentDocumentLinks
-                WHERE ContentDocument.Title LIKE '%64-8_AgentAuth'
+                WHERE ContentDocument.Title LIKE '%RESUBMISSION_LETTER_ZIP'
                 LIMIT 1
             )
             FROM Application__c
@@ -217,7 +242,7 @@ public class AgentAuthLetterPdfHandler {
         sftpWrapper.sftpPort     = PRINTING_HOUSE_SFTP.Port__c;
         sftpWrapper.sftpUserName = PRINTING_HOUSE_SFTP.UserName__c;
         sftpWrapper.sftpPassword = PRINTING_HOUSE_SFTP.Password__c;
-        sftpWrapper.folderName   = PRINTING_HOUSE_SFTP.X64_8_Letter_Folder__c;
+        sftpWrapper.folderName   = 'Full Pack Resubmission';
         sftpWrapper.files        = new List<SFTPFile>{sftpFile};
 
         HttpResponse response = uploadFileToSFTP(sftpWrapper);

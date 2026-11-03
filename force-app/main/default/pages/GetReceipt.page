@@ -73,27 +73,6 @@
 					<td width="25%"></td>
 					<td>
                         <apex:outputText escape="false" value="{!appObj.Full_Current_Address_Abroad__c}"/>
-                        <!-- <span style="{!IF(ISBLANK(appObj.Contact__r.MailingStreet), 'display:none', null)}">
-                            {!appObj.Contact__r.MailingStreet}<br/>
-                        </span>
-                        <span style="{!IF(ISBLANK(appObj.Contact__r.Account.Mailing_Line_2__c), 'display:none', null)}">
-                            {!appObj.Contact__r.Account.Mailing_Line_2__c}<br/>
-                        </span>
-                        <span style="{!IF(ISBLANK(appObj.Contact__r.MailingCity), 'display:none', null)}">
-                            {!appObj.Contact__r.MailingCity}<br/>
-                        </span>
-                        <span style="{!IF(ISBLANK(appObj.Contact__r.Account.Mailing_State__c), 'display:none', null)}">
-                            {!appObj.Contact__r.Account.Mailing_State__c}
-                            <br/>
-                        </span>
-                        <span style="{!IF(ISBLANK(appObj.Contact__r.MailingPostalCode), 'display:none', null)}">
-                            {!appObj.Contact__r.MailingPostalCode}
-                            <br/>
-                        </span>
-                        <span style="{!IF(ISBLANK(appObj.Contact__r.Account.Mailing_Country__c), 'display:none', null)}">
-                            {!appObj.Contact__r.Account.Mailing_Country__c}
-                            <br/>
-                        </span> -->
 					</td>
 				</tr>
 			</table>
@@ -117,9 +96,9 @@
             </h2>
             <div class="main-block">
                 <p>Dear Sir / Madam</p>
-                <p>Payment has just been made to HMRC for £______________________ via Electronic Banking [&nbsp;&nbsp;&nbsp;]  / Enclosed Sterling Draft [&nbsp;&nbsp;&nbsp;]</p>
+                <p>Payment has just been made to HMRC for £______________________ via Electronic Banking</p>
                 <p>My payment reference used is: _____________________</p>
-                <p>This is to pay for___________ past years of voluntary National Insurance Contributions (NICs)</p>
+                <p>This is to pay for___________ past year(s) of voluntary National Insurance Contributions (NICs)</p>
                 <p><b>1. Please send a receipt for this payment to my address above.</b></p>
                 <p><b>2. Please confirm that my payment has been allocated against the tax years indicated below.</b></p>
                 <table class="main-table">
@@ -187,8 +166,8 @@
                         <tr>
                             <td>2015 to 2016</td>
                             <td>[&nbsp;&nbsp;&nbsp;]</td>
-                            <td></td>
-                            <td></td>
+                            <td>2025 to 2026</td>
+                            <td>[&nbsp;&nbsp;&nbsp;]</td>
                         </tr>
                     </thead>
                 </table>

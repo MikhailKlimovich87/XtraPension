@@ -1,0 +1,119 @@
+<template>
+    <div class="pc1-sched-page slds-card">
+        <!-- Header: breadcrumb + title + refresh -->
+        <div class="pc1-sched-header">
+            <div class="pc1-sched-header__left">
+                <nav class="slds-breadcrumb slds-list_horizontal" aria-label="Breadcrumbs">
+                    <ol class="slds-list_horizontal slds-wrap">
+                        <li class="slds-breadcrumb__item slds-text-title">
+                            <a href="#" onclick={handleBreadcrumbApps}>Applications</a>
+                        </li>
+                        <li class="slds-breadcrumb__item slds-text-title">
+                            <a href="#" onclick={handleBreadcrumbRecord}>{breadcrumbLabel}</a>
+                        </li>
+                        <li class="slds-breadcrumb__item slds-text-title">
+                            <span>Schedule History</span>
+                        </li>
+                    </ol>
+                </nav>
+                <div class="pc1-sched-title-row">
+                    <lightning-icon icon-name="standard:event" size="small"></lightning-icon>
+                    <h1 class="slds-text-heading_medium slds-p-left_x-small">{titleText}</h1>
+                </div>
+                <p class="pc1-sched-subtitle slds-text-body_small slds-text-color_weak">{subtitle}</p>
+            </div>
+            <div class="pc1-sched-header__right">
+                <button type="button" class="slds-button slds-button_icon slds-button_icon-border" title="Refresh" onclick={handleRefresh}>
+                    <lightning-icon icon-name="utility:refresh" size="x-small"></lightning-icon>
+                </button>
+            </div>
+        </div>
+
+        <template if:true={error}>
+            <div class="slds-text-color_error slds-p-around_small">Error: {error}</div>
+        </template>
+
+        <!-- Empty state -->
+        <template if:false={hasRows}>
+            <template if:false={error}>
+                <div class="slds-text-color_weak slds-text-align_center slds-p-around_large">
+                    No calls have been scheduled yet.
+                </div>
+            </template>
+        </template>
+
+        <!-- History table -->
+        <template if:true={hasRows}>
+            <div class="pc1-sched-table-wrap">
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_fixed-layout pc1-sched-table">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th class="pc1-sched-col-num"><div class="slds-truncate">&nbsp;</div></th>
+                            <th>
+                                <button type="button" class="slds-button slds-button_reset pc1-sched-th" data-key="requestedAt" onclick={handleSort}>
+                                    Requested At <span class="pc1-sched-sort">{requestedSortArrow}</span>
+                                </button>
+                            </th>
+                            <th>
+                                <button type="button" class="slds-button slds-button_reset pc1-sched-th" data-key="scheduledAt" onclick={handleSort}>
+                                    Scheduled At <span class="pc1-sched-sort">{scheduledSortArrow}</span>
+                                </button>
+                            </th>
+                            <th class="pc1-sched-col-status">
+                                <button type="button" class="slds-button slds-button_reset pc1-sched-th" data-key="status" onclick={handleSort}>
+                                    Status <span class="pc1-sched-sort">{statusSortArrow}</span>
+                                </button>
+                            </th>
+                            <th>
+                                <button type="button" class="slds-button slds-button_reset pc1-sched-th" data-key="firedAt" onclick={handleSort}>
+                                    Fired At <span class="pc1-sched-sort">{firedSortArrow}</span>
+                                </button>
+                            </th>
+                            <th>
+                                <div class="slds-truncate">Call Log</div>
+                            </th>
+                            <th>
+                                <button type="button" class="slds-button slds-button_reset pc1-sched-th" data-key="createdByName" onclick={handleSort}>
+                                    By <span class="pc1-sched-sort">{bySortArrow}</span>
+                                </button>
+                            </th>
+                            <th class="pc1-sched-col-actions"><div class="slds-truncate">Actions</div></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={sortedRows} for:item="r" for:index="i">
+                            <tr key={r.id} class="pc1-sched-row">
+                                <td class="pc1-sched-col-num">{r.rowNum}</td>
+                                <td><div class="slds-truncate" title={r.requestedAtFmt}>{r.requestedAtFmt}</div></td>
+                                <td><div class="slds-truncate" title={r.scheduledAtFmt}>{r.scheduledAtFmt}</div></td>
+                                <td class="pc1-sched-col-status">
+                                    <span class={r.statusBadgeClass}>{r.statusLabel}</span>
+                                </td>
+                                <td><div class="slds-truncate" title={r.firedAtFmt}>{r.firedAtFmt}</div></td>
+                                <td>
+                                    <template lwc:if={r.hasCallLog}>
+                                        <a href={r.callLogUrl} target="_blank" rel="noopener" title={r.callLogName}>{r.callLogName}</a>
+                                    </template>
+                                    <template lwc:else>
+                                        <span class="pc1-sched-empty">—</span>
+                                    </template>
+                                </td>
+                                <td><div class="slds-truncate" title={r.createdByName}>{r.createdByName}</div></td>
+                                <td class="pc1-sched-col-actions">
+                                    <template lwc:if={r.isCancellable}>
+                                        <button type="button"
+                                                class="slds-button slds-button_neutral pc1-sched-cancel-btn"
+                                                data-scheduleid={r.id}
+                                                onclick={handleCancelRow}>
+                                            Cancel
+                                        </button>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </template>
+    </div>
+</template>

@@ -5,16 +5,21 @@ public without sharing class MovedFromAgentCallReportController {
                 List<User> activeUsers = [
                     SELECT Name
                     FROM User
-                    WHERE IsActive = true AND
-                          (Name = 'John Ring' OR
+                    WHERE  Name = 'John Ring' OR
                            Name = 'MaryClaire Mchatton' OR
                            Name = 'Rob Landy' OR
-                           Name = 'Richard Talbot' OR
                            Name = 'Sean Byrne' OR
                            Name = 'Becky McAllister' OR
                            Name = 'Fiona Carey' OR
                            Name = 'Ciara Gibson' OR
-                           Name = 'Grace Coash')
+                           Name = 'Grace Coash' OR 
+                           Name = 'Katherine Hill' OR 
+                           Name = 'Tomas Coleman' OR 
+                           Name = 'Sean Bedford' OR 
+                           Name = 'Megan Byrne' OR 
+                           Name = 'XtraPension Admin' OR 
+                           Name = 'Sales XtraPension' OR 
+                           Name = 'Richard Talbot'
                 ];
                 if (!activeUsers.isEmpty()) {
                     ACTIVE_USERS = activeUsers;
@@ -24,7 +29,7 @@ public without sharing class MovedFromAgentCallReportController {
         }
         private set;
     }
-
+    
     @AuraEnabled(cacheable=true)
     public static ResultDataWrapper getReportData() {
         ResultDataWrapper result = new ResultDataWrapper();
@@ -41,13 +46,19 @@ public without sharing class MovedFromAgentCallReportController {
                   CreatedBy.Name = 'John Ring' OR
                   CreatedBy.Name = 'MaryClaire Mchatton' OR
                   CreatedBy.Name = 'Rob Landy' OR
-                  CreatedBy.Name = 'Richard Talbot' OR
                   CreatedBy.Name = 'Grace Coash' OR
                   CreatedBy.Name = 'Sean Byrne' OR
                   CreatedBy.Name = 'Becky McAllister' OR
                   CreatedBy.Name = 'Fiona Carey' OR
                   CreatedBy.Name = 'Ciara Gibson' OR
-                  CreatedBy.Name = 'Grace Coash')
+                  CreatedBy.Name = 'Grace Coash' OR
+                  CreatedBy.Name = 'Katherine Hill' OR
+                  CreatedBy.Name = 'Tomas Coleman' OR
+                  CreatedBy.Name = 'Sean Bedford' OR
+                  CreatedBy.Name = 'Megan Byrne' OR
+                  CreatedBy.Name = 'XtraPension Admin' OR
+                  CreatedBy.Name = 'Sales XtraPension' OR 
+                  CreatedBy.Name = 'Richard Talbot')
             ORDER BY CreatedDate DESC
         ];
         if (historyData.size() == 0) {
@@ -57,10 +68,10 @@ public without sharing class MovedFromAgentCallReportController {
         List<Application__history> uniqueChanges = new List<Application__history>();
         for (Application__history change : historyData) {
             if ((change.NewValue == 'Charge CC' ||
-                 change.NewValue == 'Annual Service' ||
-                 change.NewValue == 'No Annual') &&
+                change.NewValue == 'Annual Service' ||
+                change.NewValue == 'No Annual') &&
                 change.OldValue == 'Agent Call' &&
-                !appNames.contains(change.Parent.Name)) {
+            !appNames.contains(change.Parent.Name)) {
                 uniqueChanges.add(change);
                 appNames.add(change.Parent.Name);
             } else continue;
@@ -86,7 +97,7 @@ public without sharing class MovedFromAgentCallReportController {
         Date currentWeekStartDate = todayDate.toStartOfWeek();
         Date lastWeekStartDate = currentWeekStartDate.addDays(-7);
         Date lastWeekEndDate = lastWeekStartDate.addDays(7);
-
+        
         //Map<Date, Map<String, List<Application__history>>> agentCheckChangesCounter = new Map<Date, Map<String, List<Application__history>>>();
         Map<Date, Map<String, List<Application__history>>> todayAgentCheckChangesCounter = new Map<Date, Map<String, List<Application__history>>>();
         Map<Date, Map<String, List<Application__history>>> yesterdayAgentCheckChangesCounter = new Map<Date, Map<String, List<Application__history>>>();
@@ -94,7 +105,7 @@ public without sharing class MovedFromAgentCallReportController {
         Map<Date, Map<String, List<Application__history>>> lastWeekAgentCheckChangesCounter = new Map<Date, Map<String, List<Application__history>>>();
         Map<Date, Map<String, List<Application__history>>> thisMonthAgentCheckChangesCounter = new Map<Date, Map<String, List<Application__history>>>();
         Map<Date, Map<String, List<Application__history>>> lastMonthAgentCheckChangesCounter = new Map<Date, Map<String, List<Application__history>>>();
-
+        
         for (Date changeDate : agentCheckChanges.keySet()) {
             List<Application__history> currChange = agentCheckChanges.get(changeDate);
             Map<String, List<Application__history>> currMapChanges = new Map<String, List<Application__history>>();
@@ -125,7 +136,7 @@ public without sharing class MovedFromAgentCallReportController {
                 lastMonthAgentCheckChangesCounter.put(changeDate,currMapChanges);
             }
         }
-
+        
         result.activeUsers = ACTIVE_USERS;
         result.todayChanges = getChanges('Today', todayAgentCheckChangesCounter);
         result.yesterdayChanges = getChanges('Yesterday', yesterdayAgentCheckChangesCounter);
@@ -135,7 +146,7 @@ public without sharing class MovedFromAgentCallReportController {
         result.lastMonthChanges = getChanges('Last Month', lastMonthAgentCheckChangesCounter);
         return result;
     }
-
+    
     private static PeriodData getChanges(String periodName, Map<Date, Map<String, List<Application__history>>> agentCheckChangesCounter) {
         PeriodData finalResult = new PeriodData();
         finalResult.dataValue = new List<String>();
@@ -176,19 +187,19 @@ public without sharing class MovedFromAgentCallReportController {
         }
         return finalResult;
     }
-
+    
     public class UserChanges {
         public Date dateValue {get; set;}
         public List<Integer> dataValue{get; set;}
     }
-
+    
     public class PeriodData {
         @AuraEnabled
         public Integer fullCount = 0;
         @AuraEnabled
         public List<String> dataValue{get; set;}
     }
-
+    
     public class ResultDataWrapper {
         @AuraEnabled
         public List<User> activeUsers{get; set;}

@@ -6,8 +6,40 @@ public class CountryCodeHelper {
                 Country_Code__c
             FROM Country__c
             WHERE Country_Code__c = :isoCode];
+        if(isoCode == 'Canada') {
+            return 'CA';
+        } else if(isoCode == 'Zimbabwe') {
+            return 'ZW';
+        } else if (isoCode == 'GBR') {
+            return 'United Kingdom';
+        }
         if (countries.isEmpty()) return null;
         return countries[0].Name;
+    }
+
+    public static String getCountryIsoCodeByCountryName(String countryName) {
+        List<Country__c> countries = [
+            SELECT
+                Name,
+                Country_Code__c
+            FROM Country__c
+            WHERE Name = :countryName];
+            if (countries.isEmpty()) return countryName;
+            return countries[0].Country_Code__c;
+    }
+
+     public static String getCountryStateISOByName(String stateName){
+        List<Country_State__c> states = [
+            SELECT
+                Name,
+                Country__r.Country_Code__c,
+                State_Code__c
+            FROM Country_State__c
+            WHERE
+                Name = : stateName
+            ];
+        if (states.isEmpty()) return null;
+        return states[0].State_Code__c;
     }
 
     public static String getCountryStateNameByIsoCode(String countryIsoCode, String stateIsoCode){

@@ -1,0 +1,65 @@
+.aa-ddstatus { padding: 12px 16px 16px; }
+.aa-ddstatus__head {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding-bottom: 8px; border-bottom: 1px solid #ececec;
+    margin-bottom: 12px;
+}
+.aa-ddstatus__icon { flex: 0 0 auto; margin-top: 2px; }
+.aa-ddstatus__title { font-size: 1rem; font-weight: 600; }
+.aa-ddstatus__sub { color: #666; font-size: 0.78rem; margin-top: 2px; }
+
+.aa-ddstatus__section { display: flex; flex-direction: column; gap: 10px; }
+
+/* Banner — one per state, BEM modifier ---- */
+.aa-ddstatus__banner {
+    padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;
+    border: 1px solid transparent;
+}
+.aa-ddstatus__banner--none {
+    background: #f4f4f4; border-color: #d8d8d8; color: #555;
+}
+.aa-ddstatus__banner--ok {
+    background: #f4fbf6; border-color: #b6e6c1; color: #0a7a2f;
+}
+.aa-ddstatus__banner--warn {
+    background: #fff8ea; border-color: #f2d17a; color: #7d5300;
+}
+.aa-ddstatus__banner--err {
+    background: #fdecee; border-color: #f2b4bd; color: #a4051d;
+}
+
+/* Meta rows below the banner */
+.aa-ddstatus__meta { display: flex; flex-direction: column; gap: 4px; padding-top: 2px; }
+.aa-ddstatus__row {
+    display: grid; grid-template-columns: 110px 1fr; gap: 8px;
+    font-size: 0.86rem; align-items: center;
+}
+.aa-ddstatus__k { color: #666; font-size: 0.78rem; }
+.aa-ddstatus__v { color: #222; }
+.aa-ddstatus__mono {
+    font-variant-numeric: tabular-nums;
+    font-family: ui-monospace, Menlo, monospace;
+}
+.aa-ddstatus__reason {
+    display: block; color: #a4051d; font-size: 0.82rem;
+    padding: 6px 8px; background: #fdf2f4; border-radius: 4px;
+    grid-template-columns: 1fr;
+}
+
+/* Create Direct Debit CTA block */
+.aa-ddstatus__actions {
+    margin-top: 6px; display: flex; flex-direction: column; gap: 8px;
+    padding: 12px; border: 1px solid #b3d4ff; border-radius: 6px;
+    background: #f0f6ff;
+}
+.aa-ddstatus__cta { --sds-c-button-brand-color-background: #0176d3; }
+.aa-ddstatus__hint { color: #555; font-size: 0.78rem; line-height: 1.35; }
+
+/* Failed-state next-action block — sits inside the red banner and spells
+ * out exactly what the sales rep needs to do next. (2026-08-18 UX audit.) */
+.aa-ddstatus__reason-inline { color: #7a0316; }
+.aa-ddstatus__next-action {
+    margin-top: 8px; padding: 8px 10px; border-left: 3px solid #a4051d;
+    background: rgba(255,255,255,0.5); border-radius: 3px;
+    color: #6b0313; font-size: 0.85rem; line-height: 1.4;
+}

@@ -13,6 +13,7 @@ global class StripeWebhookHandler {
 	private static final String ACOUNT_RECORD_TYPE_NAME = 'Business_Account';
 	private static final String PERSON_ACCOUNT_RECORD_TYPE_ID = XtraPension_Data__c.getInstance().Person_Account_Record_Type_Id__c;
 	private static final String REFUND_INFO_TEMPLATE_NAME = 'Refund Info';
+	private static final String REAPPLY_REFUND_INFO_TEMPLATE_NAME = 'Reapply Refund Info';
 	private static final String OWD_NAME = 'clients@xtrapension.com';
 
 	private static final Map<String, String> STATE_CODES {
@@ -333,56 +334,116 @@ global class StripeWebhookHandler {
 			String refundMethod = (String) paymentIntentData.get('payment_method');
 			Integer capturedAmount = (Integer) paymentIntentData.get('amount_captured');
 			Integer refundedAmount = (Integer) paymentIntentData.get('amount_refunded');
+			String sourceId	= (String) paymentIntentData.get('id');
 			if (descriptionData == DESCRIPTION) {
 				descriptionData = 'Deposit';
 			}
-			List<Payment__c> payments = [
-				SELECT
-					Name,
-					Product__c,
-					Product__r.Name,
-					Application__c,
-					Application__r.Name,
-					Application__r.Status__c,
-					Application__r.Contact__c,
-					Application__r.Email__c,
-					Status__c,
-					Amount__c,
-					Tax_VAT__c
-				FROM Payment__c
-				WHERE Product_Name__c = :descriptionData AND
-					  Payment_Intent__c = :paymentIntentId
-				LIMIT 1
-			];
-			if (payments.isEmpty()) {
+			PaymentDataWrapper payment;
+			if (descriptionData == 'Pension Keeper - Application and Reapply' ||
+				descriptionData == 'Pension Keeper - Reapply') {
+				List<Reapply_Payment__c> reappPayments = [
+					SELECT
+						Id,
+						Name,
+						Product__c,
+						Product__r.Name,
+						Status__c,
+						Amount__c,
+						Reapply__r.Application__r.Contact__c,
+						Reapply__r.Application__r.Email__c,
+						Reapply__r.Application__c,
+						Reapply__c,
+						Tax__c
+					FROM Reapply_Payment__c
+					WHERE Source__c = :sourceId
+					LIMIT 1
+				];
+				if (reappPayments.size() > 0) {
+					payment = new PaymentDataWrapper();
+					payment.contactId = reappPayments[0].Reapply__r.Application__r.Contact__c;
+					payment.id = reappPayments[0].Id;
+					payment.email = reappPayments[0].Reapply__r.Application__r.Email__c;
+					payment.applicationId = reappPayments[0].Reapply__r.Application__c;
+					payment.reapplyId = reappPayments[0].Reapply__c;
+					payment.amount = reappPayments[0].Amount__c;
+					payment.tax = reappPayments[0].Tax__c;
+					payment.productId = reappPayments[0].Product__c;
+				}
+
+			} else {
+				List<Payment__c> payments = [
+					SELECT
+						Id,
+						Name,
+						Product__c,
+						Product__r.Name,
+						Application__c,
+						Application__r.Name,
+						Application__r.Status__c,
+						Application__r.Contact__c,
+						Application__r.Email__c,
+						Status__c,
+						Amount__c,
+						Tax_VAT__c						
+					FROM Payment__c
+					WHERE Product_Name__c = :descriptionData AND
+					  	Payment_Intent__c = :paymentIntentId
+					LIMIT 1
+				];
+				if (payments.size() > 0) {
+					payment = new PaymentDataWrapper();
+					payment.contactId = payments[0].Application__r.Contact__c;
+					payment.id = payments[0].Id;
+					payment.email = payments[0].Application__r.Email__c;
+					payment.applicationId = payments[0].Application__c;
+					payment.amount = payments[0].Amount__c;
+					payment.tax = payments[0].Tax_VAT__c;
+					payment.productId = payments[0].Product__c;
+				}
+			}
+			if (payment == null) {
 				return 'Don\'t found current payment';
 			}
-			Payment__c currentPayment = payments[0];
+
 			OrgWideEmailAddress[] owea = [
 				SELECT Id
 				FROM OrgWideEmailAddress
 				WHERE Address = :OWD_NAME
 			];
-			List<EmailTemplate> refundEmailTemplate = [
+			List<EmailTemplate> refundEmailTemplates = [
 				SELECT
-					Id
+					Id,
+					Name
 				FROM EmailTemplate
-				WHERE Name = :REFUND_INFO_TEMPLATE_NAME
+				WHERE Name = :REFUND_INFO_TEMPLATE_NAME OR
+					  Name = :REAPPLY_REFUND_INFO_TEMPLATE_NAME
 			];
+			Map<String, Id> emailTemplateData = new Map<String, Id>();
+			for (EmailTemplate template : refundEmailTemplates) {
+				if (template.Name == REAPPLY_REFUND_INFO_TEMPLATE_NAME) {
+					emailTemplateData.put(REAPPLY_REFUND_INFO_TEMPLATE_NAME, template.Id);
+				} else {
+					emailTemplateData.put(REFUND_INFO_TEMPLATE_NAME, template.Id);
+				}
+			} 
 			Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
-			message.setTargetObjectId(currentPayment.Application__r.Contact__c);
+			message.setTargetObjectId(payment.contactId);
 			message.setUseSignature(false);
 			message.setBccSender(false);
 			message.setSaveAsActivity(true);
-			message.setWhatId(currentPayment.Id);
+			message.setWhatId(payment.id);
+			System.debug('payment.id ==== ' + payment.id);
 			message.setTreatTargetObjectAsRecipient(false);
-			if (!refundEmailTemplate.isEmpty()) {
-				message.setTemplateID(refundEmailTemplate[0].Id);
-			}
+			if (descriptionData == 'Pension Keeper - Application and Reapply' ||
+				descriptionData == 'Pension Keeper - Reapply') {
+					System.debug('1');
+					System.debug('1 ===== ' + emailTemplateData.get(REAPPLY_REFUND_INFO_TEMPLATE_NAME));
+				message.setTemplateID(emailTemplateData.get(REAPPLY_REFUND_INFO_TEMPLATE_NAME));
+			} else message.setTemplateID(emailTemplateData.get(REFUND_INFO_TEMPLATE_NAME));
 			if ( owea.size() > 0 ) {
 				message.setOrgWideEmailAddressId(owea.get(0).Id);
 			}
-			message.toAddresses = new String[] { currentPayment.Application__r.Email__c };
+			message.toAddresses = new String[] { payment.email };
 			Messaging.SingleEmailMessage[] messages = new List<Messaging.SingleEmailMessage> {message};
 			Messaging.SendEmailResult[] results = Messaging.sendEmail(messages);
 
@@ -393,7 +454,7 @@ global class StripeWebhookHandler {
 			for (dfsle__EnvelopeStatus__c status : [
 				SELECT dfsle__Status__c, dfsle__DocuSignId__c
 				FROM dfsle__EnvelopeStatus__c
-				WHERE Application__c = :currentPayment.Application__c
+				WHERE Application__c = :payment.applicationId
 			]) {
 				if (status.dfsle__Status__c == 'Sent' || status.dfsle__Status__c == 'Delivered') {
 					sentEnvelopes.add(status.dfsle__DocuSignId__c);
@@ -405,27 +466,56 @@ global class StripeWebhookHandler {
 			List<Sobject> updatedData = new List<Sobject>();
 			if (descriptionData == DESCRIPTION || descriptionData == 'Deposit') {
 				Application__c currentApplication = new Application__c(
-					Id = currentPayment.Application__c,
+					Id = payment.applicationId,
 					Status__c = 'Deposit Refund'
 				);
 				updatedData.add(currentApplication);
+			} else if (descriptionData == 'Pension Keeper') {
+				Application__c currentApplication = new Application__c(
+					Id = payment.applicationId,
+					Status__c = 'Closed'
+				);
+				updatedData.add(currentApplication);
+			} else if (descriptionData == 'Pension Keeper - Application and Reapply' ||
+					   descriptionData == 'Pension Keeper - Reapply') {
+				Reapply__c currentReapply = new Reapply__c(
+					Id = payment.reapplyId,
+					Status__c = 'Deposit Refund'
+				);
+				updatedData.add(currentReapply);
 			}
 			Credit_Note__c relatedCreditNote = new Credit_Note__c(
 				Refund_Date__c   = Date.today(),
 				Refund_Method__c = refundMethod,
-				Product__c       = currentPayment.Product__c,
-				Amount__c        = currentPayment.Amount__c - currentPayment.Tax_VAT__c,
-				Tax_EU__c        = currentPayment.Tax_VAT__c,
-				Payment__c       = currentPayment.Id
+				Product__c       = payment.productId,
+				Amount__c        = payment.amount - payment.tax,
+				Tax_EU__c        = payment.tax				
 			);
+			if (descriptionData == 'Pension Keeper - Application and Reapply' ||
+				descriptionData == 'Pension Keeper - Reapply') {
+				relatedCreditNote.Reapply_Payment__c = payment.id;
+				updatedData.add(
+					new Reapply_Payment__c(
+						Id = payment.id,
+						Status__c = 'Refund',
+						Refunded__c = true
+					)
+				);
+			} else {
+				relatedCreditNote.Payment__c = payment.id;
+				updatedData.add(
+					new Payment__c(
+						Id = payment.id,
+						Status__c = 'Refund',
+						Refunded__c = true
+					)
+				);
+			}
 			updatedData.add(relatedCreditNote);
-			currentPayment.Status__c   = 'Refund';
-			currentPayment.Refunded__c = true;
-			updatedData.add(currentPayment);
+
 			if (!updatedData.isEmpty()) {
 				upsert updatedData;
 			}
-
 			return 'End';
 		}
 		return 'Not charge.refunded or payment_intent.succeeded events';
@@ -467,5 +557,16 @@ global class StripeWebhookHandler {
 		private String isDelay;
 		private String delayDate;
 		private String isSplit;
+	}
+
+	private class PaymentDataWrapper {
+		private String id;
+		private String contactId;
+		private String email;
+		private String applicationId;
+		private String reapplyId;
+		private Double amount;
+		private Double tax;
+		private String productId;
 	}
 }

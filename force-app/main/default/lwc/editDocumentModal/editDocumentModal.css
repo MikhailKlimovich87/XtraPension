@@ -41,3 +41,13 @@ h3 {
     display: table-cell;
     width: 150px;
 }
+
+table.address-table {
+    border-collapse: collapse;
+    border: none;
+    width:100%;
+}
+
+table.address-table td {
+    border: none;
+}

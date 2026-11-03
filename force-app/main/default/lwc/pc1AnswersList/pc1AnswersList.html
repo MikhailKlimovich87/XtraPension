@@ -1,0 +1,52 @@
+<template>
+    <lightning-card icon-name="standard:answer_public" title="Application data">
+        <div slot="actions" class="slds-text-color_weak slds-text-body_small">{subtitle}</div>
+
+        <div class="slds-p-around_small">
+            <template if:true={error}>
+                <div class="slds-text-color_error slds-p-around_small">Error: {error}</div>
+            </template>
+
+            <template if:true={isEmpty}>
+                <div class="slds-text-color_weak slds-text-align_center slds-p-around_medium">
+                    No answers yet. Mary will start filling this in on the first call.
+                </div>
+            </template>
+
+            <template for:each={parts} for:item="p">
+                <div key={p.name} class="pc1-part">
+                    <div class="pc1-part__header slds-grid slds-grid_align-spread slds-p-vertical_xx-small slds-p-horizontal_small">
+                        <div class="slds-text-heading_small slds-text-color_default">
+                            <lightning-icon icon-name="utility:chevrondown" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                            {p.name}
+                        </div>
+                        <div class="slds-text-color_weak slds-text-body_small">{p.counter}</div>
+                    </div>
+                    <table class="pc1-part__table">
+                        <tbody>
+                            <template for:each={p.rows} for:item="r">
+                                <tr key={r.id} class="pc1-row">
+                                    <td class="pc1-row__q">
+                                        <template if:true={r.q}>
+                                            <span class="pc1-row__qnum">{r.q}</span>&nbsp;
+                                        </template>
+                                        <span class="pc1-row__label">{r.label}</span>
+                                    </td>
+                                    <td class="pc1-row__v">
+                                        <template if:false={r.isEmpty}>
+                                            <span class="pc1-row__value">{r.value}</span>
+                                        </template>
+                                        <template if:true={r.isEmpty}>
+                                            <span class="pc1-row__empty">(empty)</span>
+                                        </template>
+                                        &nbsp;<span class={r.badgeClass}>{r.badgeLabel}</span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

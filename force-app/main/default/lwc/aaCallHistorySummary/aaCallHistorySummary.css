@@ -1,0 +1,100 @@
+.summary-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.count-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 1.5rem;
+    padding: 0 0.5rem;
+    background: #005fb2;
+    color: #fff;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+.count-label {
+    font-size: 0.85rem;
+    color: #444;
+}
+.call-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid #eef2f6;
+}
+.call-row {
+    padding: 0.5rem 0.25rem;
+    border-bottom: 1px solid #eef2f6;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+.call-row:hover,
+.call-row:focus {
+    background: #f3f7fb;
+    outline: none;
+}
+.call-row:last-child {
+    border-bottom: none;
+}
+.call-line-1 {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: #222;
+}
+.dir-icon {
+    font-size: 0.9rem;
+}
+.call-when {
+    color: #222;
+    font-weight: 500;
+}
+.call-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    border-radius: 3px;
+    letter-spacing: 0.03em;
+    background: #dddbda;
+    color: #3e3e3c;
+    margin-left: auto;
+}
+.b-ok   { background: #04844b; color: #fff; }
+.b-bad  { background: #ba0517; color: #fff; }
+.b-info { background: #0176d3; color: #fff; }
+.b-warn { background: #fe9339; color: #fff; }
+.call-line-2 {
+    margin-top: 0.15rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: baseline;
+    font-size: 0.75rem;
+    color: #6b6b6b;
+}
+.meta-line {
+    color: #6b6b6b;
+}
+.ext-link {
+    color: #005fb2;
+    text-decoration: none;
+    font-weight: 500;
+}
+.ext-link:hover { text-decoration: underline; }
+.next-row {
+    margin-top: 0.5rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid #eef2f6;
+    font-size: 0.78rem;
+    display: flex;
+    gap: 0.35rem;
+}
+.next-label { color: #6b6b6b; }
+.next-when { color: #005fb2; font-weight: 600; }

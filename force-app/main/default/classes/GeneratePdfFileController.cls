@@ -1,7 +1,7 @@
 public without sharing class GeneratePdfFileController {
     public static final String FILL_FROM_URL = XtraPension_Data__c.getInstance().Fill_Pdf_File_Link__c;
     public static final String PUBLIC_GROUP_NAME = 'XtraPension';
-
+    
     @AuraEnabled(cacheable=false)
     public static ApplicationDocsWrapper getApplication(String recordId) {
         List<Application__c> apps = [
@@ -43,16 +43,6 @@ public without sharing class GeneratePdfFileController {
                 Previous_UK_Address_3__PostalCode__s,
                 Previous_UK_Address_3__StateCode__s,
                 Previous_UK_Address_3__Street__s,
-                Previous_UK_Address_4__City__s,
-                Previous_UK_Address_4__CountryCode__s,
-                Previous_UK_Address_4__PostalCode__s,
-                Previous_UK_Address_4__StateCode__s,
-                Previous_UK_Address_4__Street__s,
-                Previous_UK_Address_5__City__s,
-                Previous_UK_Address_5__CountryCode__s,
-                Previous_UK_Address_5__PostalCode__s,
-                Previous_UK_Address_5__StateCode__s,
-                Previous_UK_Address_5__Street__s,
                 Did_You_Change_Name__c,
                 Date_Of_Marriage_Or_Civil_Partnership__c,
                 Are_You_Divorced__c,
@@ -128,7 +118,6 @@ public without sharing class GeneratePdfFileController {
                 Step__c
             FROM Application__c
             WHERE Id =: recordId
-                AND Expiry_Date__c >: Datetime.now()
             LIMIT 1];
         RequestWrapper requestData = new RequestWrapper();
         Application__c app;
@@ -141,11 +130,12 @@ public without sharing class GeneratePdfFileController {
                 app.Is_Self_Assessment__c = false;
                 app.Is_Individual_Pay_Section__c = true;
             }
+            app.Is_Individual_Pay_Section__c = false;
             requestData.application = app;
             app.Last_UK_Employer_Address__CountryCode__s = null;
             app.Current_Address_Abroad_State__c = CountryCodeHelper.getCountryStateNameByIsoCode(
                 app.Current_Address_Abroad__CountryCode__s,
-                app.Current_Address_Abroad__StateCode__s);
+            app.Current_Address_Abroad__StateCode__s);
             List<Employer__c> afterUKEmployers = [
                 SELECT
                     Employer_Name__c,
@@ -204,7 +194,7 @@ public without sharing class GeneratePdfFileController {
             }
         }
         // if (app.Are_You_Single__c == true) {
-        //     app.Did_You_Change_Name__c = null;
+            //     app.Did_You_Change_Name__c = null;
         // }
         List<Agent__c> agents = [
             SELECT
@@ -265,22 +255,22 @@ public without sharing class GeneratePdfFileController {
             requestData.agent = agents[0];
         }
         Http http = new Http();
-	    HttpRequest request = new HttpRequest();
-	    request.setEndpoint(FILL_FROM_URL);
-	    request.setMethod('POST');
-	    request.setHeader('Content-Type', 'application/json;charset=UTF-8');
-	    // Set the body as a JSON object
-	    request.setBody(JSON.serialize(requestData));
-	    HttpResponse response = http.send(request);
+        HttpRequest request = new HttpRequest();
+        request.setEndpoint(FILL_FROM_URL);
+        request.setMethod('POST');
+        request.setHeader('Content-Type', 'application/json;charset=UTF-8');
+        // Set the body as a JSON object
+        request.setBody(JSON.serialize(requestData));
+        HttpResponse response = http.send(request);
         ApplicationDocsWrapper docsWrapper = new ApplicationDocsWrapper();
         update new Application__c(Id = recordId, Request_Data__c = JSON.serialize(requestData));
-	    // Parse the JSON response
-	    if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
-    	    System.debug('The status code returned was not expected: ' +
-    	    response.getStatusCode() + ' ' + response.getStatus());
+        // Parse the JSON response
+        if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
+            System.debug('The status code returned was not expected: ' +
+                response.getStatusCode() + ' ' + response.getStatus());
             System.debug('Body: ' + response.getBody());
             ResponseWrapper wrapper = (ResponseWrapper) System.JSON.deserialize(response.getBody(), ResponseWrapper.class);
-
+            
             List<ContentVersion> newContVersions = new List<ContentVersion>();
             List<ContentVersion> updatedContVers = new List<ContentVersion>();
             Map<String, ContentDocumentLink> fileLabelByLink = new Map<String, ContentDocumentLink>();
@@ -298,16 +288,16 @@ public without sharing class GeneratePdfFileController {
                 if (link.ContentDocument.Title.contains('CF083_ForSignature')) {
                     conVer = createContentVerison(
                         EncodingUtil.base64Decode(wrapper?.result?.application),
-                        app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CF083_ForSignature'
-                    );
+                    app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CF083_ForSignature'
+                        );
                     fileLabelByLink.put('CF083_ForSignature', link);
                     docsWrapper.cf83DocLink  = URL.getOrgDomainUrl().toExternalForm() + '/sfc/servlet.shepherd/document/download/' + link.ContentDocumentId;
                 }
                 if (link.ContentDocument.Title.contains('64-8_ForSignature')) {
                     conVer = createContentVerison(
                         EncodingUtil.base64Decode(wrapper?.result?.agent),
-                        app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_64-8_ForSignature'
-                    );
+                    app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_64-8_ForSignature'
+                        );
                     fileLabelByLink.put('64-8_ForSignature', link);
                     docsWrapper.agentDocLink  = URL.getOrgDomainUrl().toExternalForm() + '/sfc/servlet.shepherd/document/download/' + link.ContentDocumentId;
                 }
@@ -320,33 +310,33 @@ public without sharing class GeneratePdfFileController {
             if(fileLabelByLink.get('CF083_ForSignature') == null) {
                 newContVersions.add(
                     createContentVerison(
-                        EncodingUtil.base64Decode(wrapper?.result?.application),
-                        app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CF083_ForSignature'
+                    EncodingUtil.base64Decode(wrapper?.result?.application),
+                app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CF083_ForSignature'
                     )
-                );
+                    );
             }
             if(fileLabelByLink.get('64-8_ForSignature') == null) {
                 newContVersions.add(
                     createContentVerison(
-                        EncodingUtil.base64Decode(wrapper?.result?.agent),
-                        app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_64-8_ForSignature'
+                    EncodingUtil.base64Decode(wrapper?.result?.agent),
+                app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_64-8_ForSignature'
                     )
-                );
+                    );
             }
-
+            
             if (newContVersions.size() != 0) {
                 Database.insert(newContVersions, false);
                 createContentLinks(newContVersions, docsWrapper, app);
             }
             docsWrapper.status = 'Success';
-	    } else {
+        } else {
             update new Application__c(Id = recordId, Request_Data__c = JSON.serialize(requestData),Heroku_Request__c = JSON.serialize(requestData));
             docsWrapper.status = 'Error: ' + response.getBody();
             docsWrapper.status = 'Error';
-	    }
+        }
         return docsWrapper;
     }
-
+    
     private static void createContentLinks(List<ContentVersion> newDocuments, ApplicationDocsWrapper docsWrapper, Application__c app) {
         Map<Id, ContentVersion> newContVersMap = new Map<Id, ContentVersion>(newDocuments);
         List<ContentVersion> conDocs = [
@@ -361,12 +351,12 @@ public without sharing class GeneratePdfFileController {
             for (ContentVersion version : conDocs) {
                 contentDocLinks.add(
                     new ContentDocumentLink(
-                        LinkedEntityId = app.Id,
-                        ContentDocumentId = version.ContentDocumentId,
-                        shareType = 'V',
-                        Visibility = 'AllUsers'
+                    LinkedEntityId = app.Id,
+                ContentDocumentId = version.ContentDocumentId,
+                shareType = 'V',
+                Visibility = 'AllUsers'
                     )
-                );
+                    );
                 if(version.Title.contains('CF083_ForSignature')) {
                     docsWrapper.cf83DocLink  = URL.getOrgDomainUrl().toExternalForm() + '/sfc/servlet.shepherd/document/download/' + version.ContentDocumentId;
                 }
@@ -377,21 +367,21 @@ public without sharing class GeneratePdfFileController {
             insert contentDocLinks;
         }
     }
-
+    
     private static ContentVersion createContentVerison(Blob pdfBlob, String title) {
         return new ContentVersion(
             VersionData = pdfBlob,
-            ContentLocation = 'S',
-            PathOnClient = title +'.pdf',
-            Title = title
-        );
+        ContentLocation = 'S',
+        PathOnClient = title +'.pdf',
+        Title = title
+            );
     }
-
+    
     public class ResponseWrapper {
         public String status;
         public ResponseResultWrapper result;
     }
-
+    
     public class ResponseResultWrapper {
         public String application;
         public String agent;
@@ -400,7 +390,7 @@ public without sharing class GeneratePdfFileController {
         public Application__c application;
         public Agent__c agent;
     }
-
+    
     public class ApplicationDocsWrapper{
         @AuraEnabled
         public String cf83DocLink{get;set;}

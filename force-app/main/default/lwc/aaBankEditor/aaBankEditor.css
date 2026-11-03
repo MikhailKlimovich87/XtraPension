@@ -1,0 +1,41 @@
+.aa-be { padding: 12px 16px 16px; }
+.aa-be__head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 12px; padding-bottom: 8px; border-bottom: 1px solid #ececec;
+    margin-bottom: 12px;
+}
+.aa-be__title { font-size: 1rem; font-weight: 600; }
+.aa-be__sub { color: #666; font-size: 0.78rem; margin-top: 2px; }
+.aa-be__empty { color: #888; font-style: italic; padding: 12px 0; }
+
+.aa-be__display { padding: 4px 0 8px; }
+.aa-be__row {
+    display: grid; grid-template-columns: 110px 1fr; gap: 8px;
+    padding: 4px 0; font-size: 0.9rem; align-items: center;
+}
+.aa-be__k { color: #666; font-size: 0.82rem; }
+.aa-be__v { color: #222; }
+.aa-be__mono { font-variant-numeric: tabular-nums; font-family: ui-monospace, Menlo, monospace; }
+.aa-be__meta { color: #666; font-size: 0.78rem; padding-top: 4px; }
+
+/* Verify block — big brand button + inline status message */
+.aa-be__verify-block {
+    margin-top: 14px; padding: 14px 16px;
+    border: 1px solid #b3d4ff; border-radius: 8px;
+    background: #f0f6ff;
+    display: flex; flex-direction: column; gap: 10px; align-items: stretch;
+}
+.aa-be__verify-btn { --sds-c-button-brand-color-background: #0176d3; }
+.aa-be__status { font-size: 0.9rem; line-height: 1.4; }
+.aa-be__status--ok   { color: #0a7a2f; }
+.aa-be__status--err  { color: #b00020; }
+.aa-be__status--warn { color: #b56800; }
+
+/* Edit mode fields */
+.aa-be__fields { display: grid; gap: 8px; }
+.aa-be__found {
+    margin-top: 8px; padding: 8px 12px;
+    background: #f4fbf6; border: 1px solid #b6e6c1; border-radius: 4px;
+    font-size: 0.9rem;
+}
+.aa-be__foot { display: flex; justify-content: flex-end; margin-top: 14px; }

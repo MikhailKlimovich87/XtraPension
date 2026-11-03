@@ -1,0 +1,66 @@
+<template>
+    <!-- 1) Loading: brief spinner while getRecord resolves Stage + Declaration -->
+    <template lwc:if={isLoading}>
+        <div class="slds-p-around_medium slds-text-align_center">
+            <lightning-spinner alternative-text="Checking status…" size="small"></lightning-spinner>
+            <p class="slds-m-top_small slds-text-color_weak">Checking whether this application is ready to fill…</p>
+        </div>
+    </template>
+
+    <!-- 2) Working: fill run kicked off, wait for the toast, close the modal -->
+    <template lwc:elseif={working}>
+        <div class="slds-p-around_medium slds-text-align_center">
+            <lightning-spinner alternative-text="Starting fill run" size="small"></lightning-spinner>
+            <p class="slds-m-top_small">Opening the DWP Attendance Allowance form and typing this client's answers in…</p>
+        </div>
+    </template>
+
+    <!-- 3) GATE: stage not yet Data Complete OR declaration not signed -->
+    <template lwc:elseif={isGated}>
+        <div class="slds-p-around_medium">
+            <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-bottom_medium" role="alert">
+                <span class="slds-assistive-text">warning</span>
+                <lightning-icon icon-name="utility:warning" alternative-text="Warning" size="x-small" variant="inverse" class="slds-m-right_x-small"></lightning-icon>
+                <h2 class="slds-text-heading_small">{gateHeadline}</h2>
+            </div>
+            <p class="slds-text-body_regular slds-m-bottom_small">{gateMessage}</p>
+            <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">
+                Current stage: <strong>{currentStageLabel}</strong>
+            </p>
+            <div class="slds-text-align_right">
+                <lightning-button variant="brand" label="OK" onclick={handleClose}></lightning-button>
+            </div>
+        </div>
+    </template>
+
+    <!-- 4) READY: normal confirm → start-fill flow -->
+    <template lwc:elseif={isReadyToStart}>
+        <div class="slds-p-around_medium">
+            <p class="slds-text-heading_small slds-m-bottom_x-small">
+                Fill this client's Attendance Allowance form on DWP?
+            </p>
+            <p class="slds-text-body_regular slds-m-bottom_small">
+                We'll open the real DWP application in a hosted browser and type every
+                answer you've collected: claimant details, address, health conditions,
+                care needs by day and night, care home or hospital stays, healthcare
+                professionals and contact details.
+            </p>
+            <p class="slds-text-body_regular slds-m-bottom_medium">
+                <strong>It stops at the Declaration. Nothing is submitted.</strong> When the
+                Latest Fill Run card shows Ready for Review, open its live view, check the
+                answers and press Submit on DWP yourself before the session closes.
+            </p>
+            <!-- audit 2026-10-02 wave 2 (W3): nothing else records a submit made
+                 in the live view; without this step the record stays fillable
+                 and a second fill can follow. -->
+            <p class="slds-text-body_regular slds-m-bottom_medium">
+                After you press Submit, put the DWP reference (the client's NI number) in
+                DWP Reference and set the Stage to Submitted.
+            </p>
+            <div class="slds-text-align_right">
+                <lightning-button label="Not yet" onclick={handleClose} class="slds-m-right_x-small"></lightning-button>
+                <lightning-button variant="brand" label="Start filling" onclick={handleStart}></lightning-button>
+            </div>
+        </div>
+    </template>
+</template>

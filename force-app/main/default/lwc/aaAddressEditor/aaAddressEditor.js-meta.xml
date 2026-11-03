@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>60.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>AA Address Editor</masterLabel>
+    <description>Loqate-validated address panel for a AA Application. Shows the 5 UK address lines (Line 1, Line 2, City, County, Postcode) with a live Loqate search on top — pick a match to fill every field, then save. Falls back to manual entry if lookup fails.</description>
+    <targets>
+        <target>lightning__RecordPage</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__RecordPage">
+            <objects>
+                <object>AA_Application__c</object>
+            </objects>
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

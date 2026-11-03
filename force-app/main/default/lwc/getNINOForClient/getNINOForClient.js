@@ -1,9 +1,9 @@
-import { LightningElement, api, track, wire} from 'lwc';
+import { LightningElement, api, track, wire } from 'lwc';
 import getApplicationData from '@salesforce/apex/GetNINOController.getApplicationData';
 import saveNINOEnvelopsData from '@salesforce/apex/GetNINOController.saveNINOEnvelopsData';
 import generateNINOFile from '@salesforce/apex/GetNINOController.generateGetNINOFile';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-import {getRecord} from 'lightning/uiRecordApi';
+import { getRecord } from 'lightning/uiRecordApi';
 
 import USER_ID from '@salesforce/user/Id';
 import NAME_FIELD from '@salesforce/schema/User.Short_Name__c';
@@ -28,61 +28,53 @@ export default class GetNINOForClient extends LightningElement {
     isMainPage = true;
     filetableData;
     showSpinner = false;
-    options1 =
-    [
+    options1 = [
         { label: 'None', value: '', isSelected: false },
         { label: 'Yes', value: 'Yes', isSelected: false },
-        { label: 'No', value: 'No', isSelected: false  }
+        { label: 'No', value: 'No', isSelected: false }
     ];
-    options2 =
-    [
+    options2 = [
         { label: 'None', value: '', isSelected: false },
         { label: 'Yes', value: 'Yes', isSelected: false },
-        { label: 'No', value: 'No', isSelected: false  }
+        { label: 'No', value: 'No', isSelected: false }
     ];
 
-    options3 =
-    [
+    options3 = [
         { label: 'None', value: '', isSelected: false },
         { label: 'Yes', value: 'Yes', isSelected: false },
-        { label: 'No', value: 'No', isSelected: false  }
+        { label: 'No', value: 'No', isSelected: false }
     ];
 
-    options4 =
-    [
+    options4 = [
         { label: 'None', value: '', isSelected: false },
         { label: 'Yes', value: 'Yes', isSelected: false },
-        { label: 'No', value: 'No', isSelected: false  }
+        { label: 'No', value: 'No', isSelected: false }
     ];
 
-    options5 =
-    [
+    options5 = [
         { label: 'None', value: '', isSelected: false },
         { label: 'Yes', value: 'Yes', isSelected: false },
-        { label: 'No', value: 'No', isSelected: false  }
+        { label: 'No', value: 'No', isSelected: false }
     ];
 
     @wire(getRecord, {
         recordId: USER_ID,
         fields: [NAME_FIELD, PHONE_FIELD]
-    }) wireuser({
-        error,
-        data
-    }) {
+    })
+    wireuser({ error, data }) {
         if (error) {
-           this.error = error ;
+            this.error = error;
         } else if (data) {
             this.userName = data.fields.Short_Name__c.value;
             this.phoneData = data.fields.Phone.value;
         }
     }
 
-
     connectedCallback() {
         getApplicationData({
             recordId: this.recordId
-        }).then(
-            data => {
+        })
+            .then((data) => {
                 if (data.isSuccess) {
                     this.posted2Envs = data?.application?.JR_Posted_2_Env_s__c;
                     this.envA = data?.application?.Envelop_A__c;
@@ -92,26 +84,52 @@ export default class GetNINOForClient extends LightningElement {
                     this.dateEnvA = data?.application?.Envelop_A_Date__c;
                     this.dateEnvB = data?.application?.Envelop_B_Date__c;
                     this.copyData =
-                        data?.application?.Salutation__c + ' ' +
-                        data?.application?.First_Name__c + ' ' +
+                        data?.application?.Salutation__c +
+                        ' ' +
+                        data?.application?.First_Name__c +
+                        ' ' +
                         data?.application?.Second_Name__c +
-                        (data?.application?.Current_Address_Abroad__Street__s ? '\n' + data?.application?.Current_Address_Abroad__Street__s : '') +
-                        (data?.application?.Current_Address_Abroad__City__s ? '\n' + data?.application?.Current_Address_Abroad__City__s : '') +
-                        (data?.application?.Current_Address_Abroad_State__c ? '\n' + data?.application?.Current_Address_Abroad_State__c : '') +
-                        (data?.application?.Current_Address_Abroad__PostalCode__s ? '\n' + data?.application?.Current_Address_Abroad__PostalCode__s : '') +
-                        (data?.application?.Current_Address_Abroad_Country__c ? '\n' + data?.application?.Current_Address_Abroad_Country__c : '')
-                    this.getNINOData = data?.application?.First_Name__c +
-                                       ' - We\'d love feedback on your UK State Pension Top Up experience with XtraPension.\n\n' +
-                                       'Click https://xtrapension.com/review';
+                        (data?.application?.Current_Address_Abroad__Street__s
+                            ? '\n' + data?.application?.Current_Address_Abroad__Street__s
+                            : '') +
+                        (data?.application?.Current_Address_Abroad__City__s
+                            ? '\n' + data?.application?.Current_Address_Abroad__City__s
+                            : '') +
+                        (data?.application?.Current_Address_Abroad_State__c
+                            ? '\n' + data?.application?.Current_Address_Abroad_State__c
+                            : '') +
+                        (data?.application?.Current_Address_Abroad__PostalCode__s
+                            ? '\n' + data?.application?.Current_Address_Abroad__PostalCode__s
+                            : '') +
+                        (data?.application?.Current_Address_Abroad_Country__c
+                            ? '\n' + data?.application?.Current_Address_Abroad_Country__c
+                            : '');
+                    this.getNINOData =
+                        'Hi ' +
+                        data?.application?.First_Name__c +
+                        " - We'd love feedback on your UK State Pension Top Up experience with XtraPension.\n\n" +
+                        'Click here to learn more and send your review:\n' +
+                        'https://xtrapension.com/review \n\n' +
+                        "Or you can send us a quick selfie video review and we'll pay you €100!\n\n" +
+                        'Thanks';
                     this.getFollowUpAgentCallMessage =
-                        'Hi ' + data?.application?.First_Name__c + ' - ' + this.userName + ' here from XtraPension just following up re UK State Pension next steps for you.\n\n' +
-                        'Do you want to give me a call please whenever suits & I\'ll come back to you if I miss you?\n\n' +
-                        'Thanks, ' + this.userName + ' ' + this.phoneData;
+                        'Hi ' +
+                        data?.application?.First_Name__c +
+                        ' - ' +
+                        this.userName +
+                        ' here from XtraPension just following up re UK State Pension next steps for you.\n\n' +
+                        "Do you want to give me a call please whenever suits & I'll come back to you if I miss you?\n\n" +
+                        'Thanks, ' +
+                        this.userName +
+                        ' ' +
+                        this.phoneData;
                     this.getUrgentDocApprovalMessage =
-                        'Hi ' + data?.application?.First_Name__c + '.\n\n' +
+                        'Hi ' +
+                        data?.application?.First_Name__c +
+                        '.\n\n' +
                         'Your UK State Pension TopUp application has been awaiting your approval for some time.\n\n' +
-                        'If you\'re delaying approving it for some reason, please let us know.\n\n' +
-                        'Otherwise, we\'ll shortly be CANCELLING your application.\n\n' +
+                        "If you're delaying approving it for some reason, please let us know.\n\n" +
+                        "Otherwise, we'll shortly be CANCELLING your application.\n\n" +
                         'More importantly, this means you will LOSE OUT on the UK Pension opportunity which is worth many thousands to you.\n\n' +
                         'Next steps are explained in this short video:https://xpen.uk/approve\n\n' +
                         'Thanks\n\n' +
@@ -119,76 +137,73 @@ export default class GetNINOForClient extends LightningElement {
                         'XtraPension Ltd\n' +
                         '+353 (0)91 335 583';
                     if (this.posted2Envs) {
-                        this.options1.map( item => {
-                            if(item.value == this.posted2Envs) {
+                        this.options1.map((item) => {
+                            if (item.value == this.posted2Envs) {
                                 item.isSelected = true;
                             }
-                        })
+                        });
                     } else {
-                        this.options1.map( item => {
-                            if(item.label == 'None') {
+                        this.options1.map((item) => {
+                            if (item.label == 'None') {
                                 item.isSelected = true;
                             }
-                        })
+                        });
                     }
                     if (this.postedEnvA) {
-                        this.options2.map( item => {
-                            if(item.value == this.postedEnvA) {
+                        this.options2.map((item) => {
+                            if (item.value == this.postedEnvA) {
                                 item.isSelected = true;
                             }
-                        })
+                        });
                     } else {
-                        this.options2.map( item => {
-                            if(item.label == 'None') {
+                        this.options2.map((item) => {
+                            if (item.label == 'None') {
                                 item.isSelected = true;
                             }
-                        })
+                        });
                     }
                     if (this.postedEnvB) {
-                        this.options3.map( item => {
-                            if(item.value == this.postedEnvB) {
+                        this.options3.map((item) => {
+                            if (item.value == this.postedEnvB) {
                                 item.isSelected = true;
                             }
-                        })
+                        });
                     } else {
-                        this.options3.map( item => {
-                            if(item.label == 'None') {
+                        this.options3.map((item) => {
+                            if (item.label == 'None') {
                                 item.isSelected = true;
                             }
-                        })
+                        });
                     }
                     if (this.envA) {
-                        this.options4.map( item => {
-                            if(item.value == this.envA) {
+                        this.options4.map((item) => {
+                            if (item.value == this.envA) {
                                 item.isSelected = true;
                             }
-                        })
+                        });
                     } else {
-                        this.options4.map( item => {
-                            if(item.label == 'None') {
+                        this.options4.map((item) => {
+                            if (item.label == 'None') {
                                 item.isSelected = true;
                             }
-                        })
+                        });
                     }
                     if (this.envB) {
-                        this.options5.map( item => {
-                            if(item.value == this.envA) {
+                        this.options5.map((item) => {
+                            if (item.value == this.envA) {
                                 item.isSelected = true;
                             }
-                        })
+                        });
                     } else {
-                        this.options5.map( item => {
-                            if(item.label == 'None') {
+                        this.options5.map((item) => {
+                            if (item.label == 'None') {
                                 item.isSelected = true;
                             }
-                        })
+                        });
                     }
-
                 } else this.error = data?.errorMessage;
-            }
-        ).catch(
-            error => console.log('Error message ==== ', error)
-        )
+            })
+            .catch((error) => console.log('Error message ==== ', error));
     }
 
     handleClick() {
@@ -206,28 +221,21 @@ export default class GetNINOForClient extends LightningElement {
             postedEnvelopB: this.postedEnvB,
             dateEnvelopA: this.dateEnvA,
             dateEnvelopB: this.dateEnvB
-        }
+        };
         saveNINOEnvelopsData({
             data: newData
-        }).then(data=> {
-            this.showSpinner = !this.showSpinner;
-            this.showToastMessage(
-                'Success',
-                'You\'ve saved Get NINO for Client data!',
-                'success'
-            );
-            window.location.reload();
-        }).catch(error=> {
-            console.log(error);
-            this.showSpinner = !this.showSpinner;
-            this.showToastMessage(
-                'Error',
-                'Error message is ' + error.body.message,
-                'error'
-            );
-            window.location.reload();
         })
-
+            .then((data) => {
+                this.showSpinner = !this.showSpinner;
+                this.showToastMessage('Success', "You've saved Get NINO for Client data!", 'success');
+                window.location.reload();
+            })
+            .catch((error) => {
+                console.log(error);
+                this.showSpinner = !this.showSpinner;
+                this.showToastMessage('Error', 'Error message is ' + error.body.message, 'error');
+                window.location.reload();
+            });
     }
 
     handleChangePosted2Env(event) {
@@ -259,11 +267,13 @@ export default class GetNINOForClient extends LightningElement {
     }
 
     showToastMessage(titleData, messageInfo, toastVariant) {
-        this.dispatchEvent(new ShowToastEvent({
-            title: titleData,
-            message: messageInfo,
-            variant: toastVariant,
-        }));
+        this.dispatchEvent(
+            new ShowToastEvent({
+                title: titleData,
+                message: messageInfo,
+                variant: toastVariant
+            })
+        );
     }
 
     handleCopy() {
@@ -286,57 +296,37 @@ export default class GetNINOForClient extends LightningElement {
         this.showSpinner = !this.showSpinner;
         generateNINOFile({
             applicationId: this.recordId
-        }).then( result => {
-            if (result.isSuccess) {
-                this.showToastMessage(
-                    'Success',
-                    'You\'ve successfully generated file to get NINO',
-                    'success'
-                );
-            } else {
-                this.showToastMessage(
-                    'Error',
-                    result.errorMessage,
-                    'error'
-                );
-            }
-            this.showSpinner = !this.showSpinner;
-        }).catch(error=> {
-            this.showSpinner = !this.showSpinner;
-            this.showToastMessage(
-                'Error',
-                'You have error when generated files: ' + error.body.message,
-                'error'
-            );
-        });
+        })
+            .then((result) => {
+                if (result.isSuccess) {
+                    this.showToastMessage('Success', "You've successfully generated file to get NINO", 'success');
+                } else {
+                    this.showToastMessage('Error', result.errorMessage, 'error');
+                }
+                this.showSpinner = !this.showSpinner;
+            })
+            .catch((error) => {
+                this.showSpinner = !this.showSpinner;
+                this.showToastMessage('Error', 'You have error when generated files: ' + error.body.message, 'error');
+            });
     }
 
     copyInfo(dataOfCopy) {
-        const input = document.createElement("textarea");
+        const input = document.createElement('textarea');
         document.body.appendChild(input);
         input.select();
-        if(navigator.clipboard){
+        if (navigator.clipboard) {
             copy(dataOfCopy);
-            this.showToastMessage(
-                'Success',
-                'You copied the data',
-                'success'
-            );
+            this.showToastMessage('Success', 'You copied the data', 'success');
         } else {
-            this.showToastMessage(
-                'Error',
-                'You didn\'t copy the data',
-                'error'
-            );
+            this.showToastMessage('Error', "You didn't copy the data", 'error');
         }
         document.body.removeChild(input);
     }
 }
 
-export const copy = async textToCopy =>
-    await navigator.clipboard.writeText(textToCopy)
-                             .catch(err =>
-                                console.error(JSON.stringify(err)),
-                                err => console.error(JSON.stringify(err)
-                                )
-                            );
+export const copy = async (textToCopy) =>
+    await navigator.clipboard.writeText(textToCopy).catch(
+        (err) => console.error(JSON.stringify(err)),
+        (err) => console.error(JSON.stringify(err))
+    );

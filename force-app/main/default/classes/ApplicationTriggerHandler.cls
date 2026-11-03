@@ -2,6 +2,8 @@ public without sharing class ApplicationTriggerHandler {
     public Map<Id, Application__c> newApplications;
     public Map<Id, Application__c> oldApplications;
     public final String APPROVE_EMAIL_TEMPLATE_NAME = 'HMRC Success Result Reply';
+    public static final String PK_ORG_WIDE_EMAIL_ADDRESS = 'keeper@xtrapension.com';
+    public static final String PK_REGISTRATION_EMAIL_TEMPLATE_NAME = 'Welcome Pension Keeper Template';
     private static final Map<String, String[]> PROJECT_NAME_BY_RELATED_PRODUCT_NAME = new Map<String, String[]>{
         'Freebie'  => new String[]{'Deposit (Free)', 'Application (Free)', 'Guidance on HMRC Reply (Free)'}
     };
@@ -14,7 +16,7 @@ public without sharing class ApplicationTriggerHandler {
     private static final List<String> FAIL_ZIP_FILE_RECIPIENTS = new String[] {
         'fernando@xtrapension.com', 'mihail.klimovich@outlook.com'
     };
-
+    
     private static final XtraPension_Settings__mdt XP_SETTINGS {
         get {
             if (XP_SETTINGS == null) {
@@ -33,25 +35,25 @@ public without sharing class ApplicationTriggerHandler {
         }
         private set;
     }
-
+    
     Map<String, Integer> VAL_AGENTS_PROPORTION = new Map<String, Integer> {
-        'Sean'       => 30,
-        'Ciara'      => 30,
-        'Becky'      => 40
-        //'MaryClaire' => 30
+        'Sean'       => 40,
+        'Ciara'      => 40,
+        'Becky'      => 20
+            //'MaryClaire' => 30
     };
-
+    
     private static Map<String, Integer> AGENTS_PROPORTION = new Map<String, Integer> {
         'Daniel'  => 50,
         'Maria'   => 50
     };
-
+    
     Map<String, Integer> DOC_AGENTS_PROPORTION = new Map<String, Integer>{
         'Fiona'  => 50,
         'Rob' => 50
     };
-
-
+    
+    
     private final Map<String,String> CHANGED_STATUS_DATE_FIELDS = new Map<String, String>{
         'Form Completed'      => 'Form_Completed_Change_Date__c',
         'NINO/Doc Needed'     => 'NINO_Doc_Needed_Changed_Date__c',
@@ -66,6 +68,7 @@ public without sharing class ApplicationTriggerHandler {
         'Posted'              => 'Posted_Changed_Date__c',
         '64-8 Bounce'         => 'X64_8_Bounce_Changed_Date__c',
         'HMRC Reply 1'        => 'HMRC_Reply_1_Changed_Date__c',
+        'Pending Info'        => 'Pending_Info_Changed_Date__c',
         'DWP Teleclaim'       => 'DWP_Teleclaim_Changed_Date__c',
         'DWP 2 Emails Sent'   => 'DWP_2_Emails_Sent_Changed_Date__c',
         'XP Letter Sent'      => 'XP_Letter_Sent_Changed_Date__c',
@@ -76,13 +79,14 @@ public without sharing class ApplicationTriggerHandler {
         'Agent Call'	      => 'Agent_Call_Changed_Date__c',
         'Charge CC'	          => 'Charge_CC_Changed_Date__c',
         'Annual Service'      => 'Annual_Service_Changed_Date__c',
+        'Pension Keeper'      => 'Pension_Keeper_Changed_Date__c',
         'No Annual'           => 'Closed_Won_Changed_Date__c',
         'Closed'              => 'Closed_Lost_Changed_Date__c',
         'REPEAT(edits)'       => 'Repeat_Change_Date__c',
         'REPEAT(NO edits)'    => 'Repeat_No_Edit_Changed_Date__c',
         'Deposit Refund'      => 'Deposit_Refund_Changed_Date__c',
-        'Deferred'            => 'Deferred_Changed_Date__c',
-        'NO NINO'             => 'NO_NINO_Changed_Date__c'
+        'Deferred'            => 'Deferred_Changed_Date__c'
+            //'NO NINO'             => 'NO_NINO_Changed_Date__c'
     };
     private final Map<String,String> CHANGED_STATUS_USER_FIELDS = new Map<String, String>{
         'Form Completed'      => 'Form_Completed_Changed_User__c',
@@ -98,6 +102,7 @@ public without sharing class ApplicationTriggerHandler {
         'Posted'              => 'Posted_Changed_User__c',
         '64-8 Bounce'         => 'X64_8_Bounce_Changed_User__c',
         'HMRC Reply 1'        => 'HMRC_Reply_1_Changed_User__c',
+        'Pending Info'        => 'Pending_Info_Changed_User__c',
         'DWP Teleclaim'       => 'DWP_Teleclaim_Changed_User__c',
         'DWP 2 Emails Sent'   => 'DWP_2_Emails_Sent_Changed_User__c',
         'XP Letter Sent'      => 'XP_Letter_Sent_Changed_User__c',
@@ -108,28 +113,32 @@ public without sharing class ApplicationTriggerHandler {
         'Agent Call'	      => 'Agent_Call_Changed_User__c',
         'Charge CC'	          => 'Charge_CC_Changed_User__c',
         'Annual Service'      => 'Annual_Service_Changed_User__c',
+        'Pension Keeper'      =>'Pension_Keeper_Changed_User__c',
         'No Annual'           => 'No_Annual_Changed_User__c',
         'Closed'              => 'Closed_Changed_User__c',
         'REPEAT(edits)'       => 'REPEAT_edits_Changed_User__c',
         'REPEAT(NO edits)'    => 'REPEAT_NO_edits_Changed_User__c',
         'Deposit Refund'      => 'Deposit_Refund_Changed_User__c',
-        'Deferred'            => 'Deferred_Changed_User__c',
-        'NO NINO'             => 'NO_NINO_Changed_User__c'
+        'Deferred'            => 'Deferred_Changed_User__c'
+            //'NO NINO'             => 'NO_NINO_Changed_User__c'
     };
     private final static String REGISTRATION_ORG_WIDE = 'clients@xtrapension.com';
+    private final static String PK_REGISTRATION_ORG_WIDE = 'keeper@xtrapension.com';
     private final static String REGISTRATION_TEMPLATE_NAME = 'Registration Data Information';
-
+    private final static String PK_REGISTRATION_TEMPLATE_NAME = 'Pension Keeper Registration Data Information';
+    private final static String PK_WELCOME_TEMPLATE_NAME = 'Welcome Pension Keeper Template';
+    
     private static Map<String, String> VAL_AGENTS_BY_EMAIL = new Map<String, String> {
         'Sean'       => 'seanb@xtrapension.com',
         'Ciara'      => 'ciara@xtrapension.com',
         'Becky'      => 'becky@xtrapension.com '
     };
-
+    
     private static Map<String, String> DOC_AGENTS_BY_EMAIL = new Map<String, String> {
         'Daniel'  => 'daniel@xtrapension.com',
         'Maria'   => 'maria@xtrapension.com'
     };
-
+    
     private static final OrgWideEmailAddress OWD {
         get {
             if (OWD == null) {
@@ -148,7 +157,7 @@ public without sharing class ApplicationTriggerHandler {
         }
         private set;
     }
-
+    
     private static final CustomNotificationType AGENT_NOTIFICATION {
         get {
             if (AGENT_NOTIFICATION == null) {
@@ -168,7 +177,7 @@ public without sharing class ApplicationTriggerHandler {
         }
         private set;
     }
-
+    
     private static final Map<String, StaticResource> STATEMENT_EXAMPLES {
         get {
             if (STATEMENT_EXAMPLES == null) {
@@ -214,12 +223,12 @@ public without sharing class ApplicationTriggerHandler {
         }
         private set;
     }
-
+    
     public ApplicationTriggerHandler(Map<Id, Application__c> newApplications, Map<Id, Application__c> oldApplications) {
         this.newApplications = newApplications;
         this.oldApplications = oldApplications;
     }
-
+    
     public void generatePdfFiles () {
         Set<Id> updateSelfemployedAppIds = new Set<Id>();
         Set<Id> updateNameAppIds = new Set<Id>();
@@ -239,8 +248,11 @@ public without sharing class ApplicationTriggerHandler {
         Set<Id> deferredCustomNotificationApps = new Set<Id>();
         Set<Id> repeatApps = new Set<Id>();
         Set<Id> splitPaymentsApps = new Set<Id>();
+        Set<Id> updatedDobApps = new Set<Id>();
+        Set<Id> deployFilesAppIds = new Set<Id>();
+        Set<Id> retrieveFilesAppIds = new Set<Id>();
         List<Application__c> changedStatusesApps = new List<Application__c>();
-
+        
         for (Application__c app : newApplications.values()) {
             if (app.Status__c == 'Form Completed' && app.Status__c != oldApplications.get(app.Id).Status__c) {
                 System.enqueueJob(new GeneratePDFCallout(app.Id));
@@ -254,15 +266,17 @@ public without sharing class ApplicationTriggerHandler {
             if ((app.Status__c == 'REPEAT(edits)' || app.Status__c == 'REPEAT(NO edits)') && app.Status__c != oldApplications.get(app.Id).Status__c) {
                 repeatApps.add(app.Id);
             }
-            if ((app.Status__c == 'Printing House' || app.Status__c == 'REPEAT(NO edits)') && app.Status__c != oldApplications.get(app.Id).Status__c) {
+            if (app.Status__c == 'Printing House' && app.Status__c != oldApplications.get(app.Id).Status__c) {
                 //updateApplicationDocumentStatus(app.Id);
                 generateZipArchive(app.Id, app.Repeat_App__c);
+            }
+            if (app.Date_Of_Birth__c != oldApplications.get(app.Id).Date_Of_Birth__c) {
+                updatedDobApps.add(app.Id);
             }
             if ((app.Status__c == 'Closed Won' ||
                 app.Status__c == 'Charge CC' ||
                 app.Status__c == 'Annual Service')&&
-                oldApplications.get(app.Id).Status__c == 'Agent Call' &&
-                app.Agent_Call_Changed_Date__c == null) {
+            oldApplications.get(app.Id).Status__c == 'Agent Call') {
                 googleReviewSendEmailApps.add(app.Id);
             }
             if (app.Status__c != oldApplications.get(app.Id).Status__c) {
@@ -290,7 +304,7 @@ public without sharing class ApplicationTriggerHandler {
             }
             if (app.Who__c != oldApplications.get(app.Id).Who__c ||
                 app.Contact_Type__c != oldApplications.get(app.Id).Contact_Type__c ||
-                app.Days_Since_Contact__c != oldApplications.get(app.Id).Days_Since_Contact__c) {
+            app.Days_Since_Contact__c != oldApplications.get(app.Id).Days_Since_Contact__c) {
                 updateDaysSinceContactAppIds.add(app.Id);
             }
             if (app.Live_In_The_EU__c != oldApplications.get(app.Id).Live_In_The_EU__c) {
@@ -333,8 +347,16 @@ public without sharing class ApplicationTriggerHandler {
                 app.Split__c == true &&
                 app.Split__c != oldApplications.get(app.Id).Split__c &&
                 app.Current_Address_Abroad__CountryCode__s == 'ZA' &&
-                app.Split_Date__c == null) {
+            app.Split_Date__c == null) {
                 splitPaymentsApps.add(app.Id);
+            }
+            if((app.Status__c == 'No Annual' || app.Status__c == 'Closed' || app.Status__c == 'Annual Service') &&
+            app.Status__c != oldApplications.get(app.Id).Status__c) {
+                deployFilesAppIds.add(app.Id);
+            }
+            if((oldApplications.get(app.Id).Status__c == 'No Annual' || oldApplications.get(app.Id).Status__c == 'Closed' || oldApplications.get(app.Id).Status__c == 'Annual Service') &&
+            app.Status__c != oldApplications.get(app.Id).Status__c) {
+                retrieveFilesAppIds.add(app.Id);
             }
         }
         if (!googleReviewSendEmailApps.isEmpty()) {
@@ -382,6 +404,7 @@ public without sharing class ApplicationTriggerHandler {
         }
         if (!sendGoogleReviewSmsApps.isEmpty()) {
             changeEmptyGoogleReviewSmsDate(sendGoogleReviewSmsApps);
+            sendGoogleReviewEmail(sendGoogleReviewSmsApps);
         }
         if (!currentAddressAbroadStateApps.isEmpty()) {
             changeCurrentAddressAbroadState(currentAddressAbroadStateApps);
@@ -401,11 +424,21 @@ public without sharing class ApplicationTriggerHandler {
         if(repeatApps.size() != 0) {
             generateReSubLetter(repeatApps);
         }
-        if (splitPaymentsApps.size() != 0) {
+        if(splitPaymentsApps.size() != 0) {
             createSplitPayments(splitPaymentsApps);
         }
+        if(updatedDobApps.size() != 0) {
+            calculatePensionAge(updatedDobApps);
+        }
+        if(deployFilesAppIds.size() != 0) {
+            uploadFilesToAWS(deployFilesAppIds);
+        }
+        
+        if(retrieveFilesAppIds.size() != 0) {
+            retrieveFilesToAWS(retrieveFilesAppIds);
+        }
     }
-
+    
     /*private void updateApplicationDocumentStatus(Id applicationId) {
         List<Application_Document__c> relatedAppDocs = [
             SELECT Status__c
@@ -438,36 +471,68 @@ public without sharing class ApplicationTriggerHandler {
             update updateAppDocs;
         }
     }*/
-
+    
     public void autoPopulateRequiredFields() {
         List<Application__c> updateApplications = new List<Application__c>();
         Map<String, Id> personEmailsByApplId = new Map<String, Id>();
         Map<String, Id> personPhonesByApplId = new Map<String, Id>();
         List<Agent__c> mainAgent = [
-            SELECT
-                Id,
-                Name
+            SELECT Id, Name
             FROM Agent__c
         ];
         Id agentId = mainAgent.size() == 0 ? null : mainAgent[0].Id;
+
         for (Application__c app : newApplications.values()) {
-            if (app.Package_Name__c == 'Freebie') {
+
+            String resolvedLine1 = app.Freeform_RichText_Line1__c;
+            if (resolvedLine1 != null
+                && resolvedLine1.contains('{!appObj.Name}')) {
+                resolvedLine1 = resolvedLine1.replace('{!appObj.Name}', app.Name);
+            }
+
+            if (app.Package_Name__c == 'Freebie' && app.Status__c == 'Form In Progress') {
                 String randomValue = 'pi' + (Integer.valueOf(Math.Random() * 100000) + 10000000);
-                updateApplications.add(new Application__c(
-                    Id                            = app.Id,
-                    Expiry_Date__c                = Datetime.now().addYears(1),
-                    Stripe_Transaction_Id__c      = randomValue,
-                    Personal_Details_Form_Link__c = XtraPension_Data__c.getInstance().Form_Link__c + randomValue,
-                    Agent__c                      = mainAgent.size() == 0 ? null : mainAgent[0].Id
-                ));
+                updateApplications.add(
+                    new Application__c(
+                        Id                            = app.Id,
+                        Stripe_Transaction_Id__c      = randomValue,
+                        Personal_Details_Form_Link__c = XtraPension_Data__c.getInstance().Form_Link__c + randomValue,
+                        Agent__c                      = mainAgent.size() == 0 ? null : mainAgent[0].Id,
+                        Freeform_RichText_Line1__c    = resolvedLine1
+                    )
+                );
                 personEmailsByApplId.put(app.Email__c, app.Id);
                 personPhonesByApplId.put(app.Related_Contact_Phone__c, app.Id);
+
+            } else if (app.Package_Name__c == 'Freebie' && app.Status__c == 'Pension Keeper') {
+                Date pensionAge = PK_PortalUtils.calculatePensionDate(app.Date_Of_Birth__c);
+                updateApplications.add(
+                    new Application__c(
+                        Id                             = app.Id,
+                        PK_Portal_User_Active__c       = true,
+                        PK_Portal_User_PW__c           = PK_PortalAuthHelper.generatePassword(app),
+                        PK_Registration_Date__c        = Date.today(),
+                        PK_Date_Pension_Age_Reached__c = pensionAge,
+                        Pension_Age__c                 = pensionAge != null
+                                                            ? PK_PortalUtils.getYearsMonthsDaysBetween(app.Date_Of_Birth__c, pensionAge)
+                                                            : null,
+                        PK_Auto_Renewal__c             = false,
+                        Freeform_RichText_Line1__c     = resolvedLine1
+                    )
+                );
+            } else if (resolvedLine1 != app.Freeform_RichText_Line1__c) {
+                updateApplications.add(
+                    new Application__c(
+                        Id                         = app.Id,
+                        Freeform_RichText_Line1__c = resolvedLine1
+                    )
+                );
             }
         }
         if (updateApplications.isEmpty()) {
             return;
         }
-        update updateApplications;
+        update updateApplications;        
         Map<Id, Application__c> applications = new Map<Id, Application__c> ([
             SELECT Contact__c
             FROM Application__c
@@ -479,9 +544,9 @@ public without sharing class ApplicationTriggerHandler {
             if (app.Contact__c == null) {
                 Account relatedAccount = new Account(
                     LastName                = app.First_Name__c + ' ' + app.Second_Name__c,
-                    PersonEmail             = app.Email__c,
-                    PersonMobilePhone       = app.Related_Contact_Phone__c
-                );
+                PersonEmail             = app.Email__c,
+                PersonMobilePhone       = app.Related_Contact_Phone__c
+                    );
                 appIdByRelatedAccount.put(app.Id, relatedAccount);
                 newAccounts.add(relatedAccount);
             }
@@ -514,30 +579,47 @@ public without sharing class ApplicationTriggerHandler {
             }
         }
     }
-
+    
     public void sendRegistrationDataMessage() {
         if (newApplications.isEmpty()) {
             return;
         }
         OrgWideEmailAddress[] owea = [
-            SELECT Id
+            SELECT 
+                Id,
+                Address
             FROM OrgWideEmailAddress
-            WHERE Address = :REGISTRATION_ORG_WIDE
+            WHERE Address = :REGISTRATION_ORG_WIDE OR
+                  Address = :PK_REGISTRATION_ORG_WIDE
         ];
+        Map<String, OrgWideEmailAddress> oweaByAddress = new Map<String, OrgWideEmailAddress>();
+        for (OrgWideEmailAddress oweaRecord : owea) {
+            oweaByAddress.put(oweaRecord.Address, oweaRecord);
+        }
         List<EmailTemplate> registrationEmailTemplate = [
             SELECT
-                Id
+                Id,
+                Name
             FROM EmailTemplate
-            WHERE Name = :REGISTRATION_TEMPLATE_NAME
+            WHERE Name = :REGISTRATION_TEMPLATE_NAME OR
+                  Name = :PK_REGISTRATION_TEMPLATE_NAME OR
+                  Name = :PK_WELCOME_TEMPLATE_NAME
         ];
+        Map<String, EmailTemplate> templateNameByTemplateRecord = new Map<String, EmailTemplate>();
+        for (EmailTemplate template : registrationEmailTemplate) {
+            templateNameByTemplateRecord.put(template.Name, template);
+        }
         List<Application__c> apps = [
             SELECT
                 Contact__c,
                 Current_Address_Abroad__CountryCode__s,
-                Appeal_Application__c
+                Appeal_Application__c,
+                Status__c, 
+                Email__c
             FROM Application__c
             WHERE Id IN : newApplications.keySet()
         ];
+        List<Messaging.SingleEmailMessage> messages = new List<Messaging.SingleEmailMessage>();
         for (Application__c app : apps) {
             if (app.Contact__c == null) {
                 continue;
@@ -549,48 +631,60 @@ public without sharing class ApplicationTriggerHandler {
             message.setSaveAsActivity(true);
             message.setTreatTargetObjectAsRecipient(false);
             message.setWhatId(currentApp.Id);
-            if (!registrationEmailTemplate.isEmpty()) {
-                message.setTemplateID(registrationEmailTemplate[0].Id);
-            }
-            if ( owea.size() > 0 ) {
-                message.setOrgWideEmailAddressId(owea.get(0).Id);
-            }
-            List<Id> attachIds = new List<Id>();
-            StaticResource attachFile = STATEMENT_EXAMPLES.get(app.Current_Address_Abroad__CountryCode__s);
-            if (attachFile != null) {
-                ContentVersion contVersAttacment = new ContentVersion (
-                    VersionData = attachFile.Body,
+            // if ( owea.size() > 0 ) {
+                //     message.setOrgWideEmailAddressId(owea.get(0).Id);
+            // }
+            if (currentApp.Status__c != 'Pension Keeper') {
+                message.setTemplateID(templateNameByTemplateRecord.get(REGISTRATION_TEMPLATE_NAME).Id);
+                message.setOrgWideEmailAddressId(oweaByAddress.get(REGISTRATION_ORG_WIDE).Id);
+                List<Id> attachIds = new List<Id>();
+                StaticResource attachFile = STATEMENT_EXAMPLES.get(app.Current_Address_Abroad__CountryCode__s);
+                if (attachFile != null) {
+                    ContentVersion contVersAttacment = new ContentVersion (
+                        VersionData = attachFile.Body,
                     PathOnClient = attachFile.Description + '.pdf'
-                );
-                insert contVersAttacment;
-                attachIds.add(contVersAttacment.Id);
+                        );
+                    insert contVersAttacment;
+                    attachIds.add(contVersAttacment.Id);
+                }
+                ContentVersion nextStepContVersAttachment = new ContentVersion();
+                if (app.Appeal_Application__c == true) {
+                    StaticResource appealAttachFile = STATEMENT_EXAMPLES.get('Appeal App');
+                    nextStepContVersAttachment.VersionData = appealAttachFile.Body;
+                    nextStepContVersAttachment.PathOnClient = appealAttachFile.Description + '.pdf';
+                } else {
+                    StaticResource standardAttachFile = STATEMENT_EXAMPLES.get('Standard App');
+                    nextStepContVersAttachment.VersionData = standardAttachFile.Body;
+                    nextStepContVersAttachment.PathOnClient = standardAttachFile.Description + '.pdf';
+                }
+                insert nextStepContVersAttachment;
+                attachIds.add(nextStepContVersAttachment.Id);
+                if(attachIds.size() != 0) {
+                    message.setEntityAttachments(attachIds);
+                }
+                Map<String, String> agentNameByEmail = (Map<String, String>)JSON.deserialize(XP_SETTINGS.Sales_Agent_Name_By_Email__c, Map<String, String>.class);
+                String agentEmail = agentNameByEmail.get(currentApp.Agent_Making_Sale__c);
+                if (!String.isBlank(agentEmail)) {
+                    message.bccAddresses = new String[] { agentEmail };
+                } else message.setBccSender(false);
+            } else if (currentApp.Status__c == 'Pension Keeper' && currentApp.Partner_Application__c == null && currentApp.Package_Name__c != 'Freebie') {
+                message.setTemplateID(templateNameByTemplateRecord.get(PK_REGISTRATION_TEMPLATE_NAME).Id);
+                message.setOrgWideEmailAddressId(oweaByAddress.get(PK_REGISTRATION_ORG_WIDE).Id);
+            } else if (currentApp.Status__c == 'Pension Keeper' && currentApp.Partner_Application__c == null && currentApp.Package_Name__c == 'Freebie') {
+                message.setTemplateID(templateNameByTemplateRecord.get(PK_WELCOME_TEMPLATE_NAME).Id);
+                message.setOrgWideEmailAddressId(oweaByAddress.get(PK_REGISTRATION_ORG_WIDE).Id);
+            } else if (currentApp.Status__c == 'Pension Keeper' && currentApp.Partner_Application__c != null) {
+                message.setTemplateID(templateNameByTemplateRecord.get(PK_WELCOME_TEMPLATE_NAME).Id);
+                message.setOrgWideEmailAddressId(oweaByAddress.get(PK_REGISTRATION_ORG_WIDE).Id);
             }
-            ContentVersion nextStepContVersAttachment = new ContentVersion ();
-            if (app.Appeal_Application__c == true) {
-                StaticResource appealAttachFile = STATEMENT_EXAMPLES.get('Appeal App');
-                nextStepContVersAttachment.VersionData = appealAttachFile.Body;
-                nextStepContVersAttachment.PathOnClient = appealAttachFile.Description + '.pdf';
-            } else {
-                StaticResource standardAttachFile = STATEMENT_EXAMPLES.get('Standard App');
-                nextStepContVersAttachment.VersionData = standardAttachFile.Body;
-                nextStepContVersAttachment.PathOnClient = standardAttachFile.Description + '.pdf';
-            }
-            insert nextStepContVersAttachment;
-            attachIds.add(nextStepContVersAttachment.Id);
-            if(attachIds.size() != 0) {
-                message.setEntityAttachments(attachIds);
-            }
-            Map<String, String> agentNameByEmail = (Map<String, String>)JSON.deserialize(XP_SETTINGS.Sales_Agent_Name_By_Email__c, Map<String, String>.class);
-            String agentEmail = agentNameByEmail.get(currentApp.Agent_Making_Sale__c);
-            if (!String.isBlank(agentEmail)) {
-                message.bccAddresses = new String[] { agentEmail };
-            } else message.setBccSender(false);
             message.toAddresses = new String[] { currentApp.Email__c };
-            Messaging.SingleEmailMessage[] messages = new List<Messaging.SingleEmailMessage> {message};
-            Messaging.SendEmailResult[] results = Messaging.sendEmail(messages);
+            messages.add(message);
+        }
+        if (messages.size() > 0) {
+            Messaging.sendEmail(messages);
         }
     }
-
+    
     private void updateSelfemployedAbroadField(Set<Id> updatedAppIds) {
         if (updatedAppIds.isEmpty()) {
             return;
@@ -744,7 +838,7 @@ public without sharing class ApplicationTriggerHandler {
             update updatedApps;
         }
     }
-
+    
     private void updateDaysSinceContact(Set<Id> currentAppIds) {
         List<Application__c> updateApps = [
             SELECT Date_Since_Contact__c
@@ -758,7 +852,7 @@ public without sharing class ApplicationTriggerHandler {
             update updateApps;
         }
     }
-
+    
     private void updateIsKnowCheckbox(Set<Id> currentAppIds) {
         List<Application__c> updateApps = new List<Application__c>();
         for (Application__c app : [
@@ -771,21 +865,21 @@ public without sharing class ApplicationTriggerHandler {
             if (String.isBlank(app.National_Insurance_Number__c)) {
                 updateApps.add(new Application__c(
                     Id = app.Id,
-                    Is_Know_National_Insurance_Number__c = false
-                ));
+                Is_Know_National_Insurance_Number__c = false
+                    ));
             } else {
                 updateApps.add(new Application__c(
                     Id = app.Id,
-                    Is_Know_National_Insurance_Number__c = true
-                ));
+                Is_Know_National_Insurance_Number__c = true
+                    ));
             }
         }
         if (!updateApps.isEmpty()) {
             update updateApps;
         }
-
+        
     }
-
+    
     private void updateRelatedDocumentsAfterChangeApplicationName(Set<Id> currentAppIds) {
         List<ContentDocumentLink> relatedContentDocumentLinks = [
             SELECT
@@ -843,7 +937,7 @@ public without sharing class ApplicationTriggerHandler {
             update updateDocuments;
         }
     }
-
+    
     private void updateRelatedContactAfterChangeEmail(Set<Id> updatesAppIds) {
         List<Contact> updateContacts = new List<Contact>();
         for (Id appId : updatesAppIds) {
@@ -857,7 +951,7 @@ public without sharing class ApplicationTriggerHandler {
             update updateContacts;
         }
     }
-
+    
     private void updateRelatedPayments(Set<Id> updatesAppIds) {
         List<Payment__c> updatePayments = [
             SELECT
@@ -885,7 +979,7 @@ public without sharing class ApplicationTriggerHandler {
         ];
         Map<String, Decimal> productAmountForEU_Customers = new Map<String, Decimal>();
         Map<String, Decimal> productAmountForNonEU_Customers = new Map<String, Decimal>();
-
+        
         for (PriceBookEntry entry : productPrices) {
             if (entry.Pricebook2.IsStandard == true) {
                 productAmountForEU_Customers.put(entry.Product2.Name, entry.UnitPrice);
@@ -900,7 +994,7 @@ public without sharing class ApplicationTriggerHandler {
         }
         update updatePayments;
     }
-
+    
     private static void changeGoogleReviewSmsDate(Set<Id> sendSmsAppIds) {
         List<Application__c> currentApps = [
             SELECT
@@ -911,7 +1005,7 @@ public without sharing class ApplicationTriggerHandler {
                 Id IN :sendSmsAppIds AND
                 Delay_In_Days__c != null
         ];
-
+        
         if (currentApps.isEmpty()) {
             return;
         }
@@ -921,7 +1015,7 @@ public without sharing class ApplicationTriggerHandler {
         }
         update currentApps;
     }
-
+    
     private static void changeEmptyGoogleReviewSmsDate(Set<Id> sendSmsAppIds) {
         List<Application__c> currentApps = [
             SELECT
@@ -944,7 +1038,7 @@ public without sharing class ApplicationTriggerHandler {
         }
         update currentApps;
     }
-
+    
     private static void updatePaymentsFromAppealApps(Set<Id> appealApps) {
         List<Sobject> upsertRecords = new List<Sobject>();
         Map<Id, Id> applicationIdByOrderId = new Map<Id, Id>();
@@ -1009,22 +1103,23 @@ public without sharing class ApplicationTriggerHandler {
             for (PriceBookEntry entry : currentListEntries) {
                 upsertRecords.add(
                     new Payment__c (
-                        Amount__c         = entry.UnitPrice,
-                        Product__c        = entry.Product2Id,
-                        Status__c         = 'Draft',
-                        Payment_Method__c = paymentMethodId,
-                        Customer_Id__c    = app.Stripe_Customer_Id__c,
-                        Application__c    = app.Id,
-                        Order__c          = applicationIdByOrderId.get(app.Id)
+                    Amount__c         = entry.UnitPrice,
+                Product__c        = entry.Product2Id,
+                Status__c         = 'Draft',
+                Payment_Method__c = paymentMethodId,
+                Customer_Id__c    = app.Stripe_Customer_Id__c,
+                Application__c    = app.Id,
+                Order__c          = applicationIdByOrderId.get(app.Id),
+                CurrencyIsoCode   = app.CurrencyIsoCode
                     )
-                );
+                    );
             }
         }
         if (!upsertRecords.isEmpty()) {
             upsert upsertRecords;
         }
     }
-
+    
     private static void changeCurrentAddressAbroadState(Set<Id> changedApps){
         List<Application__c> currentApps = [
             SELECT
@@ -1041,16 +1136,16 @@ public without sharing class ApplicationTriggerHandler {
         for (Application__c app : currentApps) {
             updatedApps.add(
                 new Application__c(
-                    Id = app.Id,
-                    Current_Address_Abroad_State__c = app.Current_Address_Abroad__StateCode__s
+                Id = app.Id,
+            Current_Address_Abroad_State__c = app.Current_Address_Abroad__StateCode__s
                 )
-            );
+                );
         }
         if (!updatedApps.isEmpty()) {
             update updatedApps;
         }
     }
-
+    
     private void sendGoogleReviewEmail(Set<Id> apps) {
         List<Application__c> currentApps = [
             SELECT
@@ -1072,10 +1167,13 @@ public without sharing class ApplicationTriggerHandler {
             update updateApps;
         }
     }
-
+    
     public void autoAssignToAgent(List<Application__c> newApps) {
         Application__c currApp = newApps[0];
-		List<Application__c> valAgentApps = [
+        if (currApp.Status__c == 'Pension Keeper') {
+            return;
+        }
+        List<Application__c> valAgentApps = [
 	        SELECT Val_Agent__c
             FROM Application__c
             WHERE (Status__c = 'Form Completed' OR
@@ -1091,19 +1189,28 @@ public without sharing class ApplicationTriggerHandler {
             currApp.Val_Agent__c = (new List<String>( VAL_AGENTS_PROPORTION.keySet()))[0];
             return;
         }
-        if(currApp.Appeal_Application__c == true) {
-            currApp.Val_Agent__c = 'Sean';
-            return;
-        }
-        if(currApp.Current_Address_Abroad_Country__c == 'Australia' || currApp.Current_Address_Abroad_Country__c == 'New Zealand' || currApp.Current_Address_Abroad_Country__c == 'South Korea') {
+        // if(currApp.Appeal_Application__c == true) {
+            //     currApp.Val_Agent__c = 'Sean';
+            //     return;
+        // }
+        // if(currApp.Current_Address_Abroad_Country__c == 'Australia' || currApp.Current_Address_Abroad_Country__c == 'New Zealand' || currApp.Current_Address_Abroad_Country__c == 'South Korea') {
+            //     currApp.Val_Agent__c = 'Becky';
+            //     return;
+        // }
+        // if(currApp.Current_Address_Abroad_Country__c == 'South Africa') {
+            //     currApp.Val_Agent__c = 'Ciara';
+            //     return;
+        // }
+        // if(currApp.Current_Address_Abroad_Country__c == 'United States' || currApp.Current_Address_Abroad_Country__c == 'Canada') {
+            //     currApp.Val_Agent__c = 'Sean';
+            //     return;
+        // }
+        
+        if(currApp.Current_Address_Abroad_Country__c == 'Australia' || currApp.Current_Address_Abroad_Country__c == 'New Zealand') {
             currApp.Val_Agent__c = 'Becky';
             return;
         }
-        if(currApp.Current_Address_Abroad_Country__c == 'South Africa') {
-            currApp.Val_Agent__c = 'Ciara';
-            return;
-        }
-        if(currApp.Current_Address_Abroad_Country__c == 'United States' || currApp.Current_Address_Abroad_Country__c == 'Canada') {
+        if(currApp.Appeal_Application__c == true) {
             currApp.Val_Agent__c = 'Sean';
             return;
         }
@@ -1136,7 +1243,7 @@ public without sharing class ApplicationTriggerHandler {
         if (newApps.isEmpty()) return;
         currApp.Val_Agent__c  = assignAgent;
     }
-
+    
     public static void changeAgentStatusApps(Set<Id> updatedAppIds) {
         if (updatedAppIds.isEmpty()) {
             return;
@@ -1152,8 +1259,8 @@ public without sharing class ApplicationTriggerHandler {
         ]) {
             Application__c currApp = new Application__c(
                 Id = app.Id,
-                Agent_Status__c = app.Status__c
-            );
+            Agent_Status__c = app.Status__c
+                );
             if (app.New_Agent__c == null && app.Status__c == 'Agent Check') {
                 //currApp.New_Agent__c = autoAssignToNewAgent();
                 currApp.New_Agent__c = 'Maria';
@@ -1164,9 +1271,9 @@ public without sharing class ApplicationTriggerHandler {
             update updatedApps;
         }
     }
-
+    
     public static String autoAssignToNewAgent() {
-		List<Application__c> newAgentApps = [
+        List<Application__c> newAgentApps = [
 	        SELECT New_Agent__c
             FROM Application__c
             WHERE Status__c = 'Agent Check' AND
@@ -1175,7 +1282,7 @@ public without sharing class ApplicationTriggerHandler {
         if(newAgentApps.isEmpty()) {
             return (new List<String>( AGENTS_PROPORTION.keySet()))[0];
         }
-
+        
         Map<String, Decimal> agentNameByAppCount = new Map<String, Decimal>();
         for (Application__c app : newAgentApps) {
             Decimal count = agentNameByAppCount.get(app.New_Agent__c);
@@ -1203,7 +1310,7 @@ public without sharing class ApplicationTriggerHandler {
         if (assignAgent == null ) return newAgentApps[0].New_Agent__c;
         else return assignAgent;
     }
-
+    
     public static void sendSalesAgentCustomNotification(Set<Id> currApps) {
         List<Application__c> apps = [
             SELECT
@@ -1214,7 +1321,7 @@ public without sharing class ApplicationTriggerHandler {
             FROM Application__c
             WHERE Id = :currApps
         ];
-
+        
         if (apps.isEmpty()) {
             return;
         }
@@ -1227,7 +1334,7 @@ public without sharing class ApplicationTriggerHandler {
                 Id,
                 FirstName
             FROM User
-            WHERE FirstName IN :names
+            WHERE FirstName IN :names AND IsActive = true
         ];
         if (users.isEmpty()) {
             return;
@@ -1264,6 +1371,9 @@ public without sharing class ApplicationTriggerHandler {
             notification.setBody(subject);
             notification.setNotificationTypeId(AGENT_NOTIFICATION.Id);
             notification.setTargetId(app.Id);
+            if(valAgentNameByUserId.get(app.Val_Agent__c) == null) {
+                continue;
+            }
             notification.send(new Set<String> {valAgentNameByUserId.get(app.Val_Agent__c)});
             Messaging.SingleEmailMessage message = sendMessage(app, subject, VAL_AGENTS_BY_EMAIL.get(app.Val_Agent__c));
             ContentDocumentLink currNote = appIdByLatestNote.get(app.Id);
@@ -1276,7 +1386,7 @@ public without sharing class ApplicationTriggerHandler {
             Messaging.SendEmailResult[] result = Messaging.sendEmail(lstSingleEmailMessage);
         }
     }
-
+    
     public static void sendValAgentCustomNotification(Set<Id> currApps) {
         List<Application__c> apps = [
             SELECT
@@ -1287,7 +1397,7 @@ public without sharing class ApplicationTriggerHandler {
             FROM Application__c
             WHERE Id = :currApps
         ];
-
+        
         if (apps.isEmpty()) {
             return;
         }
@@ -1325,7 +1435,7 @@ public without sharing class ApplicationTriggerHandler {
         }
         Messaging.SendEmailResult[] result = Messaging.sendEmail(lstSingleEmailMessage);
     }
-
+    
     private static Messaging.SingleEmailMessage sendMessage(Application__c currApp, String subject, String toAddress) {
         Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
         message.setUseSignature(false);
@@ -1340,8 +1450,7 @@ public without sharing class ApplicationTriggerHandler {
         message.toAddresses = new String[] {toAddress};
         return message;
     }
-
-    @future
+    
     private static void generateZipArchive(Id applicationId, Boolean repeatApp) {
         if (applicationId == null) {
             return;
@@ -1401,12 +1510,12 @@ public without sharing class ApplicationTriggerHandler {
         if (String.isNotBlank(errorMessage)) {
             update new Application__c(
                 Id = applicationId,
-                Zip_Archive_Error__c = errorMessage
-            );
+            Zip_Archive_Error__c = errorMessage
+                );
             return;
         }
         Compression.ZipWriter writer = new Compression.ZipWriter();
-
+        
         Set<Id> contentDocumentIds = new Set<Id>();
         contentDocumentIds.add(fileKeyWordByLink.get('CF083').ContentDocumentId);
         contentDocumentIds.add(fileKeyWordByLink.get('CustomLetter').ContentDocumentId);
@@ -1419,7 +1528,7 @@ public without sharing class ApplicationTriggerHandler {
             contentDocumentIds.add(fileKeyWordByLink.get('ReSubLetter').ContentDocumentId);
         }
         contentDocumentIds.add(fileKeyWordByLink.get('64-8').ContentDocumentId);
-
+        
         Map<String, Id> currVers = new Map<String, Id>();
         for ( ContentVersion cv : [SELECT PathOnClient, Versiondata, ContentDocument.Title, ContentDocument.FileExtension
                                    FROM ContentVersion
@@ -1443,42 +1552,43 @@ public without sharing class ApplicationTriggerHandler {
             ];
             update new Application__c(Id = applicationId, FTP_Send_Date__c = null, Zip_Archive_Contains_UPLOAD_file__c = isContainUploadFile);
             String finalTitle = currentApplication.First_Name__c + '_' + currentApplication.Second_Name__c + '_' +
-            currentApplication.Name + '_ZIP';
+                currentApplication.Name + '_ZIP';
             if (zipDoc.size() != 0) {
                 insert new ContentVersion (
                     ContentDocumentId = zipDoc[0].ContentDocumentId,
-                    VersionData = zipAttachment,
-                    PathOnClient = finalTitle + '.zip'
-                );
+                VersionData = zipAttachment,
+                PathOnClient = finalTitle + '.zip'
+                    );
             } else {
                 ContentVersion conVer = new ContentVersion();
                 conVer.ContentLocation = 'S';
                 conVer.PathOnClient = finalTitle + '.zip';
                 conVer.Title = finalTitle;
                 conVer.VersionData = zipAttachment;
+                conVer.FirstPublishLocationId = applicationId;
                 insert conVer;
-                ContentVersion conDoc = [SELECT ContentDocumentId, ContentSize FROM ContentVersion WHERE Id =:conVer.Id][0];
-
-                ContentDocumentLink conDocLink = new ContentDocumentLink();
-                conDocLink.LinkedEntityId = applicationId;
-                conDocLink.ContentDocumentId = conDoc.ContentDocumentId;
-                conDocLink.shareType = 'I';
-                conDocLink.Visibility = 'AllUsers';
-                insert conDocLink;
+                //ContentVersion conDoc = [SELECT ContentDocumentId, ContentSize FROM ContentVersion WHERE Id =:conVer.Id][0];
+                
+                // ContentDocumentLink conDocLink = new ContentDocumentLink();
+                // conDocLink.LinkedEntityId = applicationId;
+                // conDocLink.ContentDocumentId = conDoc.ContentDocumentId;
+                // conDocLink.shareType = 'I';
+                // conDocLink.Visibility = 'AllUsers';
+                // insert conDocLink;
             }
         } catch (HandledException ex) {
             Messaging.SingleEmailMessage message = sendMessage(
                 currentApplication,
-                currentApplication.Name + ' - ERROR generating ZIP!',
-                null
-            );
+            currentApplication.Name + ' - ERROR generating ZIP!',
+            null
+                );
             message.setPlainTextBody('Error creating zip archive for application - ' + currentApplication.Name + '. Please compress PRSI file.');
             message.toAddresses = FAIL_ZIP_FILE_RECIPIENTS;
             List<Messaging.SingleEmailMessage> lstSingleEmailMessage = new List<Messaging.SingleEmailMessage>{message};
             Messaging.SendEmailResult[] result = Messaging.sendEmail(lstSingleEmailMessage);
         }
     }
-
+    
     private static void sendDeferredCustomNotificationToValAgent(Set<Id> currentAppIds) {
         List<Application__c> apps = [
             SELECT
@@ -1489,7 +1599,7 @@ public without sharing class ApplicationTriggerHandler {
             FROM Application__c
             WHERE Id = :currentAppIds
         ];
-
+        
         if (apps.isEmpty()) {
             return;
         }
@@ -1553,7 +1663,7 @@ public without sharing class ApplicationTriggerHandler {
             Messaging.SendEmailResult[] result = Messaging.sendEmail(lstSingleEmailMessage);
         }
     }
-
+    
     private static void createSplitPayments(Set<Id> splitApps) {
         List<Payment__c> applicationPayments = [
             SELECT
@@ -1579,41 +1689,41 @@ public without sharing class ApplicationTriggerHandler {
             if (payment.Product_Name__c == 'Application') {
                 upsertPayments.add(
                     new Payment__c (
-                        Id = payment.Id,
-                        Amount__c = payment.Amount__c / 5
+                    Id = payment.Id,
+                Amount__c = payment.Amount__c / 5
                     )
-                );
+                    );
                 for (Integer i = 0; i < 4; i++) {
                     Payment__c extraApplicationPayment = new Payment__c (
                         Application__c = payment.Application__c,
-                        Amount__c = payment.Amount__c / 5,
-                        CurrencyIsoCode  = payment.CurrencyIsoCode,
-                        Customer_Id__c  = payment.Customer_Id__c,
-                        Order__c  = payment.Order__c,
-                        Payment_Method__c  = payment.Payment_Method__c,
-                        Product__c  = payment.Product__c,
-                        Status__c  = 'Draft'
-                    );
-                    upsertPayments.add(extraApplicationPayment);
-                }
-            }
-            if (payment.Product_Name__c == 'Success') {
-                upsertPayments.add(
-                    new Payment__c (
-                        Id = payment.Id,
-                        Amount__c = payment.Amount__c / 2
-                    )
-                );
-                Payment__c extraSuccessPayment = new Payment__c (
-                    Application__c = payment.Application__c,
-                    Amount__c = payment.Amount__c / 2,
+                    Amount__c = payment.Amount__c / 5,
                     CurrencyIsoCode  = payment.CurrencyIsoCode,
                     Customer_Id__c  = payment.Customer_Id__c,
                     Order__c  = payment.Order__c,
                     Payment_Method__c  = payment.Payment_Method__c,
                     Product__c  = payment.Product__c,
                     Status__c  = 'Draft'
-                );
+                        );
+                    upsertPayments.add(extraApplicationPayment);
+                }
+            }
+            if (payment.Product_Name__c == 'Success') {
+                upsertPayments.add(
+                    new Payment__c (
+                    Id = payment.Id,
+                Amount__c = payment.Amount__c / 2
+                    )
+                    );
+                Payment__c extraSuccessPayment = new Payment__c (
+                    Application__c = payment.Application__c,
+                Amount__c = payment.Amount__c / 2,
+                CurrencyIsoCode  = payment.CurrencyIsoCode,
+                Customer_Id__c  = payment.Customer_Id__c,
+                Order__c  = payment.Order__c,
+                Payment_Method__c  = payment.Payment_Method__c,
+                Product__c  = payment.Product__c,
+                Status__c  = 'Draft'
+                    );
                 upsertPayments.add(extraSuccessPayment);
             }
             currAppIds.add(payment.Application__c);
@@ -1622,17 +1732,17 @@ public without sharing class ApplicationTriggerHandler {
             for (Id appId : currAppIds) {
                 upsertPayments.add(
                     new Application__c(
-                        Id = appId,
-                        Split_Date__c = Date.today()
+                    Id = appId,
+                Split_Date__c = Date.today()
                     )
-                );
+                    );
             }
         }
         if (upsertPayments.size() != 0) {
             Database.upsert(upsertPayments, false);
         }
     }
-
+    
     @future(callout=true)
     private static void generateReSubLetter(Set<Id> currApps) {
         Id appId = currApps.iterator().next();
@@ -1640,7 +1750,8 @@ public without sharing class ApplicationTriggerHandler {
             SELECT
                 Name,
                 First_Name__c,
-                Second_Name__c
+                Second_Name__c, 
+                Status__c
             FROM Application__c
             WHERE Id = :appId
             LIMIT 1
@@ -1658,7 +1769,7 @@ public without sharing class ApplicationTriggerHandler {
         } else {
             pdfBlob = Blob.valueOf('Test');
         }
-		List<ContentDocumentLink> oldDocuments = [
+        List<ContentDocumentLink> oldDocuments = [
             SELECT
                 ContentDocumentId,
                 ContentDocument.Title,
@@ -1668,33 +1779,178 @@ public without sharing class ApplicationTriggerHandler {
                   LinkedEntityId = :appId
             LIMIT 1
         ];
-
+        
         String FinalTitle = app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name +'_ReSubLetter_ForSignature';
         if (oldDocuments.size() != 0) {
             ContentVersion newVersion = new ContentVersion(
                 ContentDocumentId = oldDocuments[0].ContentDocumentId,
-                VersionData = pdfBlob,
-                PathOnClient = FinalTitle + '.pdf'
-            );
+            VersionData = pdfBlob,
+            PathOnClient = FinalTitle + '.pdf'
+                );
             insert newVersion;
         } else {
             ContentVersion conVer = new ContentVersion();
-		    conVer.ContentLocation = 'S';
-		    conVer.PathOnClient = FinalTitle + '.pdf';
-		    conVer.Title = FinalTitle;
-		    conVer.VersionData = pdfBlob;
-		    insert conVer;
-
-            ContentVersion conDoc = [SELECT ContentDocumentId, ContentSize FROM ContentVersion WHERE Id =:conVer.Id][0];
-
-		    ContentDocumentLink conDocLink = New ContentDocumentLink();
-		    conDocLink.LinkedEntityId = app.Id;
-		    conDocLink.ContentDocumentId = conDoc.ContentDocumentId;
-		    conDocLink.shareType = 'V';
-            conDocLink.Visibility = 'AllUsers';
-		    insert conDocLink;
-
-    	    update new Application__c(Id = app.Id, Repeat_App__c = true);
+            conVer.ContentLocation = 'S';
+            conVer.PathOnClient = FinalTitle + '.pdf';
+            conVer.Title = FinalTitle;
+            conVer.VersionData = pdfBlob;
+            conVer.FirstPublishLocationId = app.Id;
+            insert conVer;
+            
+            // ContentVersion conDoc = [SELECT ContentDocumentId, ContentSize FROM ContentVersion WHERE Id =:conVer.Id][0];
+            
+            // ContentDocumentLink conDocLink = New ContentDocumentLink();
+            // conDocLink.LinkedEntityId = app.Id;
+            // conDocLink.ContentDocumentId = conDoc.ContentDocumentId;
+            // conDocLink.shareType = 'V';
+            // conDocLink.Visibility = 'AllUsers';
+            // insert conDocLink;
+            
+            update new Application__c(Id = app.Id, Repeat_App__c = true);
+        }
+        if (app.Status__c == 'REPEAT(NO edits)') {
+            generateZipArchive(app.Id, true);
+        }
+    }
+    
+    private static void calculatePensionAge(Set<Id> targetAppIds) {
+        List<Application__c> updatedApps = new List<Application__c>();
+        for (Application__c app : [SELECT Id, Date_Of_Birth__c FROM Application__c WHERE Id IN :targetAppIds]) {
+            if(app.Date_Of_Birth__c != null) {
+                Date pensionAge = PK_PortalUtils.calculatePensionDate(app.Date_Of_Birth__c);
+                updatedApps.add(
+                    new Application__c(
+                    Id = app.Id,
+                PK_Date_Pension_Age_Reached__c = pensionAge,
+                Pension_Age__c = PK_PortalUtils.getYearsMonthsDaysBetween(app.Date_Of_Birth__c, pensionAge)
+                    )
+                    );
+            }
+        }
+        if (updatedApps.size() != 0) {
+            update updatedApps;
+        }
+    }
+    
+    public void registratePKPatner() {
+        List<Application__c> updatedApps = new List<Application__c>();
+        for (Application__c app : newApplications.values()) {
+            if(app.PK_Partner__c == true &&
+                oldApplications.get(app.Id).PK_Partner__c != app.PK_Partner__c &&
+            app.PK_Portal_User_Active__c == false) {
+                Date pensionAge = PK_PortalUtils.calculatePensionDate(app.Date_Of_Birth__c);
+                app.Status__c = 'Pension Keeper';
+                app.PK_Portal_User_Active__c = true;
+                app.PK_Portal_User_PW__c = PK_PortalAuthHelper.generatePassword(app);
+                app.PK_Registration_Date__c = Date.today();
+                app.PK_Date_Pension_Age_Reached__c = pensionAge;
+                app.Pension_Age__c = pensionAge != null ? PK_PortalUtils.getYearsMonthsDaysBetween(app.Date_Of_Birth__c, pensionAge) : null;
+                app.PK_Auto_Renewal__c = false;
+            }
+            if(app.PK_Freebie_App__c == true &&
+                oldApplications.get(app.Id).PK_Freebie_App__c != app.PK_Freebie_App__c &&
+            app.PK_Portal_User_Active__c == false) {
+                Date pensionAge = PK_PortalUtils.calculatePensionDate(app.Date_Of_Birth__c);
+                app.Status__c = 'Pension Keeper';
+                app.PK_Portal_User_Active__c = true;
+                app.PK_Portal_User_PW__c = PK_PortalAuthHelper.generatePassword(app);
+                app.PK_Registration_Date__c = Date.today();
+                app.PK_Date_Pension_Age_Reached__c = pensionAge;
+                app.Pension_Age__c = pensionAge != null ? PK_PortalUtils.getYearsMonthsDaysBetween(app.Date_Of_Birth__c, pensionAge) : null;
+                app.PK_Auto_Renewal__c = false;
+                sendPKRegistrationEmail(app.Id);
+            }
+            if(app.PK_Partner__c == true &&
+                oldApplications.get(app.Id).PK_Partner__c != app.PK_Partner__c &&
+                app.PK_Portal_User_Active__c == true &&
+            app.Partner_Application__c != null) {
+                List<Application__c> partnerApps = [
+                    SELECT
+                        Id,
+                        PK_Portal_User_Active__c,
+                        PK_Registration_Date__c,
+                        Date_Of_Birth__c,
+                        Status__c
+                    FROM Application__c
+                    WHERE Id = :app.Partner_Application__c
+                    LIMIT 1
+                ];
+                if(partnerApps.size() == 0) return;
+                Application__c partnerApp = partnerApps[0];
+                if(partnerApp.PK_Portal_User_Active__c == true && partnerApp.PK_Registration_Date__c != null) return;
+                if(partnerApp.Status__c == 'Annual Service' || partnerApp.Status__c == 'No Annual') {
+                    Date pensionAge = PK_PortalUtils.calculatePensionDate(partnerApp.Date_Of_Birth__c);
+                    partnerApp.Status__c = 'Pension Keeper';
+                    partnerApp.PK_Portal_User_Active__c = true;
+                    partnerApp.PK_Portal_User_PW__c = PK_PortalAuthHelper.generatePassword(app);
+                    partnerApp.PK_Registration_Date__c = Date.today();
+                    partnerApp.PK_Date_Pension_Age_Reached__c = pensionAge;
+                    partnerApp.Pension_Age__c = pensionAge != null ? PK_PortalUtils.getYearsMonthsDaysBetween(app.Date_Of_Birth__c, pensionAge) : null;
+                    partnerApp.PK_Auto_Renewal__c = false;
+                    updatedApps.add(partnerApp);
+                    update partnerApp;
+                    sendPKRegistrationEmail(partnerApp.Id);
+                } else {
+                    app.addError('Partner application doesn\'t have \'Annual Service\' or \'No Annual\' status');
+                }
+            }
+            if(updatedApps.size() > 0) {
+                update updatedApps;
+            }
+        }
+    }
+    
+    @future
+    public static void sendPKRegistrationEmail(Id appId) {
+        OrgWideEmailAddress[] owea = [
+            SELECT Id
+            FROM OrgWideEmailAddress
+            WHERE Address = :PK_ORG_WIDE_EMAIL_ADDRESS
+        ];
+        List<EmailTemplate> registrationEmailTemplate = [
+            SELECT
+                Id
+            FROM EmailTemplate
+            WHERE Name = :PK_REGISTRATION_EMAIL_TEMPLATE_NAME
+        ];
+        List<Application__c> apps = [
+            SELECT
+                Id,
+                Contact__c,
+                Email__c
+            FROM Application__c
+            WHERE Id = :appId
+            LIMIT 1
+        ];
+        if(apps.size() == 0) return;
+        Application__c app = apps[0];
+        Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
+        message.setTargetObjectId(app.Contact__c);
+        message.setUseSignature(false);
+        message.setBccSender(false);
+        message.setSaveAsActivity(true);
+        message.setTreatTargetObjectAsRecipient(false);
+        if (registrationEmailTemplate.size() > 0) {
+            message.setTemplateID(registrationEmailTemplate[0].Id);
+        }
+        message.setWhatId(app.Id);
+        if (owea.size() > 0) {
+            message.setOrgWideEmailAddressId(owea.get(0).Id);
+        }
+        message.toAddresses = new String[] { app.Email__c };
+        Messaging.SingleEmailMessage[] messages = new List<Messaging.SingleEmailMessage> {message};
+        Messaging.SendEmailResult[] results = Messaging.sendEmail(messages);
+    }
+    
+    private static void uploadFilesToAWS(Set<Id> currAppIds) {
+        if (currAppIds.size() > 0) {
+            System.enqueueJob(new UploadToAWSQueueable(currAppIds));
+        }
+    }
+    
+    private static void retrieveFilesToAWS(Set<Id> currAppIds) {
+        if (currAppIds.size() > 0) {
+            System.enqueueJob(new RetrieveToAWSQueueable(currAppIds));
         }
     }
 }

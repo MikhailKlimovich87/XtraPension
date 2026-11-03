@@ -1,0 +1,132 @@
+<template>
+    <div class="slds-card aa-feecharge">
+        <header class="aa-feecharge__head">
+            <lightning-icon icon-name="standard:payment_method" size="small" class="aa-feecharge__icon"></lightning-icon>
+            <div>
+                <h2 class="aa-feecharge__title">Fee Charge</h2>
+                <p class="aa-feecharge__sub">Schedule the 20% fee on the client's Direct Debit. The client is emailed an advance notice 5&nbsp;days before each payment, and each payment is collected on the date that notice gives.</p>
+            </div>
+        </header>
+
+        <!-- Gate visualization ---------------------------------------- -->
+        <div class="aa-feecharge__gates">
+            <div class={mandateGateClass}>
+                <lightning-icon icon-name={mandateGateIcon} size="xx-small" class="aa-feecharge__gate-icon"></lightning-icon>
+                <span>Direct Debit Active</span>
+            </div>
+            <div class={awardGateClass}>
+                <lightning-icon icon-name={awardGateIcon} size="xx-small" class="aa-feecharge__gate-icon"></lightning-icon>
+                <span>Award Amount Recorded</span>
+            </div>
+            <div class={notChargedClass}>
+                <lightning-icon icon-name={notChargedIcon} size="xx-small" class="aa-feecharge__gate-icon"></lightning-icon>
+                <span>Not Already Scheduled</span>
+            </div>
+        </div>
+
+        <!-- Not yet charged — show CTA + plan preview ---------------- -->
+        <template if:false={alreadyCharged}>
+            <div class="aa-feecharge__cta-block">
+                <lightning-button
+                    variant="brand"
+                    label={ctaLabel}
+                    icon-name="utility:money"
+                    onclick={handleChargeClick}
+                    disabled={chargeDisabled}
+                    title={chargeTooltip}
+                    class="aa-feecharge__cta">
+                </lightning-button>
+                <template if:true={feeAmount}>
+                    <div class="aa-feecharge__amount">
+                        <lightning-formatted-number
+                            value={firstInstallmentAmount}
+                            format-style="currency"
+                            currency-code="GBP">
+                        </lightning-formatted-number>
+                        <template if:true={multiInstallment}>
+                            <span class="aa-feecharge__amount-sub">&nbsp;first payment (1 of {installmentsCount})</span>
+                        </template>
+                    </div>
+                </template>
+                <template if:true={multiInstallment}>
+                    <p class="aa-feecharge__plan-hint">Later payments ({remainingLabels}) are collected automatically, each after its own 5-day advance notice.</p>
+                </template>
+                <template if:true={chargeTooltip}>
+                    <p class="aa-feecharge__disabled-reason">{chargeTooltip}</p>
+                </template>
+            </div>
+        </template>
+
+        <!-- Already charged — show status + installment table --------- -->
+        <template if:true={alreadyCharged}>
+            <div class="aa-feecharge__charged">
+                <div class="aa-feecharge__charged-banner">
+                    <strong>{bannerLabel}</strong>
+                    <template if:true={chargedAtDisplay}>
+                        &nbsp;on {chargedAtDisplay}
+                    </template>
+                    <template if:true={prettyPaymentStatus}>
+                        &nbsp;({prettyPaymentStatus})
+                    </template>
+                </div>
+                <div class="aa-feecharge__meta">
+                    <div class="aa-feecharge__row">
+                        <span class="aa-feecharge__k">Total fee</span>
+                        <span class="aa-feecharge__v">
+                            <lightning-formatted-number
+                                value={feeAmount}
+                                format-style="currency"
+                                currency-code="GBP">
+                            </lightning-formatted-number>
+                        </span>
+                    </div>
+                    <div class="aa-feecharge__row">
+                        <span class="aa-feecharge__k">Plan</span>
+                        <span class="aa-feecharge__v">{planSummary}</span>
+                    </div>
+                    <template if:true={nextChargeDisplay}>
+                        <div class="aa-feecharge__row">
+                            <span class="aa-feecharge__k">Next charge</span>
+                            <span class="aa-feecharge__v">{nextChargeDisplay}</span>
+                        </div>
+                    </template>
+                    <template if:true={maskedPaymentId}>
+                        <div class="aa-feecharge__row">
+                            <span class="aa-feecharge__k">Payment ID (installment&nbsp;1)</span>
+                            <span class="aa-feecharge__v aa-feecharge__mono">{maskedPaymentId}</span>
+                        </div>
+                    </template>
+                </div>
+                <template if:true={pausedDnc}>
+                    <p class="aa-feecharge__disabled-reason">Fee collection is paused because this client is marked Do Not Contact.
+                        No notice is sent and nothing new is collected until the flag is cleared; then it resumes with a fresh 5-day notice.</p>
+                </template>
+                <template if:true={hasPlan}>
+                    <div class="aa-feecharge__inst">
+                        <template for:each={installmentRows} for:item="row">
+                            <div key={row.id} class="aa-feecharge__inst-row">
+                                <span class="aa-feecharge__inst-n">#{row.number}</span>
+                                <span class="aa-feecharge__inst-date">{row.dateDisplay}</span>
+                                <span class="aa-feecharge__inst-amt">
+                                    <lightning-formatted-number value={row.amount} format-style="currency" currency-code="GBP"></lightning-formatted-number>
+                                </span>
+                                <span class="aa-feecharge__inst-status">{row.statusLabel}
+                                    <template if:true={row.noticeLabel}><span class="aa-feecharge__inst-notice">&nbsp;· {row.noticeLabel}</span></template>
+                                </span>
+                                <template if:true={row.canRetry}>
+                                    <lightning-button
+                                        label="Retry"
+                                        variant="brand-outline"
+                                        data-id={row.id}
+                                        onclick={handleRetry}
+                                        disabled={retryDisabled}>
+                                    </lightning-button>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+</template>

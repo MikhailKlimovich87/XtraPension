@@ -1,0 +1,53 @@
+.aa-va { padding-bottom: 1rem; }
+.aa-va__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+}
+.aa-va__title { font-size: 1.1rem; font-weight: 600; }
+.aa-va__sub { color: #555; font-size: 0.85rem; margin-top: 0.15rem; }
+.aa-va__empty { color: #777; font-style: italic; }
+.aa-va__table { padding: 0 1rem; }
+.aa-va__row {
+    display: grid;
+    grid-template-columns: minmax(120px, 1.5fr) 90px minmax(160px, 2fr) 80px 90px 100px;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #ececec;
+}
+.aa-va__row--head {
+    font-weight: 600;
+    color: #555;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 2px solid #d0d0d0;
+}
+.aa-va__row--inactive { opacity: 0.55; }
+.aa-va__cell { min-width: 0; }
+.aa-va__share { display: flex; align-items: center; gap: 0.5rem; }
+.aa-va__bar {
+    flex: 1 1 auto;
+    height: 8px;
+    background: #eef1f6;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.aa-va__bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #1589ee, #0070d2);
+    transition: width 0.25s ease;
+}
+.aa-va__pct { font-variant-numeric: tabular-nums; font-size: 0.85rem; color: #333; min-width: 40px; text-align: right; }
+.aa-va__count { font-variant-numeric: tabular-nums; }
+.aa-va__actions-col { display: flex; gap: 0.35rem; justify-content: flex-end; }
+.aa-va__footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0.25rem 0.25rem;
+    color: #555;
+    font-size: 0.85rem;
+}

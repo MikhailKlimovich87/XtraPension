@@ -15,16 +15,14 @@ public class UpdateLetterPdfTest {
         ];
         Id personContactId = currentContact[0].Id;
         Application__c testApplication = TestDataFactory.createApplication(personContactId, false);
-        testApplication.Update_Letter_Template__c = '<div>Test messsage</div>';
         insert testApplication;
     }
-
+    
     @IsTest
     static void generateUpdateLetterPDFTest() {
         List<Application__c> testApps = [
             SELECT
-                Id,
-                Update_Letter_Template__c
+                Id
             FROM Application__c
         ];
         Test.startTest();

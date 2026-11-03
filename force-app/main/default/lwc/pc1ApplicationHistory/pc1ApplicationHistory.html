@@ -1,0 +1,56 @@
+<template>
+    <article class="slds-card">
+        <div class="slds-card__header slds-grid slds-grid_align-spread">
+            <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                <div class="slds-media__figure">
+                    <lightning-icon icon-name="standard:record_lookup" size="small"></lightning-icon>
+                </div>
+                <div class="slds-media__body">
+                    <h2 class="slds-card__header-title">
+                        <span class="slds-text-heading_small">{titleWithCount}</span>
+                    </h2>
+                </div>
+            </header>
+        </div>
+
+        <div class="slds-card__body slds-card__body_inner">
+            <template if:true={error}>
+                <div class="slds-text-color_error slds-p-around_small">Error: {error}</div>
+            </template>
+
+            <template if:false={hasRows}>
+                <div class="slds-text-color_weak slds-text-align_center slds-p-around_medium">
+                    No changes yet. Field edits will appear here.
+                </div>
+            </template>
+
+            <template if:true={hasRows}>
+                <ul class="slds-has-dividers_bottom-space">
+                    <template for:each={rows} for:item="r">
+                        <li key={r.id} class="slds-item slds-p-vertical_x-small">
+                            <div class="slds-grid slds-grid_align-spread slds-text-body_small slds-text-color_weak">
+                                <span>
+                                    <lightning-formatted-date-time value={r.when} year="numeric" month="2-digit" day="2-digit" hour="2-digit" minute="2-digit"></lightning-formatted-date-time>
+                                </span>
+                            </div>
+                            <div class="slds-text-body_regular slds-m-top_xx-small">
+                                <b>{r.fieldLabel}</b>
+                                <span class="slds-m-horizontal_xx-small slds-text-color_weak">·</span>
+                                <a href="#" data-userid={r.userId} onclick={handleUserClick}>{r.userName}</a>
+                            </div>
+                            <div class="slds-text-body_small slds-m-top_xx-small slds-truncate">
+                                <span class="slds-text-color_weak">{r.oldValue}</span>
+                                <span class="slds-m-horizontal_xx-small slds-text-color_weak">→</span>
+                                <span>{r.newValue}</span>
+                            </div>
+                        </li>
+                    </template>
+                </ul>
+            </template>
+        </div>
+
+        <footer class="slds-card__footer">
+            <a href="#" onclick={handleViewAll}>{footerLabel}</a>
+        </footer>
+    </article>
+</template>

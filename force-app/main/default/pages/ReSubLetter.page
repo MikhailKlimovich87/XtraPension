@@ -104,7 +104,7 @@
                 <div class="item-body">We are resubmitting the attached application for Voluntary National Insurance contributions on behalf of our client, {!appObj.First_Name__c} {!appObj.Second_Name__c}.</div>
                 <div class="item-body">
                     This application was originally submitted on {!appObj.Tracking_No_Rx_d_by_XP__c} via <span style="{!IF(appObj.DHL_Repeat__c = true, 'display:none', null)};" class="free-form">Royal Mail,</span>
-                    <span style="{!IF(appObj.DHL_Repeat__c = false, 'display:none', null)};" class="free-form">DHL,</span> under tracking number {!appObj.Tracking_Number__c}. We have since been advised by HMRC that the original application has not been received.
+                    <span style="{!IF(appObj.DHL_Repeat__c = false, 'display:none', null)};" class="free-form">DHL,</span> under tracking number {!appObj.Tracking_Number__c}.
                 </div>
                 <div class="item-body">
                     To avoid any further delays, we are enclosing all original documents again, including:

@@ -275,7 +275,6 @@ public with sharing class ApplicationManagerHandler {
                                 'Getting_UK_Pension_Now__c ' +
                             'FROM Application__c ' +
                             'WHERE Stripe_Transaction_Id__c = :stripeId' +
-                                ' AND Expiry_Date__c > :todayDateTime' +
                             ' LIMIT 1 ';
         Application__c app = Database.query(queryLine);
         if (app == null) {
@@ -370,7 +369,6 @@ public with sharing class ApplicationManagerHandler {
                 Step__c
             FROM Application__c
             WHERE Stripe_Transaction_Id__c = :stripeId
-                AND Expiry_Date__c > :Datetime.now()
             LIMIT 1
         ];
         if (app == null) {
@@ -424,7 +422,6 @@ public with sharing class ApplicationManagerHandler {
                 Step__c
             FROM Application__c
             WHERE Stripe_Transaction_Id__c = :stripeId
-                AND Expiry_Date__c > :Datetime.now()
             LIMIT 1
         ];
         List<Employer__c> relatedEmployers = [
@@ -554,7 +551,6 @@ public with sharing class ApplicationManagerHandler {
                 SelfEmployment_Employment_Abroad__c
             FROM Application__c
             WHERE Stripe_Transaction_Id__c = :stripeId
-                AND Expiry_Date__c > :Datetime.now()
             LIMIT 1
         ];
         List<Employer__c> relatedEmployers = [
@@ -760,7 +756,6 @@ public with sharing class ApplicationManagerHandler {
             SELECT Id
             FROM Application__c
             WHERE Stripe_Transaction_Id__c = :stripeId
-                AND Expiry_Date__c > :Datetime.now()
             LIMIT 1
         ];
 
@@ -808,7 +803,6 @@ public with sharing class ApplicationManagerHandler {
                 Missing_Info_Send_Date__c
             FROM Application__c
             WHERE Stripe_Transaction_Id__c = :stripeId
-                AND Expiry_Date__c > :Datetime.now()
             LIMIT 1
         ];
         if (app == null) {
@@ -883,7 +877,6 @@ public with sharing class ApplicationManagerHandler {
                 Contact__c
             FROM Application__c
             WHERE Stripe_Transaction_Id__c = :stripeId
-                AND Expiry_Date__c > :Datetime.now()
             LIMIT 1
         ];
         if (requestData?.statements == null) {
@@ -1035,8 +1028,8 @@ public with sharing class ApplicationManagerHandler {
         String fullFormQueryStatuses = isFullForm == true ?
             '(Status__c = \'Form In Progress\' ' +
             'OR Status__c = \'Form Completed\' ' +
-            'OR Status__c = \'NINO/Doc Needed\' OR Status__c = \'NO NINO\') ' :
-            '(Status__c = \'Form In Progress\' OR Status__c = \'NO NINO\') ';
+            'OR Status__c = \'NINO/Doc Needed\') ' :
+            '(Status__c = \'Form In Progress\') ';
         String queryLine1 =
             'SELECT ' +
                 'Id ' +
@@ -1148,7 +1141,6 @@ public with sharing class ApplicationManagerHandler {
                 'Getting_UK_Pension_Now__c ' +
             'FROM Application__c ' +
             'WHERE Stripe_Transaction_Id__c =: stripeId ' +
-                'AND Expiry_Date__c >: todayDateTime ' +
                 'AND '+ fullFormQueryStatuses +
             'LIMIT 1';
 
@@ -1193,7 +1185,6 @@ public with sharing class ApplicationManagerHandler {
                 'Years_Of_Work_In_The_UK__c ' +
             'FROM Application__c ' +
             'WHERE Stripe_Transaction_Id__c =: stripeId ' +
-                'AND Expiry_Date__c >: todayDateTime ' +
                 'AND Status__c = \'Form In Progress\' ' +
             'LIMIT 1';
         try {
@@ -1445,7 +1436,6 @@ public with sharing class ApplicationManagerHandler {
                 'Step__c ' +
             'FROM Application__c ' +
             'WHERE Stripe_Transaction_Id__c =: stripeId ' +
-                'AND Expiry_Date__c >: todayDateTime ' +
                 'AND (Status__c = \'Form In Progress\' OR ' +
                      'Status__c = \'Form Completed\' OR ' +
                      'Status__c = \'NINO/Doc Needed\' OR ' +
@@ -1571,7 +1561,6 @@ public with sharing class ApplicationManagerHandler {
                 Years_Of_Work_In_The_UK__c
             FROM Application__c
             WHERE Stripe_Transaction_Id__c = :stripeId
-                AND Expiry_Date__c > :Datetime.now()
             LIMIT 1
         ];
         if (apps.isEmpty()) {

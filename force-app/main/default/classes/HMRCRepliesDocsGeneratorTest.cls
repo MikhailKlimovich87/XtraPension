@@ -1,6 +1,6 @@
 @isTest
 public with sharing class HMRCRepliesDocsGeneratorTest {
-
+    
     @TestSetup
     static void makeData(){
         TestDataFactory.createProductsWithPrices();
@@ -21,7 +21,7 @@ public with sharing class HMRCRepliesDocsGeneratorTest {
         testApp.Bounce_Letter_Template__c = '<p>Test 3</p>';
         insert testApp;
     }
-
+    
     @IsTest
     static void genetateDWPDocTestCase1() {
         List<Application__c> apps = [
@@ -51,7 +51,7 @@ public with sharing class HMRCRepliesDocsGeneratorTest {
         Application__c appAfterUpdate = testAppsAfterUpdate[0];
         Assert.areEqual(1, appAfterUpdate.ContentDocumentLinks.size());
     }
-
+    
     @IsTest
     static void genetateDWPDocTestCase2() {
         List<Application__c> apps = [
@@ -81,7 +81,7 @@ public with sharing class HMRCRepliesDocsGeneratorTest {
         Application__c appAfterUpdate = testAppsAfterUpdate[0];
         Assert.areEqual(1, appAfterUpdate.ContentDocumentLinks.size());
     }
-
+    
     @IsTest
     static void genetateCertifiedDocTest() {
         List<Application__c> apps = [
@@ -110,7 +110,7 @@ public with sharing class HMRCRepliesDocsGeneratorTest {
         Application__c appAfterUpdate = testAppsAfterUpdate[0];
         Assert.areEqual(1, appAfterUpdate.ContentDocumentLinks.size());
     }
-
+    
     @IsTest
     static void genetateBounceLetterTest() {
         List<Application__c> apps = [
@@ -139,7 +139,7 @@ public with sharing class HMRCRepliesDocsGeneratorTest {
         Application__c appAfterUpdate = testAppsAfterUpdate[0];
         Assert.areEqual(1, appAfterUpdate.ContentDocumentLinks.size());
     }
-
+    
     @IsTest
     static void genetateUpdateLetterTest() {
         List<Application__c> apps = [
@@ -168,4 +168,63 @@ public with sharing class HMRCRepliesDocsGeneratorTest {
         Application__c appAfterUpdate = testAppsAfterUpdate[0];
         Assert.areEqual(1, appAfterUpdate.ContentDocumentLinks.size());
     }
+    
+    @IsTest
+    static void genetateWorkHistoryTest() {
+        List<Application__c> apps = [
+            SELECT Id, (SELECT ContentDocument.Title
+                    FROM ContentDocumentLinks
+                    WHERE ContentDocument.Title LIKE '%Work_History%')
+            FROM Application__c
+            LIMIT 1
+        ];
+        Application__c currApp = apps[0];
+        Assert.areEqual(0, currApp.ContentDocumentLinks.size());
+        Test.startTest();
+        System.enqueueJob(new HMRCRepliesDocsGenerator(currApp.Id, 'Work_History__c'));
+        Test.stopTest();
+        List<Application__c> testAppsAfterUpdate = [
+            SELECT
+                Id,
+                (SELECT
+                    ContentDocument.Title
+                FROM ContentDocumentLinks
+                WHERE ContentDocument.Title LIKE '%Work_History%')
+            FROM Application__c
+            WHERE Id = :currApp.Id
+            LIMIT 1
+        ];
+        Application__c appAfterUpdate = testAppsAfterUpdate[0];
+        Assert.areEqual(1, appAfterUpdate.ContentDocumentLinks.size());
+    }
+    
+    @IsTest
+    static void genetateRefundRequestTest() {
+        List<Application__c> apps = [
+            SELECT Id, (SELECT ContentDocument.Title
+                    FROM ContentDocumentLinks
+                    WHERE ContentDocument.Title LIKE '%Refund Request%')
+            FROM Application__c
+            LIMIT 1
+        ];
+        Application__c currApp = apps[0];
+        Assert.areEqual(0, currApp.ContentDocumentLinks.size());
+        Test.startTest();
+        System.enqueueJob(new HMRCRepliesDocsGenerator(currApp.Id, 'HMRC Refund Request'));
+        Test.stopTest();
+        List<Application__c> testAppsAfterUpdate = [
+            SELECT
+                Id,
+                (SELECT
+                    ContentDocument.Title
+                FROM ContentDocumentLinks
+                WHERE ContentDocument.Title LIKE '%HMRC_Refund_Request%')
+            FROM Application__c
+            WHERE Id = :currApp.Id
+            LIMIT 1
+        ];
+        Application__c appAfterUpdate = testAppsAfterUpdate[0];
+        Assert.areEqual(1, appAfterUpdate.ContentDocumentLinks.size());
+    }
+    
 }

@@ -1,0 +1,179 @@
+<apex:page readOnly="true" standardController="Application__c" extensions="RefundRequestPdf" renderAs="pdf" id="RefundRequest" sidebar="false" standardStylesheets="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+        <head>
+            <style>
+                @page {
+                    size: 210mm 297mm;
+					margin-top: 30px;
+					margin-bottom: 10px;
+					@bottom-left {
+                        content: element(footer);
+                    }
+                }
+				body {
+					font-family: "Roboto", sans-serif;
+					font-size: 14px;
+				}
+				table {
+                    border-color:black;
+					width:100%;
+      			}
+				.main-table{
+					width:100%;
+                    -fs-table-paginate: paginate;
+                    border-width: 1px;
+                    border-style: solid;
+                    border-color: #000000;
+                    font-weight: normal;
+				}
+                .main-table tr td{
+                    border-width: 1px;
+                    border-style: solid;
+                    border-color: #000000;
+                } 
+                .reason-table-block {
+                    font-weight: normal;
+                }
+                .reason-table-block td {
+                    height: 40px !important;
+                }
+                
+                h2 {
+					text-align: center;
+                }
+                .header {
+                    padding-top: 20px;
+                }
+                ol li {
+                    padding-bottom: 10px;
+                    font-weight: bold;
+                }
+                td {
+                    height: 37px;
+                    padding-left: 5px;
+                }   
+                .first-column {
+                    width: 35%;
+                    background-color: #f2f2f2;
+                }
+            </style>
+        </head>
+        <body>
+            <table border="0" width="100%">
+                <tr>
+                    <td width="20%"></td>
+                    <td width="20%"></td>
+                    <td width="20%"></td>
+                    <td width="20%"></td>
+                    <td style="text-align:right !important;">
+                        <apex:outputText escape="false" value="{!appObj.Full_Current_Address_Abroad__c}"/>
+                    </td>
+                </tr>
+            </table>
+            <br/>
+            <br/>
+            <div>
+                International Case<br/>
+                PT Operations North East England<br/>
+                HM Revenue &amp; Customs<br/>
+                BX9 1AN<br/>
+                United Kingdom
+            </div>
+            <div class="header">
+                <h2>Request for Refund of National Insurance Contributions</h2>
+            </div>
+            <div>
+                <ol>
+                    <li>
+                        <p><i>Personal Details</i></p>
+                        <table class="main-table" cellspacing="0">
+                            <tr>
+                                <td class="first-column">Full Name</td>
+                                <td>{!appObj.First_Name__c} {!appObj.Second_Name__c}</td>
+                            </tr>
+                            <tr>
+                                <td class="first-column">National Insurance Number</td>
+                                <td><apex:outputText escape="false" value="{!appObj.National_Insurance_Number__c}"/></td>
+                            </tr>
+                            <tr>
+                                <td class="first-column">Contact Number</td>
+                                <td>{!appObj.Related_Contact_Phone__c}</td>
+                            </tr>
+                        </table>
+                    </li>
+                    <li>
+                        <p><i>Contribution Details</i></p>
+                        <table class="main-table" cellspacing="0">
+                            <tr>
+                                <td class="first-column">Amount Paid</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="first-column">Date Payment Was Made</td>
+                                <td><apex:outputText escape="false" value="DD ______ MM ______ YYYY ________"/></td>
+                            </tr>
+                            <tr>
+                                <td class="first-column">Tax Year(s) Related To</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="first-column">Method of Payment</td>
+                                <td></td>
+                            </tr>
+                        </table>
+                    </li>
+                    <li>
+                        <p><i>Reason for Refund Request</i></p>
+                        <div class="reason-table-block">
+                            <p>Please explain the reason for your request:</p>
+                            <table class="main-table" cellspacing="0">
+                                <tr>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </li>
+                    <li>
+                        <p><i>Refund Payment Details</i></p>
+                        <table class="main-table" cellspacing="0">
+                            <tr>
+                                <td class="first-column">IBAN / Bank Account Number</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="first-column">Sort Code</td>
+                                <td><apex:outputText escape="false" value="______ - ______ - ______"/></td>
+                            </tr>
+                            <tr>
+                                <td class="first-column">Cheque Payable To (if applicable)</td>
+                                <td></td>
+                            </tr>
+                        </table>
+                    </li>
+                    <li>
+                        <p><i>Declaration</i></p>
+                        <table class="main-table" cellspacing="0">
+                            <tr>
+                                <td class="first-column">Signature</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="first-column">Date</td>
+                                <td><apex:outputText escape="false" value="DD ______ MM ______ YYYY ________"/></td>
+                            </tr>
+                        </table>
+                    </li>
+                </ol>
+            </div>
+        </body>
+    </html>
+</apex:page>

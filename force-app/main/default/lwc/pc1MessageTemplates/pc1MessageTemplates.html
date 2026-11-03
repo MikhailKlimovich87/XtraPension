@@ -1,0 +1,383 @@
+<template>
+    <lightning-card title="PC Messages" icon-name="utility:email">
+        <div slot="actions">
+            <lightning-button label="+ New Template" variant="brand" onclick={handleAdd}></lightning-button>
+        </div>
+
+        <lightning-tabset active-tab-value={activeTab} onactive={handleTabActive}>
+            <!-- ═══════════════════════════ TEMPLATES TAB ═══════════════════════════ -->
+            <lightning-tab label="Templates" value="templates">
+
+                <!-- Filters -->
+                <div class="slds-p-around_small pc1-mt__filters">
+                    <div class="slds-grid slds-gutters slds-wrap slds-grid_vertical-align-end">
+                        <div class="slds-col slds-size_1-of-5">
+                            <lightning-combobox
+                                label="Type"
+                                value={filterChannel}
+                                options={channelFilterOptions}
+                                onchange={handleFilterChannel}
+                                variant="label-stacked">
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-4">
+                            <lightning-combobox
+                                label="Trigger event"
+                                value={filterTrigger}
+                                options={triggerFilterOptions}
+                                onchange={handleFilterTrigger}
+                                variant="label-stacked">
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            <lightning-input
+                                type="search"
+                                label="Search by name"
+                                data-role="search"
+                                onchange={handleFilterSearch}
+                                variant="label-stacked">
+                            </lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-6 slds-p-bottom_x-small">
+                            <lightning-input
+                                type="checkbox"
+                                label="Active only"
+                                checked={filterActive}
+                                onchange={handleFilterActive}>
+                            </lightning-input>
+                        </div>
+                    </div>
+                    <div class="slds-grid slds-grid_align-spread slds-p-top_xx-small">
+                        <span class="slds-text-body_small slds-text-color_weak">{filteredCountLabel} templates</span>
+                        <lightning-button variant="base" label="Clear filters" onclick={handleClearFilters}></lightning-button>
+                    </div>
+                </div>
+
+                <div class="slds-p-horizontal_small">
+                    <template if:true={loading}>
+                        <lightning-spinner alternative-text="Loading templates..."></lightning-spinner>
+                    </template>
+
+                    <template if:true={isEmpty}>
+                        <div class="pc1-mt__empty slds-p-around_medium">
+                            <p>No templates match the current filters. Adjust filters or click "+ New Template".</p>
+                        </div>
+                    </template>
+
+                    <template if:true={showTable}>
+                        <table class="slds-table slds-table_bordered slds-table_cell-buffer pc1-mt__table-el">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Trigger Event</th>
+                                    <th>Language</th>
+                                    <th>Active</th>
+                                    <th>Last Modified</th>
+                                    <th class="pc1-mt__actions-th">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={filteredRows} for:item="row">
+                                    <tr key={row.id}>
+                                        <td class="pc1-mt__name">{row.name}</td>
+                                        <td>
+                                            <span class={row.channelCls}>
+                                                <span class="pc1-mt__emoji" aria-hidden="true">{row.channelEmoji}</span>
+                                                &nbsp;{row.channel}
+                                            </span>
+                                        </td>
+                                        <td>{row.triggerDisplay}</td>
+                                        <td>{row.language}</td>
+                                        <td>
+                                            <lightning-input
+                                                type="toggle"
+                                                variant="label-hidden"
+                                                label="Active"
+                                                message-toggle-active=""
+                                                message-toggle-inactive=""
+                                                checked={row.active}
+                                                data-id={row.id}
+                                                onchange={handleToggleActive}>
+                                            </lightning-input>
+                                        </td>
+                                        <td class="pc1-mt__ts">{row.lastModifiedDisplay}</td>
+                                        <td>
+                                            <lightning-button-group>
+                                                <lightning-button label="Edit"      data-id={row.id} onclick={handleEdit}></lightning-button>
+                                                <lightning-button label="Preview"   data-id={row.id} onclick={handleOpenPreview}></lightning-button>
+                                                <lightning-button label="Duplicate" data-id={row.id} onclick={handleDuplicate}></lightning-button>
+                                                <lightning-button label="Delete"    data-id={row.id} variant="destructive-text" onclick={handleDelete}></lightning-button>
+                                            </lightning-button-group>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
+                </div>
+            </lightning-tab>
+
+            <!-- ═══════════════════════════ SEND LOG TAB ═══════════════════════════ -->
+            <lightning-tab label="Send Log" value="sendlog">
+                <div class="slds-p-around_small">
+                    <div class="slds-grid slds-gutters slds-wrap slds-grid_vertical-align-end pc1-mt__logfilters">
+                        <div class="slds-col slds-size_1-of-6">
+                            <lightning-input type="date" label="From" data-role="logfilter-from" onchange={handleLogFrom} variant="label-stacked"></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-6">
+                            <lightning-input type="date" label="To" data-role="logfilter-to" onchange={handleLogTo} variant="label-stacked"></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-4">
+                            <lightning-combobox label="Template" value={logFilterTemplate} options={templateFilterOptions} onchange={handleLogTemplate} variant="label-stacked"></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-6">
+                            <lightning-combobox label="Status" value={logFilterStatus} options={statusFilterOptions} onchange={handleLogStatus} variant="label-stacked"></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-4 slds-p-bottom_x-small">
+                            <lightning-button variant="brand" label="Apply" onclick={handleApplyLogFilters}></lightning-button>
+                            &nbsp;
+                            <lightning-button variant="base" label="Clear" onclick={handleClearLogFilters}></lightning-button>
+                        </div>
+                    </div>
+
+                    <template if:true={logLoading}>
+                        <lightning-spinner alternative-text="Loading send log..."></lightning-spinner>
+                    </template>
+
+                    <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th>Sent At (Europe/London)</th>
+                                <th>Application</th>
+                                <th>Template</th>
+                                <th>Channel</th>
+                                <th>Status</th>
+                                <th>External Id</th>
+                                <th>Error</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={logRows} for:item="l">
+                                <tr key={l.id}>
+                                    <td class="pc1-mt__ts">{l.sentAtDisplay}</td>
+                                    <td>
+                                        <template if:true={l.appUrl}>
+                                            <a href={l.appUrl} target="_blank">{l.applicationName}</a>
+                                        </template>
+                                    </td>
+                                    <td>
+                                        <template if:true={l.templateUrl}>
+                                            <a href={l.templateUrl} target="_blank">{l.templateName}</a>
+                                        </template>
+                                    </td>
+                                    <td>{l.channel}</td>
+                                    <td><span class={l.statusBadgeCls}>{l.status}</span></td>
+                                    <td class="pc1-mt__ts">{l.externalId}</td>
+                                    <td title={l.errorMessage}>{l.errorPreview}</td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+
+                    <div class="slds-grid slds-grid_align-spread slds-p-top_small">
+                        <span class="slds-text-body_small">{logPageLabel}</span>
+                        <div>
+                            <lightning-button label="Prev" onclick={handleLogPrev} disabled={logHasPrevDisabled}></lightning-button>
+                            &nbsp;
+                            <lightning-button label="Next" onclick={handleLogNext} disabled={logHasNextDisabled}></lightning-button>
+                        </div>
+                    </div>
+                </div>
+            </lightning-tab>
+        </lightning-tabset>
+
+        <!-- ══════════════════════════ EDIT MODAL (redesigned 2026-08-25 · split live-preview) ══════════════════════════ -->
+        <template if:true={showEdit}>
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open pc1-mt__modal-xl" onkeydown={handleModalKeydown}>
+                <div class="slds-modal__container pc1-mt__modal-container-xl">
+                    <header class="slds-modal__header pc1-mt__edit-header">
+                        <h2 class="slds-modal__title slds-hyphenate">Edit Template <span class="pc1-mt__edit-subtitle">— what you write on the left is exactly what the client receives on the right</span></h2>
+                    </header>
+                    <div class="slds-modal__content pc1-mt__edit-body">
+
+                        <!-- Meta strip: name/channel/trigger/mode/subject/attachment -->
+                        <div class="pc1-mt__meta-strip">
+                            <div class="pc1-mt__meta-row">
+                                <div class="pc1-mt__meta-col pc1-mt__meta-col--name">
+                                    <lightning-combobox label="Start from" value={selectedMold} options={moldOptions} onchange={handleMoldChange} variant="label-stacked"></lightning-combobox>
+                                </div>
+                                <div class="pc1-mt__meta-col pc1-mt__meta-col--name">
+                                    <lightning-input label="Name" value={editing.name} onchange={handleName} variant="label-stacked"></lightning-input>
+                                </div>
+                                <div class="pc1-mt__meta-col pc1-mt__meta-col--sm">
+                                    <lightning-combobox label="Channel" value={editing.channel} options={channelOptions} onchange={handleChannel} variant="label-stacked"></lightning-combobox>
+                                </div>
+                                <div class="pc1-mt__meta-col">
+                                    <lightning-combobox label="Trigger Event" value={editing.triggerEvent} options={triggerEventOptions} onchange={handleTrigger} variant="label-stacked"></lightning-combobox>
+                                </div>
+                                <template if:true={showModeToggle}>
+                                    <div class="pc1-mt__meta-col pc1-mt__meta-col--sm">
+                                        <lightning-combobox label="Content Mode" value={editing.contentMode} options={contentModeOptions} onchange={handleContentMode} variant="label-stacked"></lightning-combobox>
+                                    </div>
+                                </template>
+                                <div class="pc1-mt__meta-col pc1-mt__meta-col--xs">
+                                    <label class="slds-form-element__label" for="active-toggle">Active</label>
+                                    <lightning-input type="toggle" id="active-toggle" label="Active" variant="label-hidden" message-toggle-active="ON" message-toggle-inactive="OFF" checked={editing.active} onchange={handleActive}></lightning-input>
+                                </div>
+                            </div>
+                            <template if:true={isEmail}>
+                                <div class="pc1-mt__meta-row">
+                                    <div class="pc1-mt__meta-col pc1-mt__meta-col--grow">
+                                        <lightning-input label="Subject" data-role="subject" value={editing.subjectTemplate} onchange={handleSubject} onfocus={handleFocusSubject} class={subjectInputCls} variant="label-stacked"></lightning-input>
+                                        <p if:true={subjectErrorLine} class="pc1-mt__inline-err">{subjectErrorLine}</p>
+                                    </div>
+                                    <div class="pc1-mt__meta-col pc1-mt__meta-col--grow">
+                                        <lightning-input label="Attachment (Static Resource DevName, optional)" value={editing.attachmentStaticResourceName} onchange={handleAttachment} variant="label-stacked"></lightning-input>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Split: Compose (left) · Live preview envelope (right) -->
+                        <div class="pc1-mt__split">
+                            <div class="pc1-mt__split-col pc1-mt__split-col--compose">
+                                <div class="pc1-mt__split-head">
+                                    <span class="pc1-mt__split-title">Compose</span>
+                                    <span class="pc1-mt__split-hint">Bold, italic, lists, links · use the toolbar. Insert merge fields with the palette below.</span>
+                                </div>
+
+                                <template if:true={isSimpleMode}>
+                                    <lightning-input-rich-text
+                                        data-role="content"
+                                        value={editing.contentText}
+                                        onchange={handleRichContent}
+                                        formats={richTextFormats}
+                                        label-visible="false"
+                                        placeholder="Type your message. Use the toolbar for formatting. Merge tokens like {{FirstName}} stay literal until sent."
+                                        class="pc1-mt__richtext">
+                                    </lightning-input-rich-text>
+                                </template>
+                                <template if:true={isAdvancedMode}>
+                                    <textarea id="bodyhtml" data-role="bodyhtml" class={contentTextareaCls} rows="18" value={editing.bodyTemplate} onchange={handleBodyHtml} oninput={handleBodyHtml} onfocus={handleFocusBodyHtml}>{editing.bodyTemplate}</textarea>
+                                </template>
+                                <p if:true={bodyErrorLine} class="pc1-mt__inline-err">{bodyErrorLine}</p>
+
+                                <!-- Compact horizontal merge-field palette (categorised, wraps) -->
+                                <div class="pc1-mt__palette-inline">
+                                    <div class="pc1-mt__palette-inline-head">
+                                        <span>Merge fields</span>
+                                        <span class="pc1-mt__palette-inline-hint">click to insert · target: {lastFocusLabel}</span>
+                                    </div>
+                                    <template for:each={chipGroups} for:item="grp">
+                                        <div key={grp.category} class="pc1-mt__palette-inline-row">
+                                            <span class="pc1-mt__palette-inline-cat">{grp.category}</span>
+                                            <template for:each={grp.chips} for:item="chip">
+                                                <button key={chip.token} data-token={chip.token} class="pc1-mt__pill" onclick={handleInsertToken} title={chip.example}>{chip.token}</button>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <div class="pc1-mt__split-col pc1-mt__split-col--preview">
+                                <div class="pc1-mt__split-head">
+                                    <span class="pc1-mt__split-title">Live preview <span class="pc1-mt__live-dot"></span></span>
+                                    <span class="pc1-mt__split-hint">Exactly what the client receives · rendered with sample data</span>
+                                </div>
+
+                                <template if:true={isEmail}>
+                                    <!-- Email envelope: From/To/Subject header + iframe body -->
+                                    <div class="pc1-mt__preview-email-envelope">
+                                        <div class="pc1-mt__preview-header">
+                                            <p><strong>From:</strong> XtraPension &lt;{previewFromEmail}&gt;</p>
+                                            <p><strong>To:</strong> {sampleClientDisplay}</p>
+                                            <p><strong>Subject:</strong> {liveSubjectResolved}</p>
+                                        </div>
+                                        <div class="pc1-mt__preview-iframe pc1-mt__preview-iframe--live pc1-mt__live-render" lwc:dom="manual" data-role="live-render"></div>
+                                    </div>
+                                </template>
+                                <template if:false={isEmail}>
+                                    <!-- SMS envelope: phone header + iMessage-style bubble -->
+                                    <div class="pc1-mt__preview-sms-envelope">
+                                        <p class="pc1-mt__preview-sms-meta"><strong>SMS to:</strong> {sampleClientDisplay} · from XtraPension</p>
+                                        <div class="pc1-mt__preview-sms-bubble">{liveSmsBody}</div>
+                                        <p class="pc1-mt__preview-sms-count">{liveSmsLenDisplay}</p>
+                                    </div>
+                                </template>
+
+                                <details class="slds-m-top_x-small pc1-mt__reveal-html">
+                                    <summary class="slds-text-body_small slds-text-color_weak">Show rendered raw HTML (advanced)</summary>
+                                    <pre class="pc1-mt__preview-text">{liveBodyHtml}</pre>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label="Cancel" onclick={handleCloseEdit}></lightning-button>
+                        &nbsp;
+                        <lightning-button variant="brand" label="Save (Ctrl+S)" onclick={handleSave} disabled={saveDisabled}></lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <!-- ══════════════════════════ FULL-BLEED PREVIEW MODAL (kept — uses real SF record) ══════════════════════════ -->
+        <template if:true={showPreview}>
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open" onkeydown={handlePreviewKeydown}>
+                <div class="slds-modal__container pc1-mt__modal-container">
+                    <header class="slds-modal__header">
+                        <h2 class="slds-modal__title">Preview: {previewTemplate.name}</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <div class="pc1-mt__preview-picker">
+                            <lightning-input label="Sample Application Id (paste a PC1 record Id)" value={previewAppId} onchange={handlePreviewAppInput}></lightning-input>
+                            <lightning-button label="Render" variant="brand" onclick={handleRunPreview} disabled={previewLoading}></lightning-button>
+                        </div>
+                        <template if:true={previewLoading}>
+                            <lightning-spinner alternative-text="Rendering..."></lightning-spinner>
+                        </template>
+                        <template if:true={hasPreviewResult}>
+                            <div class="pc1-mt__preview-pane">
+                                <template if:true={previewIsEmail}>
+                                    <div class="pc1-mt__preview-email-envelope">
+                                        <div class="pc1-mt__preview-header">
+                                            <p><strong>From:</strong> XtraPension &lt;{previewFromEmail}&gt;</p>
+                                            <p><strong>To:</strong> {previewClientDisplay}</p>
+                                            <p><strong>Subject:</strong> {previewResult.subject}</p>
+                                        </div>
+                                        <template if:true={previewBodyIsHtml}>
+                                            <div class="pc1-mt__preview-iframe pc1-mt__live-render" lwc:dom="manual" data-role="full-render"></div>
+                                        </template>
+                                        <template if:false={previewBodyIsHtml}>
+                                            <pre class="pc1-mt__preview-text">{previewResult.body}</pre>
+                                        </template>
+                                    </div>
+                                    <details class="slds-m-top_x-small">
+                                        <summary class="slds-text-body_small slds-text-color_weak">Show raw HTML</summary>
+                                        <pre class="pc1-mt__preview-text">{previewResult.body}</pre>
+                                    </details>
+                                </template>
+                                <template if:false={previewIsEmail}>
+                                    <div class="pc1-mt__preview-sms-envelope">
+                                        <p class="pc1-mt__preview-sms-meta"><strong>SMS to:</strong> {previewClientDisplay} · from XtraPension</p>
+                                        <div class="pc1-mt__preview-sms-bubble">{previewResult.body}</div>
+                                        <p class="pc1-mt__preview-sms-count">{previewSmsLenDisplay}</p>
+                                    </div>
+                                </template>
+                                <template if:true={previewResult.attachmentName}>
+                                    <p class="pc1-mt__preview-att"><lightning-icon icon-name="doctype:attachment" size="x-small"></lightning-icon>&nbsp;Attached: {previewResult.attachmentName}.pdf</p>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label="Close" onclick={handleClosePreview}></lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+    </lightning-card>
+</template>

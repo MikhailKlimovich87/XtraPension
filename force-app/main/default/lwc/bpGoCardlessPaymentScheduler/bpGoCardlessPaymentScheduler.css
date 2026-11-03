@@ -1,0 +1,95 @@
+/* --- Mandate Block (outer border + label) --- */
+.mandate-block {
+    border: 1px solid #d8d8d8;
+    border-radius: 0.25rem;
+    background-color: #ffffff;
+    overflow: hidden;
+}
+
+.mandate-block_header {
+    background-color: #f3f2f2;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #d8d8d8;
+}
+
+.mandate-block_header h2 {
+    color: #181818;
+    font-weight: 600;
+    margin: 0;
+}
+
+.mandate-block_body {
+    padding: 1rem;
+}
+
+/* --- Status Banners (inside the block) --- */
+.status-banner {
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    border: 1px solid transparent;
+}
+
+.status-banner_inactive {
+    background-color: #f3f2f2;
+    border-color: #e5e5e5;
+    color: #3e3e3c;
+}
+
+.status-banner_active {
+    background-color: #ebf7e6;
+    border-color: #cdefc4;
+    color: #194e31;
+}
+
+.status-active-text {
+    color: #2e844a;
+    font-weight: 700;
+}
+
+/* --- Detail Rows (Reference, IDs) --- */
+.mandate-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-bottom: 1px dashed #e5e5e5;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    color: #747474;
+    font-size: 0.8125rem;
+}
+
+.detail-value {
+    color: #181818;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    font-family: monospace;
+}
+
+/* --- Fee Box --- */
+.fee-box {
+    background-color: #f3f2f2;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* --- Schedule Preview --- */
+.schedule-preview {
+    background-color: #f3f2f2;
+    border-left: 4px solid #0070d2;
+    border-radius: 0.25rem;
+}

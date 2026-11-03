@@ -1,0 +1,69 @@
+<template>
+    <lightning-card title="Call Scheduling" icon-name="standard:event">
+        <p class="slds-p-horizontal_medium slds-text-body_small slds-text-color_weak pc1-sub">
+            Mary (Eleven Labs agent) <span class="pc1-live-badge slds-badge">LIVE</span>
+        </p>
+        <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+            <!-- Schedule inputs — native date + time pickers (time steps 5 min
+                 to match the SF cron granularity). Disabled when a Pending
+                 row exists so users can't queue a second one. -->
+            <div class="pc1-cs-inputs">
+                <lightning-input
+                    class="pc1-cs-input"
+                    type="date"
+                    label="Date"
+                    value={dateValue}
+                    min={todayIso}
+                    disabled={inputDisabled}
+                    title={inputDisabledTooltip}
+                    onchange={handleDateChange}>
+                </lightning-input>
+                <lightning-input
+                    class="pc1-cs-input"
+                    type="time"
+                    label="Time"
+                    value={timeValue}
+                    step="300"
+                    disabled={inputDisabled}
+                    title={inputDisabledTooltip}
+                    onchange={handleTimeChange}>
+                </lightning-input>
+            </div>
+            <div class="pc1-cs-actions slds-var-m-top_small">
+                <lightning-button label="Schedule" variant="brand"   onclick={handleSchedule} disabled={scheduleDisabled} icon-name="utility:event" title={inputDisabledTooltip}></lightning-button>
+                <lightning-button label="Call Now" variant="neutral" onclick={handleCallNow}  disabled={callDisabled}     icon-name="utility:call"></lightning-button>
+            </div>
+            <!-- Pending schedule card (visible only when a Pending row exists) -->
+            <template lwc:if={hasPending}>
+                <div class="pc1-pending" role="region" aria-label="Next scheduled call">
+                    <div class="pc1-pending__head">
+                        <lightning-icon icon-name="utility:call" size="x-small" class="pc1-pending__icon"></lightning-icon>
+                        <span class="pc1-pending__title">Next call scheduled</span>
+                    </div>
+                    <div class="pc1-pending__when">
+                        <span class="pc1-pending__abs">{pendingWhenAbs}</span>
+                        <span class="pc1-pending__sep">&nbsp;·&nbsp;</span>
+                        <span class="pc1-pending__rel">{pendingWhenRel}</span>
+                    </div>
+                    <p class="pc1-pending__meta">
+                        Requested by {pendingRequestedBy} <span class="pc1-pending__sep">·</span> {pendingRequestedAgo}
+                    </p>
+                    <div class="pc1-pending__actions">
+                        <lightning-button
+                            label="Cancel"
+                            variant="destructive-text"
+                            icon-name="utility:close"
+                            onclick={handleCancelPending}
+                            disabled={cancelling}>
+                        </lightning-button>
+                    </div>
+                </div>
+            </template>
+
+            <!-- View history link — always visible at the bottom -->
+            <div class="pc1-cs-viewhistory">
+                <a href="#" onclick={handleViewHistory}>View schedule history &rarr;</a>
+            </div>
+        </div>
+    </lightning-card>
+</template>

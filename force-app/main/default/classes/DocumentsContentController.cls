@@ -132,15 +132,7 @@ public without sharing class DocumentsContentController {
                 Previous_UK_Address_3__CountryCode__s,
                 Previous_UK_Address_3__PostalCode__s,
                 Include_UK_Address3__c,
-                Previous_UK_Address_4__Street__s,
-                Previous_UK_Address_4__City__s,
-                Previous_UK_Address_4__CountryCode__s,
-                Previous_UK_Address_4__PostalCode__s,
                 Include_UK_Address4__c,
-                Previous_UK_Address_5__Street__s,
-                Previous_UK_Address_5__City__s,
-                Previous_UK_Address_5__CountryCode__s,
-                Previous_UK_Address_5__PostalCode__s,
                 Include_UK_Address5__c,
                 Last_UK_Employer_Name__c,
                 Last_UK_Employer_Start_Date__c,
@@ -182,8 +174,6 @@ public without sharing class DocumentsContentController {
                 Previous_UK_Address_1_Country__c,
                 Previous_UK_Address_2_Country__c,
                 Previous_UK_Address_3_Country__c,
-                Previous_UK_Address_4_Country__c,
-                Previous_UK_Address_5_Country__c,
                 Abroad_Employer_Address1_Country__c,
                 Career_Break_Employer_Address1_Country__c,
                 Last_UK_Employer_Address_Country__c,
@@ -198,6 +188,10 @@ public without sharing class DocumentsContentController {
                 Custom_Letter_Date__c,
                 Status__c,
                 Appeal_Application__c,
+                Tracking_Number_Received_Date__c,
+                Tracking_Number_Received_Date_2__c,
+                Tracking_Number_Received_Date_3__c,
+                Years_Of_Work_In_The_UK__c,
                     (SELECT
                         Employer_Name__c,
                         Start_Date__c,
@@ -276,9 +270,16 @@ public without sharing class DocumentsContentController {
         Map<String, DocumentInfo> titleByDocumentInfo = new Map<String, DocumentInfo>();
         Application__c app = currentApplication[0];
         ResultEmailTemplate resultBody = new ResultEmailTemplate();
-        resultBody.successTemplate = app.Current_Address_Abroad__CountryCode__s == 'IE' ?
+        Datetime targetDate = Datetime.newInstance(2026, 4, 6, 0, 0, 0);
+
+        resultBody.successTemplate = ((app.Tracking_Number_Received_Date__c != null && app.Tracking_Number_Received_Date__c >= targetDate) ||
+                                          (app.Tracking_Number_Received_Date_2__c != null && app.Tracking_Number_Received_Date_2__c >= targetDate) ||
+                                          (app.Tracking_Number_Received_Date_3__c != null && app.Tracking_Number_Received_Date_3__c >= targetDate)) &&
+                                           app.Years_Of_Work_In_The_UK__c < 10 ?
+                                              XtraPensionConstants.SUCCESS_HMRC_NO_ANNUAL_RESULT_TEMPLATE.replace('{!Application__c.First_Name__c}', app.First_Name__c) :
+                                         app.Current_Address_Abroad__CountryCode__s == 'IE' ?
                                          XtraPensionConstants.SUCCESS_HMRC_RESULT_IRELAND_CUSTOMER_TEMPLATE.replace('{!Application__c.First_Name__c}', app.First_Name__c) :
-                                         XtraPensionConstants.SUCCESS_HMRC_RESULT_TEMPLATE.replace('{!Application__c.First_Name__c}', app.First_Name__c);
+                                              XtraPensionConstants.SUCCESS_HMRC_RESULT_TEMPLATE.replace('{!Application__c.First_Name__c}', app.First_Name__c);
         resultBody.rejectTempalte = XtraPensionConstants.REJECT_HMRC_RESULT_TEMPLATE.replace('{!Application__c.First_Name__c}', app.First_Name__c);
         resultBody.emailSubject = app.Name + ' - ' + app.First_Name__c + ' ' + app.Second_Name__c + ' - UK State Pension / Your HMRC Assessment';
         data.templateData = resultBody;
@@ -293,7 +294,7 @@ public without sharing class DocumentsContentController {
             String title = link.ContentDocument.Title;
             String docTitle = title.contains('64-8_') ? 'Agent Authorisation':
                                 title.contains('CF083') ? 'Application Form' :
-                                    title.contains('CustomLetter') ? 'Custom Letter' :
+                                    title.contains('CustomLetter_ForSignature') ? 'Custom Letter' :
                                         title.contains('UPLOAD') ? 'Client Uploaded Doc' :
                                             title.contains('ClientSummary') ? 'Client Summary' :
                                             title.contains('DWPStatusCheck') ? 'DWP Status Check' :
@@ -384,7 +385,7 @@ public without sharing class DocumentsContentController {
                                     app.Last_UK_Home_Address__PostalCode__s + ', ' + app.Last_UK_Home_Address_Country__c;
         latestAddress.numberOfAddress =  1;
         data.latestUKAddress = latestAddress;
-        for (Integer i = 1; i <= 5; i++) {
+        for (Integer i = 1; i <= 3; i++) {
             if (app.get('Previous_UK_Address_' + i + '__Street__s') != null) {
                 PreviousUKAddressData prevAddress = new PreviousUKAddressData();
                 prevAddress.addressData =
@@ -522,7 +523,7 @@ public without sharing class DocumentsContentController {
     }
 
     @AuraEnabled
-    public static String pdfAction(String applicationId) {
+    public static String pdfAction(String applicationId, Boolean isReply) {
         List<Application__c> currentApplication = [
             SELECT
                 First_Name__c,
@@ -534,7 +535,7 @@ public without sharing class DocumentsContentController {
                         ContentDocument.CreatedDate,
                         LinkedEntityId
                     FROM ContentDocumentLinks
-                    WHERE ContentDocument.Title LIKE '%CustomLetter_ForSignature%'
+                    WHERE ContentDocument.Title LIKE '%CustomLetter%'
                     LIMIT 1)
             FROM Application__c
             WHERE Id = :applicationId
@@ -543,10 +544,32 @@ public without sharing class DocumentsContentController {
             return 'Didn\'t find any apps';
         }
         Application__c app = currentApplication[0];
+        Id currContentDocumentId;
+        for (ContentDocumentLink link : app.ContentDocumentLinks) {
+            if (link.ContentDocument.Title.contains('ForSignature') && isReply != true) {
+                System.debug('Found ForSignature document');
+                currContentDocumentId = link.ContentDocumentId;
+                break;
+            }
+            if (link.ContentDocument.Title.contains('REPLY') && isReply == true) {
+                System.debug('Found REPLY document');
+                currContentDocumentId = link.ContentDocumentId;
+                break;
+            }
+        }
+
         PageReference savepage ;
-        savepage = Page.CustomLetter;
+        String fileName = '';
+        if (isReply == true) {
+            savepage = Page.CustomLetterReply;
+            fileName = app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CustomLetter_REPLY';
+        } else {
+            savepage = Page.CustomLetter;
+            fileName = app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CustomLetter_ForSignature';
+        }
         savepage.getParameters().put('id', applicationId);
         blob pdfBlob;
+
         if (!Test.isRunningTest()) {
             pdfBlob = savepage.getContent();
         } else {
@@ -554,26 +577,24 @@ public without sharing class DocumentsContentController {
         }
         ContentVersion conVer = createContentVerison(
             pdfBlob,
-            app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CustomLetter_ForSignature'
+            fileName
         );
-        if(app.ContentDocumentLinks.size() != 0) {
-            conVer.ContentDocumentId = app.ContentDocumentLinks[0].ContentDocumentId;
+        if(currContentDocumentId != null) {
+            conVer.ContentDocumentId = currContentDocumentId;
         }
         insert conVer;
-        if(app.ContentDocumentLinks.size() == 0) {
-            List<ContentVersion> conDocs = [
-                SELECT ContentDocumentId
-                FROM ContentVersion
-                WHERE Id = :conVer.Id
-            ];
-            if (conDocs.size() > 0) {
-                insert new ContentDocumentLink(
-                        LinkedEntityId = app.Id,
-                        ContentDocumentId = conDocs[0].ContentDocumentId,
-                        shareType = 'V',
-                        Visibility = 'AllUsers'
-                );
-            }
+        List<ContentVersion> conDocs = [
+            SELECT ContentDocumentId
+            FROM ContentVersion
+            WHERE Id = :conVer.Id
+        ];
+        if (currContentDocumentId == null) {
+            insert new ContentDocumentLink(
+                LinkedEntityId = app.Id,
+                ContentDocumentId = conDocs[0].ContentDocumentId,
+                shareType = 'V',
+                Visibility = 'AllUsers'
+            );
         }
         return 'Success';
     }
@@ -604,7 +625,11 @@ public without sharing class DocumentsContentController {
                 Contact__c,
                 Email__c,
                 Status__c, 
-                Current_Address_Abroad__CountryCode__s
+                Current_Address_Abroad__CountryCode__s,
+                Tracking_Number_Received_Date__c,
+                Tracking_Number_Received_Date_2__c,
+                Tracking_Number_Received_Date_3__c,
+                Years_Of_Work_In_The_UK__c
             FROM Application__c
             WHERE Id = :appId
         ];
@@ -689,8 +714,13 @@ public without sharing class DocumentsContentController {
         ];
 
         String[] attachDocIds = new List<String>();
+        Datetime targetDate = Datetime.newInstance(2026, 4, 6, 0, 0, 0);
         for (ContentDocument doc : docs) {
             if (app.Current_Address_Abroad__CountryCode__s == 'IE' && doc.LatestPublishedVersion.Title.contains('Private Pensions')) continue;
+            if(((app.Tracking_Number_Received_Date__c != null && app.Tracking_Number_Received_Date__c >= targetDate) ||
+            (app.Tracking_Number_Received_Date_2__c != null && app.Tracking_Number_Received_Date_2__c >= targetDate) ||
+            (app.Tracking_Number_Received_Date_3__c != null && app.Tracking_Number_Received_Date_3__c >= targetDate)) &&
+            app.Years_Of_Work_In_The_UK__c < 10 && doc.LatestPublishedVersion.Title.contains('Annual Service')) continue;
             attachDocIds.add(doc.LatestPublishedVersionId);
         }
         if (TRANSFER_UK_PENSION_ATTACH_FILE != null && app.Current_Address_Abroad__CountryCode__s == 'IE') {

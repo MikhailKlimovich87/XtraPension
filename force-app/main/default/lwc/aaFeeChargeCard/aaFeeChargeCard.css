@@ -1,0 +1,79 @@
+.aa-feecharge { padding: 12px 16px 16px; }
+.aa-feecharge__head {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding-bottom: 8px; border-bottom: 1px solid #ececec;
+    margin-bottom: 12px;
+}
+.aa-feecharge__icon { flex: 0 0 auto; margin-top: 2px; }
+.aa-feecharge__title { font-size: 1rem; font-weight: 600; }
+.aa-feecharge__sub { color: #666; font-size: 0.78rem; margin-top: 2px; }
+
+/* Gates ------------------------------------------------------------ */
+.aa-feecharge__gates {
+    display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;
+}
+.aa-feecharge__gate {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px; border-radius: 4px; font-size: 0.86rem;
+    border: 1px solid transparent;
+}
+.aa-feecharge__gate--ok  {
+    background: #f4fbf6; border-color: #b6e6c1; color: #0a7a2f;
+}
+.aa-feecharge__gate--bad {
+    background: #fdecee; border-color: #f2b4bd; color: #a4051d;
+}
+.aa-feecharge__gate-icon { flex: 0 0 auto; }
+
+/* CTA -------------------------------------------------------------- */
+.aa-feecharge__cta-block {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 12px; border: 1px solid #b3d4ff; border-radius: 6px;
+    background: #f0f6ff;
+}
+.aa-feecharge__cta { --sds-c-button-brand-color-background: #0176d3; }
+.aa-feecharge__amount {
+    font-size: 1.35rem; font-weight: 700; color: #0176d3;
+    text-align: center;
+}
+.aa-feecharge__amount-sub {
+    font-size: 0.85rem; font-weight: 500; color: #444;
+}
+.aa-feecharge__plan-hint {
+    font-size: 0.82rem; color: #444;
+    padding: 6px 10px; background: #fbf6ff; border-radius: 4px;
+    border: 1px solid #d8c7ea;
+}
+.aa-feecharge__disabled-reason {
+    font-size: 0.78rem; color: #7d5300;
+    padding: 6px 8px; background: #fff8ea; border-radius: 4px;
+    border: 1px solid #f2d17a;
+}
+
+/* Charged state ---------------------------------------------------- */
+.aa-feecharge__charged { display: flex; flex-direction: column; gap: 8px; }
+.aa-feecharge__charged-banner {
+    padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;
+    background: #f4fbf6; border: 1px solid #b6e6c1; color: #0a7a2f;
+}
+.aa-feecharge__meta { display: flex; flex-direction: column; gap: 4px; }
+.aa-feecharge__row {
+    display: grid; grid-template-columns: 110px 1fr; gap: 8px;
+    font-size: 0.86rem; align-items: center;
+}
+.aa-feecharge__k { color: #666; font-size: 0.78rem; }
+.aa-feecharge__v { color: #222; }
+.aa-feecharge__mono {
+    font-variant-numeric: tabular-nums;
+    font-family: ui-monospace, Menlo, monospace;
+}
+
+/* Instalment list (audit 2026-10-02 F110) -------------------------- */
+.aa-feecharge__inst { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.aa-feecharge__inst-row {
+    display: grid; grid-template-columns: 28px 96px 80px 1fr auto; gap: 8px;
+    align-items: center; font-size: 0.82rem;
+    padding: 4px 6px; border-bottom: 1px solid #f0f0f0;
+}
+.aa-feecharge__inst-n { color: #666; }
+.aa-feecharge__inst-notice { color: #666; font-size: 0.76rem; }

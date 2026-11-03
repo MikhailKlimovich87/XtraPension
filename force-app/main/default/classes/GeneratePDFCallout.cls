@@ -2,7 +2,7 @@ public class GeneratePDFCallout implements Queueable, Database.AllowsCallouts {
     public String applicationId;
     public Application__c app;
     public static final String FILL_FROM_URL = XtraPension_Data__c.getInstance().Fill_Pdf_File_Link__c;
-
+    
     public GeneratePDFCallout (String recordId) {
         this.applicationId = recordId;
         this.app = [
@@ -44,16 +44,6 @@ public class GeneratePDFCallout implements Queueable, Database.AllowsCallouts {
                 Previous_UK_Address_3__PostalCode__s,
                 Previous_UK_Address_3__StateCode__s,
                 Previous_UK_Address_3__Street__s,
-                Previous_UK_Address_4__City__s,
-                Previous_UK_Address_4__CountryCode__s,
-                Previous_UK_Address_4__PostalCode__s,
-                Previous_UK_Address_4__StateCode__s,
-                Previous_UK_Address_4__Street__s,
-                Previous_UK_Address_5__City__s,
-                Previous_UK_Address_5__CountryCode__s,
-                Previous_UK_Address_5__PostalCode__s,
-                Previous_UK_Address_5__StateCode__s,
-                Previous_UK_Address_5__Street__s,
                 Did_You_Change_Name__c,
                 Date_Of_Marriage_Or_Civil_Partnership__c,
                 Are_You_Divorced__c,
@@ -130,12 +120,12 @@ public class GeneratePDFCallout implements Queueable, Database.AllowsCallouts {
                 Step__c
             FROM Application__c
             WHERE Id =: applicationId
-                AND Expiry_Date__c >: Datetime.now()
             LIMIT 1];
     }
-
+    
     public void execute(QueueableContext context) {
         RequestWrapper requestData = new RequestWrapper();
+        app.Is_Individual_Pay_Section__c = false;
         requestData.application = app;
         app.Last_UK_Employer_Address__CountryCode__s = null;
         List<Agent__c> agents = [
@@ -197,14 +187,14 @@ public class GeneratePDFCallout implements Queueable, Database.AllowsCallouts {
             requestData.agent = agents[0];
         }
         Http http = new Http();
-	    HttpRequest request = new HttpRequest();
-	    request.setEndpoint(FILL_FROM_URL);
-	    request.setMethod('POST');
-	    request.setHeader('Content-Type', 'application/json;charset=UTF-8');
-	    // Set the body as a JSON object
-	    request.setBody(JSON.serialize(requestData));
+        HttpRequest request = new HttpRequest();
+        request.setEndpoint(FILL_FROM_URL);
+        request.setMethod('POST');
+        request.setHeader('Content-Type', 'application/json;charset=UTF-8');
+        // Set the body as a JSON object
+        request.setBody(JSON.serialize(requestData));
         HttpResponse response = http.send(request);
-	    // Parse the JSON response
+        // Parse the JSON response
         try {
             if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
                 update app;
@@ -236,22 +226,22 @@ public class GeneratePDFCallout implements Queueable, Database.AllowsCallouts {
                     if (link.ContentDocument.Title.contains('CF083_ForSignature')) {
                         conVer = createContentVerison(
                             EncodingUtil.base64Decode(wrapper?.result?.application),
-                            app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CF083_ForSignature'
-                       );
+                        app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CF083_ForSignature'
+                            );
                         fileLabelByLink.put('CF083_ForSignature', link);
                     }
                     if (link.ContentDocument.Title.contains('64-8_ForSignature')) {
                         conVer = createContentVerison(
                             EncodingUtil.base64Decode(wrapper?.result?.agent),
-                            app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_64-8_ForSignature'
-                        );
+                        app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_64-8_ForSignature'
+                            );
                         fileLabelByLink.put('64-8_ForSignature', link);
                     }
                     if (link.ContentDocument.Title.contains('CustomLetter_ForSignature')) {
                         conVer = createContentVerison(
                             pdfBlob,
-                            app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CustomLetter_ForSignature'
-                        );
+                        app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CustomLetter_ForSignature'
+                            );
                         fileLabelByLink.put('CustomLetter_ForSignature', link);
                     }
                     conVer.ContentDocumentId = link.ContentDocumentId;
@@ -263,26 +253,26 @@ public class GeneratePDFCallout implements Queueable, Database.AllowsCallouts {
                 if(fileLabelByLink.get('CF083_ForSignature') == null) {
                     newContVersions.add(
                         createContentVerison(
-                            EncodingUtil.base64Decode(wrapper?.result?.application),
-                            app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CF083_ForSignature'
+                        EncodingUtil.base64Decode(wrapper?.result?.application),
+                    app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CF083_ForSignature'
                         )
-                    );
+                        );
                 }
                 if(fileLabelByLink.get('64-8_ForSignature') == null) {
                     newContVersions.add(
                         createContentVerison(
-                            EncodingUtil.base64Decode(wrapper?.result?.agent),
-                            app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_64-8_ForSignature'
+                        EncodingUtil.base64Decode(wrapper?.result?.agent),
+                    app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_64-8_ForSignature'
                         )
-                    );
+                        );
                 }
                 if(fileLabelByLink.get('CustomLetter_ForSignature') == null) {
                     newContVersions.add(
                         createContentVerison(
-                            pdfBlob,
-                            app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CustomLetter_ForSignature'
+                        pdfBlob,
+                    app.First_Name__c + '_' + app.Second_Name__c + '_' + app.Name + '_CustomLetter_ForSignature'
                         )
-                    );
+                        );
                 }
                 if (newContVersions.size() != 0) {
                     Database.insert(newContVersions, false);
@@ -295,16 +285,16 @@ public class GeneratePDFCallout implements Queueable, Database.AllowsCallouts {
             update new Application__c(Id = app.Id, Heroku_Request__c = JSON.serialize(requestData));
         }
     }
-
+    
     private ContentVersion createContentVerison(Blob pdfBlob, String title) {
         return new ContentVersion(
             VersionData = pdfBlob,
-            ContentLocation = 'S',
-            PathOnClient = title +'.pdf',
-            Title = title
-        );
+        ContentLocation = 'S',
+        PathOnClient = title +'.pdf',
+        Title = title
+            );
     }
-
+    
     private void createContentLinks(List<ContentVersion> newDocuments) {
         Map<Id, ContentVersion> newContVersMap = new Map<Id, ContentVersion>(newDocuments);
         List<ContentVersion> conDocs = [
@@ -317,27 +307,27 @@ public class GeneratePDFCallout implements Queueable, Database.AllowsCallouts {
             for (ContentVersion version : conDocs) {
                 contentDocLinks.add(
                     new ContentDocumentLink(
-                        LinkedEntityId = app.Id,
-                        ContentDocumentId = version.ContentDocumentId,
-                        shareType = 'V',
-                        Visibility = 'AllUsers'
+                    LinkedEntityId = app.Id,
+                ContentDocumentId = version.ContentDocumentId,
+                shareType = 'V',
+                Visibility = 'AllUsers'
                     )
-                );
+                    );
             }
             insert contentDocLinks;
         }
     }
-
+    
     public class ResponseWrapper {
         public String status;
         public ResponseResultWrapper result;
     }
-
+    
     public class ResponseResultWrapper {
         public String application;
         public String agent;
     }
-
+    
     public class RequestWrapper {
         public Application__c application;
         public Agent__c agent;

@@ -1,0 +1,76 @@
+<template>
+    <lightning-modal-header label="Confirm fee charge"></lightning-modal-header>
+    <lightning-modal-body>
+        <div class="pc1-feemodal__body">
+            <p class="pc1-feemodal__prompt">
+                Charge&nbsp;
+                <strong>
+                    <lightning-formatted-number
+                        value={firstInstallmentAmount}
+                        format-style="currency"
+                        currency-code="GBP">
+                    </lightning-formatted-number>
+                </strong>
+                &nbsp;from
+                <strong>{clientName}</strong>'s account?
+            </p>
+            <p class="pc1-feemodal__context">
+                This is 20% of the&nbsp;
+                <lightning-formatted-number
+                    value={awardAmount}
+                    format-style="currency"
+                    currency-code="GBP">
+                </lightning-formatted-number>
+                &nbsp;award (VAT included).
+                <template if:true={multiInstallment}>
+                    &nbsp;Installment&nbsp;1 of {installments}. Total fee&nbsp;
+                    <strong>
+                        <lightning-formatted-number
+                            value={feeAmount}
+                            format-style="currency"
+                            currency-code="GBP">
+                        </lightning-formatted-number>
+                    </strong>.
+                </template>
+            </p>
+            <template if:true={multiInstallment}>
+                <p class="pc1-feemodal__plan">
+                    Remaining {remainingCount} installment<template if:true={remainingPlural}>s</template>
+                    ({remainingDates}) will be charged automatically by the daily
+                    scheduler. Bacs advance notice fires 3 working days before each.
+                </p>
+            </template>
+            <p class="pc1-feemodal__notice">
+                The client will receive a Bacs advance notice 3 working days before the charge lands.
+            </p>
+
+            <div class="pc1-feemodal__checks">
+                <lightning-input
+                    type="checkbox"
+                    label="I have verified the award amount against the DWP letter"
+                    checked={verifiedAmount}
+                    onchange={handleVerifiedChange}>
+                </lightning-input>
+                <lightning-input
+                    type="checkbox"
+                    label="I understand this cannot be reversed without going through DD Guarantee refund"
+                    checked={understandIrreversible}
+                    onchange={handleIrreversibleChange}>
+                </lightning-input>
+            </div>
+        </div>
+    </lightning-modal-body>
+    <lightning-modal-footer>
+        <lightning-button
+            label="Cancel"
+            onclick={handleCancel}>
+        </lightning-button>
+        <lightning-button
+            class="slds-m-left_x-small"
+            variant="destructive"
+            label={confirmLabel}
+            onclick={handleConfirm}
+            disabled={canConfirmDisabled}>
+        </lightning-button>
+    </lightning-modal-footer>
+</template>

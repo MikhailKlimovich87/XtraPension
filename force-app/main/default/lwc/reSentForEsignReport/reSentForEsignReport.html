@@ -1,0 +1,41 @@
+<template>
+    <lightning-card title="Sent for E-sign Reapples Report">
+        <div class="slds-p-horizontal_small" style="padding-bottom:50px">
+            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                <thead>
+                    <tr class="slds-line-height_reset">
+                        <th scope="col"><div class="slds-truncate"></div></th>
+                        <th scope="col"><div class="slds-truncate">Total</div></th>
+                        <template for:each={agents} for:item="agent">
+                            <th scope="col" key={agent.id}>
+                                <div class="slds-truncate" title={agent.label}>{agent.label}</div>
+                            </th>
+                        </template>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template for:each={agentSales} for:item="sale">
+                        <tr key={sale.name} class="slds-hint-parent">
+                            <td data-label="Changes">
+                                <div class="slds-truncate">{sale.name}</div>
+                            </td>
+                            <td data-label="Total">
+                                <div class="slds-truncate">{sale.fullCount}</div>
+                            </td>
+                            <template for:each={sale.countData} for:item="item">
+                                <td data-label="Changes" key={item.id}>
+                                    <div class="slds-truncate">{item.value}</div>
+                                </td>
+                            </template>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+        <template if:true={agentExist}>
+            <div style="height: 400px; position: relative;">
+                <c-pie-chart sale-data={amountByDay}></c-pie-chart>
+            </div>
+        </template>
+    </lightning-card>
+</template>

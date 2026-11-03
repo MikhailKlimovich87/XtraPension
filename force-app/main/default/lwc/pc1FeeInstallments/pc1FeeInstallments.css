@@ -1,0 +1,17 @@
+.pc1-inst { margin-top: 14px; border-top: 1px solid #ececec; padding-top: 10px; }
+.pc1-inst__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.pc1-inst__title { font-size: 0.86rem; font-weight: 600; }
+.pc1-inst__alert { font-size: 0.78rem; color: #a4051d; }
+.pc1-inst__scroll { overflow-x: auto; }
+.pc1-inst__table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.pc1-inst__table th { text-align: left; color: #666; font-weight: 500; padding: 4px 6px; border-bottom: 1px solid #ececec; }
+.pc1-inst__table td { padding: 6px; border-bottom: 1px solid #f3f3f3; vertical-align: middle; }
+.pc1-inst__num { text-align: right; font-variant-numeric: tabular-nums; }
+.pc1-inst__action { text-align: right; white-space: nowrap; }
+.pc1-inst__pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.74rem; border: 1px solid transparent; white-space: nowrap; }
+.pc1-inst__pill--ok   { background: #f4fbf6; border-color: #b6e6c1; color: #0a7a2f; }
+.pc1-inst__pill--info { background: #eef4ff; border-color: #b9cdf5; color: #1b4fa3; }
+.pc1-inst__pill--warn { background: #fff7e6; border-color: #f2d199; color: #8a5a00; }
+.pc1-inst__pill--bad  { background: #fdecee; border-color: #f2b4bd; color: #a4051d; }
+.pc1-inst__pill--muted{ background: #f6f6f6; border-color: #e2e2e2; color: #555; }
+.pc1-inst__error { font-size: 0.8rem; color: #a4051d; margin-top: 8px; }

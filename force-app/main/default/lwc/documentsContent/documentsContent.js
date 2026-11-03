@@ -177,7 +177,8 @@ export default class DocumentsContent extends NavigationMixin(LightningElement) 
   }
   createNewContentDocument() {
     pdfAction({
-      applicationId : this.recordId
+      applicationId : this.recordId,
+      isReply: false
     }).then(result => {
       window.location.reload();
     }).catch(error => {
