@@ -28,8 +28,8 @@
  * Sanity flags (surfaced inline BEFORE Record):
  *   • award outside £3,500..£7,200 → "does not look like an annual award"
  *     warning + a required "I have checked this amount" tick (audit
- *     2026-10-02 F111: the annual award is the weekly rate x 52, ~£3,843
- *     lower / ~£5,741 higher at 2025/26 rates; the old £100 / £50,000 flags
+ *     2026-10-02 F111: the annual award is the weekly rate x 52, ~£3,988
+ *     lower / ~£5,959 higher at 2026/27 rates; the old £100 / £50,000 flags
  *     were PC1 values and let a weekly figure through). The server enforces
  *     the same band (AA_GoCardlessController.AWARD_BAND_MIN/MAX).
  *   • VAT-included checkbox — off by default; explanatory copy only, the

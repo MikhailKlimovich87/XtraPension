@@ -77,7 +77,8 @@
                   </template>
                 </template>
                 <template lwc:if={m.text}>
-                  <div class="aa-wa__text">{m.text}</div>
+                  <!-- one line on purpose: the text is pre-wrap, so no whitespace between the pieces -->
+                  <div class="aa-wa__text"><template for:each={m.parts} for:item="p"><span key={p.key} class={p.cls}><template lwc:if={p.href}><a href={p.href} target="_blank" rel="noopener noreferrer">{p.text}</a></template><template lwc:else>{p.text}</template></span></template></div>
                 </template>
                 <div class="aa-wa__meta">
                   <template lwc:if={m.metaSender}>

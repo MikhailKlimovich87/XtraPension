@@ -9,6 +9,72 @@ import listApplicationFiles from '@salesforce/apex/PC1_WhatsAppController.listAp
 
 const ACCEPTED_TYPES = ['.jpg','.jpeg','.png','.webp','.gif','.pdf','.doc','.docx','.xls','.xlsx','.txt','.csv','.mp3','.m4a','.ogg','.mp4'];
 
+const HTML_TAG_RE = /<\/?[a-z][a-z0-9]*\b[^<>]*>|&(?:amp|lt|gt|quot|nbsp|#\d+|#x[0-9a-f]+);/i;
+function htmlToWhatsApp(input) {
+    const s = String(input || '');
+    if (!HTML_TAG_RE.test(s)) return s;
+    const bare = (u) => u.replace(/^https?:\/\//i, '').replace(/\/$/, '').toLowerCase();
+    return s
+        .replace(/<a\b[^>]*?href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (m, href, inner) => {
+            const text = inner.replace(/<[^>]+>/g, '').trim();
+            if (/^mailto:/i.test(href)) return text || href.replace(/^mailto:/i, '');
+            return !text || bare(text) === bare(href) ? href : `${text}: ${href}`;
+        })
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, '\n')
+        .replace(/<li\b[^>]*>/gi, '• ')
+        .replace(/<\/?(b|strong)\b[^>]*>/gi, '*')
+        .replace(/<\/?(i|em)\b[^>]*>/gi, '_')
+        .replace(/<\/?[a-z][a-z0-9]*\b[^<>]*>/gi, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#(\d+);/g, (m, n) => String.fromCodePoint(Number(n)))
+        .replace(/&#x([0-9a-f]+);/gi, (m, n) => String.fromCodePoint(parseInt(n, 16)))
+        .replace(/&amp;/gi, '&')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
+
+/**
+ * Bubble text as the phone shows it. Texts copied from email templates can carry HTML
+ * (<a href>, <br>), so they go through htmlToWhatsApp first (same function as the Sales
+ * panel, xpWhatsAppPanel). Then links become clickable and *bold* / _italic_ / ~strike~
+ * get their style. Returns pieces for the template (LWC has no innerHTML).
+ */
+const URL_RE = /\b(?:https?:\/\/|www\.)[^\s<>"]+/gi;
+const STYLE_RE = /(^|[\s([{"'])([*_~])(?!\s)([^\n]*?\S)\2(?=$|[\s.,;:!?)\]}"'])/g;
+const STYLE_CLASS = { '*': 'pc1-wa__b', '_': 'pc1-wa__i', '~': 'pc1-wa__s' };
+function waParts(input) {
+    const parts = [];
+    const push = (text, cls = '', href = '') => {
+        if (text) parts.push({ key: String(parts.length), text, cls, href });
+    };
+    const styled = (seg) => {
+        let last = 0;
+        seg.replace(STYLE_RE, (m, pre, mark, inner, at) => {
+            push(seg.slice(last, at) + pre);
+            push(inner, STYLE_CLASS[mark]);
+            last = at + m.length;
+            return m;
+        });
+        push(seg.slice(last));
+    };
+    const s = htmlToWhatsApp(input);
+    let last = 0;
+    for (const m of s.matchAll(URL_RE)) {
+        if (m.index < last) continue;
+        const url = m[0].replace(/[.,;:!?'")\]}*_~]+$/, '');
+        styled(s.slice(last, m.index));
+        push(url, 'pc1-wa__link', /^www\./i.test(url) ? `https://${url}` : url);
+        last = m.index + url.length;
+    }
+    styled(s.slice(last));
+    return parts;
+}
+
 /**
  * pc1WhatsAppPanel — WhatsApp chat embedded below the Data Collection panel.
  *
@@ -145,6 +211,7 @@ export default class Pc1WhatsAppPanel extends LightningElement {
             return {
                 key:       m.uid || `${m.chat_id}-${m.timestamp}`,
                 text:      m.text || '',
+                parts:     waParts(m.text),
                 timestamp: m.timestamp,
                 bubbleClass,
                 isOut,
@@ -220,9 +287,11 @@ export default class Pc1WhatsAppPanel extends LightningElement {
         this.sending = true;
         // Optimistic bubble
         const tempKey = 'temp-' + Date.now();
+        const shown = body || (file ? `📎 ${file.name}` : '');
         const optimistic = {
             key: tempKey,
-            text: body || (file ? `📎 ${file.name}` : ''),
+            text: shown,
+            parts: waParts(shown),
             timestamp: new Date().toISOString(),
             bubbleClass: 'pc1-wa__bubble is-out is-sending', isOut: true,
             timeLabel: this._timeOf(new Date().toISOString()),

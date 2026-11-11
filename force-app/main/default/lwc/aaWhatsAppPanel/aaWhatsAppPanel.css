@@ -128,6 +128,14 @@
 .aa-wa__text {
   white-space: pre-wrap;
 }
+.aa-wa__link a {
+  color: #027eb5;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+.aa-wa__b { font-weight: 700; }
+.aa-wa__i { font-style: italic; }
+.aa-wa__s { text-decoration: line-through; }
 .aa-wa__meta {
   display: flex;
   gap: 4px;

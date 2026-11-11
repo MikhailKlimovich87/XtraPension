@@ -128,6 +128,14 @@
 .pc1-wa__text {
   white-space: pre-wrap;
 }
+.pc1-wa__link a {
+  color: #027eb5;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+.pc1-wa__b { font-weight: 700; }
+.pc1-wa__i { font-style: italic; }
+.pc1-wa__s { text-decoration: line-through; }
 .pc1-wa__meta {
   display: flex;
   gap: 4px;

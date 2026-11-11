@@ -74,8 +74,8 @@ private class BP_GeneratePdfFileControllerTest {
             BP_Pdf_File_Link__c = 'test',
             BP_Pdf_File_IPC1394_Link__c = 'test',
             BP_PDF_IPCBR1_Wet__c = 'test',
-            BP_PDF_IPC1394_Wet__c = 'test'
-
+            BP_PDF_IPC1394_Wet__c = 'test',
+            BR_X_Api_Key__c = 'test'
         );
         insert data;
     }

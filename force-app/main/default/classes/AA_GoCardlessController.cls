@@ -56,9 +56,9 @@ public with sharing class AA_GoCardlessController {
     private static final Decimal AWARD_MAX = 100000;
 
     // audit 2026-10-02 F111: Award_Amount__c is the ANNUAL award = weekly rate
-    // x 52, so a real value sits in one of two narrow bands (2025/26: lower
-    // £73.90 x 52 = £3,842.80, higher £110.40 x 52 = £5,740.80). A weekly
-    // (110.40) or 4-weekly/monthly figure typed from the DWP letter passed every
+    // x 52, so a real value sits in one of two narrow bands (2026/27: lower
+    // £76.70 x 52 = £3,988.40, higher £114.60 x 52 = £5,959.20). A weekly
+    // (114.60) or 4-weekly/monthly figure typed from the DWP letter passed every
     // old check and under-charged the fee five- to fifty-fold. Outside this
     // band the save needs an explicit confirmation from the operator. MIN sits
     // below 52 x the lower rate even at older rates; MAX leaves ~25% headroom
@@ -338,7 +338,7 @@ public with sharing class AA_GoCardlessController {
             throw new AuraHandledException('Award amount unrealistically large (>' + AWARD_MAX + ')');
         if ((amount < AWARD_BAND_MIN || amount > AWARD_BAND_MAX) && confirmUnusualAmount != true) {
             throw new AuraHandledException('UNUSUAL_AWARD: £' + amount.setScale(2) + ' does not look like an annual ' +
-                'Attendance Allowance award. Enter the weekly rate x 52 (2025/26: £3,842.80 lower rate, £5,740.80 higher rate). ' +
+                'Attendance Allowance award. Enter the weekly rate x 52 (2026/27: £3,988.40 lower rate, £5,959.20 higher rate). ' +
                 'If you typed the weekly amount, multiply it by 52. If this amount is right, tick ' +
                 '"I have checked this amount against the DWP letter" and save again.');
         }
