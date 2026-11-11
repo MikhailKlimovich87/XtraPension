@@ -8,6 +8,14 @@ public with sharing class BP_ClientSummaryPdfServiceTest {
             Last_Name__c = 'Smith'
         );
         insert basic;
+
+        insert new XtraPension_Data__c(
+            BP_Pdf_File_Link__c = 'test',
+            BP_Pdf_File_IPC1394_Link__c = 'test',
+            BP_PDF_IPCBR1_Wet__c = 'test',
+            BP_PDF_IPC1394_Wet__c = 'test',
+            BR_X_Api_Key__c = 'test'
+        );
     }
 
     private static Basic__c getBasic() {
@@ -66,6 +74,85 @@ public with sharing class BP_ClientSummaryPdfServiceTest {
         Test.stopTest();
 
         System.assertNotEquals(null, docId);
+    }
+
+    @IsTest
+    static void testGeneratePdf_UpdateExistingDocumentAsViewer() {
+        Profile standardProfile = [
+            SELECT Id
+            FROM Profile
+            WHERE Name = 'Standard User'
+            LIMIT 1
+        ];
+        User agent = new User(
+            Alias = 'agent',
+            Email = 'agent@example.test',
+            EmailEncodingKey = 'UTF-8',
+            LastName = 'Agent',
+            LanguageLocaleKey = 'en_US',
+            LocaleSidKey = 'en_US',
+            ProfileId = standardProfile.Id,
+            TimeZoneSidKey = 'America/Los_Angeles',
+            Username = 'agent.' + UserInfo.getUserId() + '@example.test'
+        );
+        insert agent;
+
+        Basic__c basic;
+        System.runAs(agent) {
+            basic = new Basic__c(
+                First_Name__c = 'Agent',
+                Last_Name__c = 'Claim'
+            );
+            insert basic;
+        }
+
+        createDocument(basic, 'Client Summary');
+        ContentDocumentLink documentLink = [
+            SELECT ContentDocumentId, ShareType, ContentDocument.OwnerId
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId = :basic.Id
+            LIMIT 1
+        ];
+        System.assertEquals('V', documentLink.ShareType);
+        System.assertNotEquals(agent.Id, documentLink.ContentDocument.OwnerId);
+        Id existingDocumentId = documentLink.ContentDocumentId;
+        Integer originalVersionCount = [
+            SELECT Count()
+            FROM ContentVersion
+            WHERE ContentDocumentId = :existingDocumentId
+        ];
+
+        Test.startTest();
+        Id resultDocumentId;
+        System.runAs(agent) {
+            resultDocumentId = BP_ClientSummaryPdfService.generatePdf(basic.Id);
+
+            List<ContentDocumentLink> visibleDocuments = [
+                SELECT ContentDocumentId, ContentDocument.Title
+                FROM ContentDocumentLink
+                WHERE LinkedEntityId = :basic.Id
+            ];
+            BP_GeneratePdfFileController.updateDocumentVersion(
+                JSON.serialize(new Map<String, Object>{
+                    'base64' => EncodingUtil.base64Encode(Blob.valueOf('FORM PDF'))
+                }),
+                'Client Summary',
+                'pdf',
+                visibleDocuments
+            );
+        }
+        Test.stopTest();
+
+        System.assertEquals(existingDocumentId, resultDocumentId);
+        System.assertEquals(
+            originalVersionCount + 2,
+            [
+                SELECT Count()
+                FROM ContentVersion
+                WHERE ContentDocumentId = :existingDocumentId
+            ],
+            'Both regeneration paths should add versions to the existing Viewer-shared file'
+        );
     }
 
     @IsTest
