@@ -12,7 +12,9 @@ import DWPREF_FIELD   from '@salesforce/schema/PC1_Application__c.DWP_Reference_
 /**
  * PC Quick Action — Fill on DWP.
  *
- * Gate matrix (client-side pre-flight; server enforces the same):
+ * Gate matrix (client-side pre-flight; the server enforces the declaration,
+ * mandate, DWP reference and in-flight gates, and since the 2026-11-11 audit
+ * is meant to enforce the stage gate too, in PC1_HerokuBridge):
  *   Stage in FILL_READY_STAGES
  *   Declaration_Complete__c = true
  *   DD_Mandate_Status__c = 'active'
@@ -133,6 +135,9 @@ export default class Pc1QuickActionFillOnDwp extends LightningElement {
         return this._runFill(true);
     }
     async _runFill(force) {
+        // One request per click: a second click while the first is in flight
+        // started a second Browserbase session on the same DWP form.
+        if (this.working) return;
         this.working = true;
         try {
             const result = await startFillFromUi({

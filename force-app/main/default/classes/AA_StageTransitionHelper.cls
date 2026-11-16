@@ -20,6 +20,46 @@ public with sharing class AA_StageTransitionHelper {
      */
     public static Map<Id, String> noteByApp = new Map<Id, String>();
 
+    // ── DWP decision stages need the decision on record (audit 2026-11-11 AA-SFUI-4) ──
+    // Moving a case INTO 'Awarded' or 'Closed - Refused' emails the client the
+    // DWP decision, once per application, ever
+    // (AA_MessageDispatcher.dispatchStageOutcomes). There is still no state
+    // machine, but a bare stage pick (Stage card, Path, Details tab, API) must
+    // not be able to send that email: a wrong click told a client their claim
+    // was awarded or refused, could not be recalled, and used up the one send
+    // so the real decision was never emailed. So:
+    //   - 'Awarded' needs the award amount on the record. The Award card
+    //     (AA_GoCardlessController.recordAward) writes the amount and the
+    //     stage together, so it is the normal door.
+    //   - 'Closed - Refused' needs the refusal written down: a stage note that
+    //     is not one of the generic ones below, passed through
+    //     AA_RecordPageService.changeStage (the Stage card). The note is kept
+    //     on the AA_Stage_Log__c row.
+    // Anything else is refused with the reason.
+    @TestVisible private static final String AWARD_REQUIRED_MSG =
+        'Record the DWP award first: use the Award card (it saves the amount and moves the case to Awarded). ' +
+        'Moving a case to Awarded emails the client that their claim was approved, and that email is sent only once.';
+    @TestVisible private static final String REFUSAL_NOTE_REQUIRED_MSG =
+        'To close a claim as refused, use Change Stage on the Stage card and write the DWP refusal in the note ' +
+        '(date of the decision letter and the reason). Moving a case to Closed - Refused emails the client that ' +
+        'their claim was refused, and that email is sent only once.';
+    @TestVisible private static final Set<String> GENERIC_NOTES = new Set<String>{
+        'changed via record page', 'changed via stage card'
+    };
+
+    /** null when the move into this stage may go ahead, else the message for the user. */
+    @TestVisible
+    private static String decisionGuard(AA_Application__c app, String note) {
+        if (app.Stage__c == 'Awarded' && (app.Award_Amount__c == null || app.Award_Amount__c <= 0)) {
+            return AWARD_REQUIRED_MSG;
+        }
+        if (app.Stage__c == 'Closed - Refused'
+                && (String.isBlank(note) || GENERIC_NOTES.contains(note.trim().toLowerCase()))) {
+            return REFUSAL_NOTE_REQUIRED_MSG;
+        }
+        return null;
+    }
+
     public static void handleTransitions(List<AA_Application__c> newList, Map<Id, AA_Application__c> oldMap) {
         List<AA_Stage_Log__c> logs = new List<AA_Stage_Log__c>();
         Set<Id> submittedIds = new Set<Id>();
@@ -29,6 +69,12 @@ public with sharing class AA_StageTransitionHelper {
         for (AA_Application__c app : newList) {
             AA_Application__c prev = oldMap.get(app.Id);
             if (app.Stage__c == prev.Stage__c) continue;
+
+            String refused = decisionGuard(app, noteByApp.get(app.Id));
+            if (refused != null) {
+                app.addError(refused);
+                continue;
+            }
 
             app.Stage_Changed_At__c = now;
             logs.add(new AA_Stage_Log__c(

@@ -25,8 +25,6 @@ const FILTERS = [
     { key: 'stage:Needs Human',            label: 'Needs Human' }
 ];
 
-const FILL_STAGES = new Set(['Reviewed', 'Ready for Submit', 'Data Complete']);
-
 export default class AaClientsList extends NavigationMixin(LightningElement) {
     @api pageSize = 100;
     filter = 'all';
@@ -80,8 +78,7 @@ export default class AaClientsList extends NavigationMixin(LightningElement) {
                 : '—',
             pctInt: Math.min(100, Math.round(r.progressPct || 0)),
             progressText: `${r.progressFilled ?? 0}/${r.progressTotal ?? 0}`,
-            progressStyle: `width:${Math.min(100, Math.round(r.progressPct || 0))}%`,
-            canFill: FILL_STAGES.has(stage)
+            progressStyle: `width:${Math.min(100, Math.round(r.progressPct || 0))}%`
         };
     }
 
@@ -156,17 +153,9 @@ export default class AaClientsList extends NavigationMixin(LightningElement) {
         this.navToRecord(e.currentTarget.dataset.id);
     }
 
-    handleCallNow(e) {
-        e.stopPropagation();
-        this.toast('Call Now', 'info',
-            'Wire this to your ElevenLabs / dial webhook (AA_HerokuBridge.startCall).');
-    }
-
-    handleFill(e) {
-        e.stopPropagation();
-        this.toast('Fill on DWP', 'info',
-            'Open the client record and use the Fill Run panel to launch a run.');
-    }
+    // No Call or Fill button on a row (audit 2026-11-11 AA-SFUI-9): both were
+    // placeholders that only showed a message. Call Now and Fill on DWP are on
+    // the record, behind their own confirmation and stage checks.
 
     navToRecord(id) {
         this[NavigationMixin.Navigate]({

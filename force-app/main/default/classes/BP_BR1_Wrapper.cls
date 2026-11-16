@@ -52,6 +52,17 @@ public with sharing class BP_BR1_Wrapper {
         Public String q16g;
         Public String q16h;
         Public Boolean q17_no;
+        // HM Forces (Q17): yes, Army / Navy / RAF, enlisted, discharged, where, regiment or corps, service number, rank
+        Public Boolean q17_yes;
+        Public Boolean q17a;
+        Public Boolean q17b;
+        Public Boolean q17c;
+        Public String q17d;
+        Public String q17e;
+        Public String q17f;
+        Public String q17g;
+        Public String q17h;
+        Public String q17i;
         Public Boolean q18_no;
         Public Boolean q18_yes;
         Public String q18a;
@@ -166,6 +177,159 @@ public with sharing class BP_BR1_Wrapper {
         Public List<Claimant_Country_lived__c> contryLivedList;
 
 
+        // Q18 has two employer slots: the two longest jobs go there (John, 10/11/2026), in their own order; the rest go
+        // to Other information. A job without both dates counts as the shortest; equal lengths keep the earlier one.
+        private List<Claimant_Company__c> longestFirst(List<Claimant_Company__c> employers) {
+            if (employers.size() <= 2) {
+                return employers;
+            }
+            List<Integer> days = new List<Integer>();
+            for (Claimant_Company__c employer : employers) {
+                days.add(employer.From_Date__c != null && employer.To_Date__c != null
+                    ? employer.From_Date__c.daysBetween(employer.To_Date__c) : -1);
+            }
+            Integer first = 0;
+            for (Integer i = 1; i < employers.size(); i++) {
+                if (days[i] > days[first]) first = i;
+            }
+            Integer second = first == 0 ? 1 : 0;
+            for (Integer i = 0; i < employers.size(); i++) {
+                if (i != first && days[i] > days[second]) second = i;
+            }
+            List<Claimant_Company__c> sorted = new List<Claimant_Company__c>{
+                employers[Math.min(first, second)], employers[Math.max(first, second)]
+            };
+            for (Integer i = 0; i < employers.size(); i++) {
+                if (i != first && i != second) sorted.add(employers[i]);
+            }
+            return sorted;
+        }
+
+        private String textOf(Object value) {
+            return value == null ? '' : String.valueOf(value);
+        }
+
+        // Q58 / Q62 "Did you pay into the social security system of that country?": Yes, unless the number is "N/A"
+        // (worked there for a UK employer, NI paid in the UK; John, 11/11/2026). A blank number is still Yes, as before.
+        private Boolean paidThere(String socialSecurityNumber) {
+            String n = socialSecurityNumber == null ? '' : socialSecurityNumber.replaceAll('[\\s./]', '').toUpperCase();
+            return n != 'NA';
+        }
+
+        // ---- Call of 11/11/2026 17h13 (docs/claims-call-1111b/CONTRACT.md) ----
+        // Other information: the previous marriage when remarried (BR1 Q20), a divorced client's former spouse who has
+        // died since, and the marriage notes box of the forms (Marriage_Notes__c). '' when there is nothing to say.
+        @TestVisible
+        private String previousMarriageBlock(Basic__c app) {
+            // Every field from the populated fields: callers (and the devs' tests) query different field lists
+            Map<String, Object> g = app.getPopulatedFieldsAsMap();
+            String status = (String) g.get('Claimant_marital_Status__c');
+            Boolean remarried = status == 'Remarried';
+            String notes = (String) g.get('Marriage_Notes__c');
+            Date died = (Date) g.get('Claimant_date_Of_Bereavement__c');
+            if (!remarried && !(status == 'Divorced' && died != null) && String.isBlank(notes)) return '';
+            String title = (String) g.get('Partner_Title__c');
+            String spouse = spouseWord(title);
+            List<String> lines = new List<String>();
+            if (remarried) {
+                Boolean widowed = (String) g.get('Previous_Marriage_Ended__c') == 'Widowed';
+                String who = (widowed ? 'Late ' : 'Former ') + spouse;
+                String name = spouseFullName(g);
+                String line = who + ': ' + (String.isBlank(name) ? 'name not known' : name);
+                if (g.get('Partner_DOB__c') != null) line += ', born ' + formatDate((Date) g.get('Partner_DOB__c'));
+                line += ', National Insurance number: ' + spouseNino(g) + '.';
+                lines.add(line);
+                if (g.get('Claimant_date_Of_Marriage__c') != null) lines.add('We married on ' + formatDate((Date) g.get('Claimant_date_Of_Marriage__c')) + '.');
+                if (g.get('Claimant_date_Of_Divorce__c') != null) lines.add('We divorced on ' + formatDate((Date) g.get('Claimant_date_Of_Divorce__c')) + '.');
+                if (died != null) lines.add(pronoun(title) + ' died on ' + formatDate(died) + '.');
+                if (g.get('Partner_Address_Unknown__c') == true) {
+                    lines.add(possessive(title) + ' address is not known.');
+                } else if (g.get('Partner_same_as_claimant__c') != true && String.isNotBlank((String) g.get('Partner_Address1__c'))) {
+                    lines.add(possessive(title) + ' last address: ' + joinParts(new List<String>{ (String) g.get('Partner_Address1__c'),
+                        (String) g.get('Partner_Address2__c'), (String) g.get('Partner_City__c'), (String) g.get('Partner_State_Name__c'),
+                        (String) g.get('Partner_Postcode__c'), (String) g.get('Partner_Country__c') }) + '.');
+                }
+                Date again = (Date) g.get('Date_Of_Remarriage__c');
+                lines.add(again != null ? 'I remarried on ' + formatDate(again) + '.' : 'I have since remarried.');
+                lines.add('Please check whether my ' + who.toLowerCase() + '\'s National Insurance record can be used for my State Pension.');
+            } else if (status == 'Divorced' && died != null) {
+                lines.add('My former ' + spouse + ' died on ' + formatDate(died) + '.');
+            }
+            if (String.isNotBlank(notes)) {
+                if (!lines.isEmpty()) lines.add('');
+                lines.add(notes.trim());
+            }
+            String heading = remarried ? 'Previous marriage (BR1 Q20: married more than once)' : 'Marriage - Additional Info';
+            return '===================\n' + heading + ': \n\n' + String.join(lines, '\n') + '\n\n';
+        }
+
+        // The new fields are read from the populated fields, so a caller whose query does not select them still works
+        private Map<String, Object> given1111b(Basic__c app) {
+            return app.getPopulatedFieldsAsMap();
+        }
+
+        private String spouseWord(String title) {
+            if (title == 'Mr') return 'husband';
+            if (title == 'Mrs' || title == 'Ms' || title == 'Miss') return 'wife';
+            return 'husband / wife';
+        }
+
+        private String pronoun(String title) {
+            return title == 'Mr' ? 'He' : (title == 'Mrs' || title == 'Ms' || title == 'Miss') ? 'She' : 'They';
+        }
+
+        private String possessive(String title) {
+            return title == 'Mr' ? 'His' : (title == 'Mrs' || title == 'Ms' || title == 'Miss') ? 'Her' : 'Their';
+        }
+
+        // Title, first, middle and last name. The middle-name box sometimes holds the whole name ("Desmond Victor
+        // Waters", C05502): then it is used as it is.
+        private String spouseFullName(Map<String, Object> g) {
+            String middle = g.get('Partner_Other_Name__c') == null ? '' : ((String) g.get('Partner_Other_Name__c')).trim();
+            String last = g.get('Partner_Surname__c') == null ? '' : ((String) g.get('Partner_Surname__c')).trim();
+            List<String> parts = new List<String>{ (String) g.get('Partner_Title__c') };
+            if (String.isNotBlank(middle) && String.isNotBlank(last) && middle.toLowerCase().contains(last.toLowerCase())) {
+                parts.add(middle);
+            } else {
+                parts.addAll(new List<String>{ (String) g.get('Partner_First_Name__c'), middle, last });
+            }
+            List<String> kept = new List<String>();
+            for (String part : parts) {
+                if (String.isNotBlank(part)) kept.add(part.trim());
+            }
+            return String.join(kept, ' ');
+        }
+
+        // BR1 Q22 "Other names in full": first name + middle names. When the middle-name box holds the whole name, the
+        // surname (Q21) is taken out of it and the first name is not repeated.
+        @TestVisible
+        private String otherNamesInFull(String first, String middle, String last) {
+            String f = first == null ? '' : first.normalizeSpace();
+            String m = middle == null ? '' : middle.normalizeSpace();
+            String l = last == null ? '' : last.normalizeSpace();
+            if (String.isNotBlank(m) && String.isNotBlank(l)) {
+                m = (' ' + m + ' ').replaceAll('(?i)\\s' + Pattern.quote(l) + '(?=\\s)', ' ').normalizeSpace();
+            }
+            if (String.isNotBlank(m) && String.isNotBlank(f) && (m.equalsIgnoreCase(f) || m.toLowerCase().startsWith(f.toLowerCase() + ' '))) {
+                m = m.substring(f.length()).normalizeSpace();
+            }
+            return String.isBlank(f) ? m : (String.isBlank(m) ? f : f + ' ' + m);
+        }
+
+        private String spouseNino(Map<String, Object> g) {
+            String nino = (String) g.get('Partner_Nino__c');
+            if (String.isNotBlank(nino)) return nino;
+            return (String) g.get('Partner_Has_Nino_values__c') == 'Never Had' ? 'none' : 'not known';
+        }
+
+        private String joinParts(List<String> parts) {
+            List<String> kept = new List<String>();
+            for (String part : parts) {
+                if (String.isNotBlank(part)) kept.add(part.trim());
+            }
+            return String.join(kept, ', ');
+        }
+
         // ONLY ADDED FOR DATE FORMATTING
         private String formatDate(Date value) {
             if (value == null) {
@@ -188,6 +352,12 @@ public with sharing class BP_BR1_Wrapper {
 
         public ApplicationDataWrapper(Basic__c app) {
             String notes = '';
+            // Single (12/11/2026 audit): what the record still holds about a spouse (an earlier status, rows from the Short
+            // Form) is kept on the claim but never printed: no spouse notes, no Q13, no spouse employers or addresses
+            Boolean withSpouse = app.Claimant_marital_Status__c != 'Single';
+            String partnerLivedNotes = withSpouse ? app.Partner_Ever_Lived_UK_Notes__c : null;
+            String partnerDwpReference = withSpouse ? app.Partner_Reference_on_Any_DWP_Letters__c : null;
+            String partnerWaitingText = withSpouse ? app.Partner_is_Waiting_Uk_Benefits_text__c : null;
             this.name = app.Name;
             this.stateName = app.Current_Address_Abroad_State_Name__c;
             this.countryName = app.Current_Address_Abroad_Country_Name__c;
@@ -202,10 +372,10 @@ public with sharing class BP_BR1_Wrapper {
 
             
             if(String.isNotBlank(app.Claimant_Ever_Lived_UK_Notes__c)||
-                String.isNotBlank(app.Partner_Ever_Lived_UK_Notes__c) ||
-                String.isNotBlank(app.Partner_Reference_on_Any_DWP_Letters__c)||
+                String.isNotBlank(partnerLivedNotes) ||
+                String.isNotBlank(partnerDwpReference)||
                 String.isNotBlank(app.Claimant_is_Waiting_Uk_Benefits_text__c)||
-                String.isNotBlank(app.Partner_is_Waiting_Uk_Benefits_text__c)) {
+                String.isNotBlank(partnerWaitingText)) {
                 notes = notes + '===================\n'; 
                 notes = notes + 'UK Residence, DWP References and Pending UK Benefits - Additional Info: \n\n'; 
 
@@ -213,12 +383,12 @@ public with sharing class BP_BR1_Wrapper {
                 notes = notes + app.Claimant_Ever_Lived_UK_Notes__c;
                 notes = notes + '\n\n';
                 }
-                if(String.isNotBlank(app.Partner_Ever_Lived_UK_Notes__c)) {
-                    notes = notes + app.Partner_Ever_Lived_UK_Notes__c;
+                if(String.isNotBlank(partnerLivedNotes)) {
+                    notes = notes + partnerLivedNotes;
                     notes = notes + '\n\n';
                 }
-                 if(String.isNotBlank(app.Partner_Reference_on_Any_DWP_Letters__c)) {
-                notes = notes +  app.Partner_Reference_on_Any_DWP_Letters__c;
+                 if(String.isNotBlank(partnerDwpReference)) {
+                notes = notes +  partnerDwpReference;
                 notes = notes + '\n\n';
                 }
                 
@@ -226,8 +396,8 @@ public with sharing class BP_BR1_Wrapper {
                     notes = notes  + app.Claimant_is_Waiting_Uk_Benefits_text__c;
                     notes = notes + '\n\n';
                 }
-                if(String.isNotBlank(app.Partner_is_Waiting_Uk_Benefits_text__c)) {
-                    notes = notes + app.Partner_is_Waiting_Uk_Benefits_text__c;
+                if(String.isNotBlank(partnerWaitingText)) {
+                    notes = notes + partnerWaitingText;
                     notes = notes + '\n\n';
             }
             }
@@ -280,10 +450,10 @@ public with sharing class BP_BR1_Wrapper {
             this.q12c = app.Claimant_Widows_Benefit__c;
             this.q12d = app.Claimant_Bereavement_Benefit__c;
 
-            this.q13a = app.Partner_State_Pension__c;
-            this.q13b = app.Partner_Graduated_Retirement_Benefit__c;
-            this.q13c = app.Partner_Widows_Benefit__c;
-            this.q13d = app.Partner_Bereavement_Benefit__c;
+            this.q13a = withSpouse ? app.Partner_State_Pension__c : null;
+            this.q13b = withSpouse ? app.Partner_Graduated_Retirement_Benefit__c : null;
+            this.q13c = withSpouse ? app.Partner_Widows_Benefit__c : null;
+            this.q13d = withSpouse ? app.Partner_Bereavement_Benefit__c : null;
 
             this.q14_no = app.Claimant_ever_Lived_UK__c ? false : true;
             this.q14_yes = app.Claimant_ever_Lived_UK__c ? true : false;
@@ -293,8 +463,22 @@ public with sharing class BP_BR1_Wrapper {
             this.q16c = formatDate(app.Claimant_worked_UK_From__c);
             this.q16d = formatDate(app.Claimant_worked_UK_To__c);
 
-            // No selector in source JSON
-            this.q17_no = true;
+            // Q17 HM Forces, from the Claimant_HM_Forces_* fields (long form or Claim page, 10/11/2026); No until asked.
+            // Read from the populated fields, so a caller whose query does not select them still gets "No".
+            Map<String, Object> given = app.getPopulatedFieldsAsMap();
+            Boolean forces = given.get('Claimant_HM_Forces__c') == true;
+            String service = forces ? (String) given.get('Claimant_HM_Forces_Service__c') : null;
+            this.q17_no = !forces;
+            this.q17_yes = forces;
+            this.q17a = service == 'Army';
+            this.q17b = service == 'Navy';
+            this.q17c = service == 'RAF';
+            this.q17d = forces ? formatDate((Date) given.get('Claimant_HM_Forces_Enlisted__c')) : '';
+            this.q17e = forces ? formatDate((Date) given.get('Claimant_HM_Forces_Discharged__c')) : '';
+            this.q17f = forces ? textOf(given.get('Claimant_HM_Forces_Discharged_Where__c')) : '';
+            this.q17g = forces ? textOf(given.get('Claimant_HM_Forces_Regiment__c')) : '';
+            this.q17h = forces ? textOf(given.get('Claimant_HM_Forces_Service_No__c')) : '';
+            this.q17i = forces ? textOf(given.get('Claimant_HM_Forces_Rank__c')) : '';
 
             this.q18_no = app.Claimant_Ever_Worked_UK__c ? false : true;
             this.q18_yes = app.Claimant_Ever_Worked_UK__c ? true : false;
@@ -310,6 +494,10 @@ public with sharing class BP_BR1_Wrapper {
 
             if(app.Claimant_Companies__r != null && app.Claimant_Companies__r.size()>0) {
                 for(Claimant_Company__c itemwrap : app.Claimant_Companies__r) {
+                    // Single: the spouse's employers and UK addresses left on the record are not printed (Q50, Q15)
+                    if(itemwrap.Is_Partner__c && !withSpouse) {
+                        continue;
+                    }
                     if(itemwrap.Is_Partner__c && !itemwrap.Is_Addresses__c) {
                         ukCompaniesPartner.add(itemwrap);
                     } else if(itemwrap.Is_Addresses__c) {
@@ -319,6 +507,7 @@ public with sharing class BP_BR1_Wrapper {
                     }
                 }
             }
+            ukCompaniesClaim = longestFirst(ukCompaniesClaim);
             List<Claimant_Company__c> withoutAddressCompanies = new List<Claimant_Company__c>();
             if( ukHadAddress.size()>0) {
                 if(ukHadAddress[0] != null) {
@@ -595,12 +784,35 @@ public with sharing class BP_BR1_Wrapper {
             if(app.Claimant_marital_Status__c == 'Civil Partner') {
                 this.q20_married = true;
             }
+            // Remarried (call of 11/11/2026 17h13): Q20 asks for the CURRENT status, so married
+            Boolean remarried = app.Claimant_marital_Status__c == 'Remarried';
+            if (remarried) {
+                this.q20_married = true;
+            }
             this.q20_divorced = app.Claimant_marital_Status__c == 'Divorced'? true : false;
             this.q20_annulled = app.Claimant_marital_Status__c == 'Annulled'? true : false;
             this.q20_separated = app.Claimant_marital_Status__c == 'Separated'? true : false;
             this.q20_widowed = app.Claimant_marital_Status__c == 'Widowed'? true : false;
 
-            if(app.Claimant_marital_Status__c != 'Single') {
+            if (remarried) {
+                // BR1 Q20: "If married more than once give details of previous marriages in the section named 'Other
+                // information'". Q21-Q28 are the current husband / wife; the spouse of the form's section 3 (the former
+                // one, whose UK record we claim on) goes in Other information (previousMarriageBlock).
+                this.q21 = ((String) given1111b(app).get('Current_Spouse_Last_Name__c'));
+                this.q22 = ((String) given1111b(app).get('Current_Spouse_First_Name__c'));
+                this.q23 = '';
+                this.q24 = ((String) given1111b(app).get('Current_Spouse_Nino__c'));
+                this.q25_yes = false;
+                this.q25_no = false;
+                this.q27 = formatDate(((Date) given1111b(app).get('Current_Spouse_DOB__c')));
+                this.q28 = formatDate(((Date) given1111b(app).get('Date_Of_Remarriage__c')));
+                this.q29 = '';
+                this.q30 = '';
+                this.q31_no = false;
+                this.q31_yes = true;
+                this.q32_yes = ((String) given1111b(app).get('Previous_Marriage_Ended__c')) == 'Divorced';
+                this.q33_yes = ((String) given1111b(app).get('Previous_Marriage_Ended__c')) == 'Widowed';
+            } else if(app.Claimant_marital_Status__c != 'Single') {
                 this.q21 = app.Partner_Surname__c;
                 this.q22 = String.isNotBlank(app.Partner_First_Name__c) ? app.Partner_First_Name__c + ' ' + app.Partner_Other_Name__c : app.Partner_Other_Name__c;
                 if(String.isBlank(app.Partner_Other_Name__c)) {
@@ -609,7 +821,10 @@ public with sharing class BP_BR1_Wrapper {
                 if(String.isBlank(app.Partner_Other_Name__c) && String.isBlank(app.Partner_First_Name__c)) {
                     this.q22 = '';
                 }
-                
+                // The whole name typed in Middle Name(s) ("Desmond Victor Waters", C05502) printed "Desmond Desmond
+                // Victor Waters": Q22 is the other names in full, without the surname or the first name twice (12/11/2026)
+                this.q22 = otherNamesInFull(app.Partner_First_Name__c, app.Partner_Other_Name__c, app.Partner_Surname__c);
+
                 this.q23 = app.Partner_Maiden_Name__c;
                 this.q24 = app.Partner_Nino__c;
 
@@ -632,12 +847,23 @@ public with sharing class BP_BR1_Wrapper {
                         this.q26d = app.Partner_Postcode__c;
                     }
                 }
+                // Not known (11/11/2026 17h13): a blank Q26 reads as "same address as you"
+                if (given1111b(app).get('Partner_Address_Unknown__c') == true) {
+                    this.q26a = 'Not known';
+                    this.q26b = '';
+                    this.q26c = '';
+                    this.q26d = '';
+                }
                 
 
                 this.q27 = formatDate(app.Partner_DOB__c);
                 this.q28 = formatDate(app.Claimant_date_Of_Marriage__c);
                 this.q29 = formatDate(app.Claimant_date_Of_Divorce__c);
                 this.q30 = formatDate(app.Claimant_date_Of_Bereavement__c);
+                // Q30 is for widows: a divorced client's former spouse who died since goes in Other information
+                if (app.Claimant_marital_Status__c == 'Divorced') {
+                    this.q30 = '';
+                }
 
                 // No selector in source JSON
                 this.q31_no = app.Claimant_marital_Status__c == 'Single' ? true : false;
@@ -677,17 +903,17 @@ public with sharing class BP_BR1_Wrapper {
 
             List<BenefitWrapper> benefits = new List<BenefitWrapper>();
 
-            if(app.Claimant_State_Pension__c || app.Partner_State_Pension__c) {
-                benefits.add(new BenefitWrapper('State Pension', app.Claimant_State_Pension__c, app.Partner_State_Pension__c));
+            if(app.Claimant_State_Pension__c || (withSpouse && app.Partner_State_Pension__c)) {
+                benefits.add(new BenefitWrapper('State Pension', app.Claimant_State_Pension__c, (withSpouse && app.Partner_State_Pension__c)));
             }
-            if(app.Claimant_Graduated_Retirement_Benefit__c || app.Partner_Graduated_Retirement_Benefit__c) {
-                benefits.add(new BenefitWrapper('Graduated Retirement Benefit', app.Claimant_Graduated_Retirement_Benefit__c, app.Partner_Graduated_Retirement_Benefit__c));
+            if(app.Claimant_Graduated_Retirement_Benefit__c || (withSpouse && app.Partner_Graduated_Retirement_Benefit__c)) {
+                benefits.add(new BenefitWrapper('Graduated Retirement Benefit', app.Claimant_Graduated_Retirement_Benefit__c, (withSpouse && app.Partner_Graduated_Retirement_Benefit__c)));
             }
-            if(app.Claimant_Widows_Benefit__c || app.Partner_Widows_Benefit__c) {
-                benefits.add(new BenefitWrapper('Widows Benefit', app.Claimant_Widows_Benefit__c, app.Partner_Widows_Benefit__c));
+            if(app.Claimant_Widows_Benefit__c || (withSpouse && app.Partner_Widows_Benefit__c)) {
+                benefits.add(new BenefitWrapper('Widows Benefit', app.Claimant_Widows_Benefit__c, (withSpouse && app.Partner_Widows_Benefit__c)));
             }
-            if(app.Claimant_Bereavement_Benefit__c || app.Partner_Bereavement_Benefit__c) {
-                benefits.add(new BenefitWrapper('Bereavement Benefit', app.Claimant_Bereavement_Benefit__c, app.Partner_Bereavement_Benefit__c));
+            if(app.Claimant_Bereavement_Benefit__c || (withSpouse && app.Partner_Bereavement_Benefit__c)) {
+                benefits.add(new BenefitWrapper('Bereavement Benefit', app.Claimant_Bereavement_Benefit__c, (withSpouse && app.Partner_Bereavement_Benefit__c)));
             }
             if(benefits.size()>0) {
                 this.q51_yes = true;
@@ -782,89 +1008,84 @@ public with sharing class BP_BR1_Wrapper {
             this.q55b = true;
 
             contryLivedList = new List<Claimant_Country_lived__c>();
+            // Single (12/11/2026 audit): spouse rows left on the record are not the client's countries
+            List<Claimant_Country_lived__c> livedIn = new List<Claimant_Country_lived__c>();
+            if (app.ClaimantCountrieslived__r != null) {
+                for (Claimant_Country_lived__c livedRow : app.ClaimantCountrieslived__r) {
+                    if (withSpouse || livedRow.getPopulatedFieldsAsMap().get('Is_Partner__c') != true) livedIn.add(livedRow);
+                }
+            }
 
-            if(app.ClaimantCountrieslived__r != null && app.ClaimantCountrieslived__r.size()>0) { 
-                contryLivedList.addAll(app.ClaimantCountrieslived__r);
+            if(livedIn.size()>0) { 
+                contryLivedList.addAll(livedIn);
 
-                if(app.ClaimantCountrieslived__r[0] != null) {
-                    this.q55a = app.ClaimantCountrieslived__r[0].Is_Live_Here_Now__c ? true : false;
-                    this.q55b = app.ClaimantCountrieslived__r[0].Is_Live_Here_Now__c ? true : false;
+                if(livedIn[0] != null) {
+                    // Slide 202: every country prints Lived and Worked and Q58 Yes; "live here now" only sets CURRENT (04/11/2026)
+                    this.q55a = true;
+                    this.q55b = true;
 
-                    this.q56 = app.ClaimantCountrieslived__r[0].Name;
+                    this.q56 = livedIn[0].Name;
 
                     this.q57 = formatDate(
-                        app.ClaimantCountrieslived__r[0].From_date__c
+                        livedIn[0].From_date__c
                     );
 
                     this.q57a = formatDate(
-                        app.ClaimantCountrieslived__r[0].To_Date__c
+                        livedIn[0].To_Date__c
                     );
 
-                    if( app.ClaimantCountrieslived__r[0].Is_Live_Here_Now__c) {
+                    if( livedIn[0].Is_Live_Here_Now__c) {
                         this.q57a = 'CURRENT';
                     }
 
-                    this.q58_no =
-                        app.ClaimantCountrieslived__r[0].Is_Live_Here_Now__c
-                        ? false
-                        : true;
-
-                    this.q58_yes =
-                        app.ClaimantCountrieslived__r[0].Is_Live_Here_Now__c
-                        ? true
-                        : false;
+                    // "N/A" = worked there for a UK employer, NI paid in the UK: did not pay in that country (John, 11/11/2026)
+                    this.q58_no = !paidThere(livedIn[0].Social_Security_Number__c);
+                    this.q58_yes = !this.q58_no;
 
                     this.q58a =
-                        app.ClaimantCountrieslived__r[0].Social_Security_Number__c;
-                    if(app.ClaimantCountrieslived__r[0].Name == 'Australia') {
+                        livedIn[0].Social_Security_Number__c;
+                    if(livedIn[0].Name == 'Australia') {
                         this.q59 = 'Services Australia\n' + 'Seniors Services\n' + 'PO Box 7808\n' + 'Canberra BC ACT 2610\n' + 'Australia\n';
-                    } else if (app.ClaimantCountrieslived__r[0].Name == 'Ireland') {
+                    } else if (livedIn[0].Name == 'Ireland') {
                         this.q59 = 'Dept of Social Protection\n' + 'College Road\n' + 'Sligo, F91 T384\n' + 'Ireland\n';
                     }
                     
                 }
 
-                if(app.ClaimantCountrieslived__r.size()>1 && app.ClaimantCountrieslived__r[1] != null) {
-                    this.q59a = app.ClaimantCountrieslived__r[1].Is_Live_Here_Now__c ? true : false;
-                    this.q59b = app.ClaimantCountrieslived__r[1].Is_Live_Here_Now__c ? true : false;
+                if(livedIn.size()>1 && livedIn[1] != null) {
+                    this.q59a = true;
+                    this.q59b = true;
 
-                    this.q60 = app.ClaimantCountrieslived__r[1].Name;
+                    this.q60 = livedIn[1].Name;
 
                     this.q61a = formatDate(
-                        app.ClaimantCountrieslived__r[1].From_date__c
+                        livedIn[1].From_date__c
                     );
 
                     this.q61b = formatDate(
-                        app.ClaimantCountrieslived__r[1].To_Date__c
+                        livedIn[1].To_Date__c
                     );
-                    if( app.ClaimantCountrieslived__r[1].Is_Live_Here_Now__c) {
+                    if( livedIn[1].Is_Live_Here_Now__c) {
                         this.q61b = 'CURRENT';
                     }
 
-                    this.q62_no =
-                        app.ClaimantCountrieslived__r[1].Is_Live_Here_Now__c
-                        ? false
-                        : true;
-
-                    this.q62_yes =
-                        app.ClaimantCountrieslived__r[1].Is_Live_Here_Now__c
-                        ? true
-                        : false;
+                    this.q62_no = !paidThere(livedIn[1].Social_Security_Number__c);
+                    this.q62_yes = !this.q62_no;
 
                     this.q62a =
-                        app.ClaimantCountrieslived__r[1].Social_Security_Number__c;
-                     if(app.ClaimantCountrieslived__r[1].Name == 'Australia') {
+                        livedIn[1].Social_Security_Number__c;
+                     if(livedIn[1].Name == 'Australia') {
                         this.q63 = 'Services Australia\n' + 'Seniors Services\n' + 'PO Box 7808\n' + 'Canberra BC ACT 2610\n' + 'Australia\n';
-                    } else if (app.ClaimantCountrieslived__r[1].Name == 'Ireland') {
+                    } else if (livedIn[1].Name == 'Ireland') {
                         this.q63 = 'Dept of Social Protection\n' + 'College Road\n' + 'Sligo, F91 T384\n' + 'Ireland\n';
                     }
                 }
 
-                if(app.ClaimantCountrieslived__r.size()>2) {
+                if(livedIn.size()>2) {
                     Integer index = 0; 
                     notes = notes + '===================\n';  
                     notes = notes + 'Q55 - Additional Info: \n\n';      
-                    for(Claimant_Country_lived__c item : app.ClaimantCountrieslived__r) {
+                    for(Claimant_Country_lived__c item : livedIn) {
                         index ++;
                         if(index>2) { 
                             notes = notes + 'Country ' + index + ': ';                         
@@ -880,11 +1101,7 @@ public with sharing class BP_BR1_Wrapper {
                             if(item.Is_Live_Here_Now__c) {
                                 notes = notes + ' - CURRENT, ';
                             }
-                            if(item.Is_Live_Here_Now__c) {
-                                notes = notes + 'Did you pay into the social security system of that country? - Yes, ';
-                            } else {
-                                notes = notes + 'Did you pay into the social security system of that country? - No, ';
-                            }
+                            notes = notes + 'Lived and worked, Did you pay into the social security system of that country? - ' + (paidThere(item.Social_Security_Number__c) ? 'Yes' : 'No') + ', ';
                             if (String.isNotBlank(item.Social_Security_Number__c)) {
                                 notes = notes + item.Social_Security_Number__c + ', ';
                             }
@@ -897,6 +1114,7 @@ public with sharing class BP_BR1_Wrapper {
                 
             }
 
+            notes = notes + previousMarriageBlock(app);
             notes = String.isBlank(app.Notes__c) ? notes : notes +   'Notes: \n\n' + app.Notes__c;
 
             this.q64 = 'Please note:\n\n' +

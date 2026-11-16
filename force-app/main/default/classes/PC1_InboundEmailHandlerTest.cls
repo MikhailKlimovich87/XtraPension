@@ -108,6 +108,36 @@ private class PC1_InboundEmailHandlerTest {
         System.assertEquals(1, [SELECT COUNT() FROM PC1_Inbound_Email_DLQ__c]);
     }
 
+    // Audit 2026-11-11 PC-APEX-11: a long HTML reply failed the insert
+    // (STRING_TOO_LONG) and only reached a queue nobody was told about.
+    @IsTest static void long_html_reply_is_saved_on_the_record() {
+        PC1_Application__c a = makeApp('long@example.org');
+        Messaging.InboundEmail e = mail('long@example.org', 'Re: your letter', 'short text');
+        e.htmlBody = '<p>' + 'x'.repeat(140000) + '</p>';
+
+        System.assertEquals(true, run(e).success);
+
+        EmailMessage em = [SELECT RelatedToId, HtmlBody FROM EmailMessage WHERE FromAddress = 'long@example.org'];
+        System.assertEquals(a.Id, em.RelatedToId, 'the reply is on the application');
+        System.assert(em.HtmlBody.length() <= 131072, 'cut to what the field holds');
+        System.assert(em.HtmlBody.contains('message cut here'), 'and it says so');
+        System.assertEquals(0, [SELECT COUNT() FROM PC1_Inbound_Email_DLQ__c], 'not in the dead-letter queue');
+    }
+
+    @IsTest static void a_dead_letter_row_alerts_the_admin_at_most_once_an_hour() {
+        PC1_Config__c cfg = new PC1_Config__c(SetupOwnerId = UserInfo.getOrganizationId());
+        cfg.put('Admin_Alert_Email__c', 'ops@example.com');
+        insert cfg;
+
+        run(mail('a'.repeat(1100) + '@example.org', 'x', 'body'));
+        System.assertEquals(1, [SELECT COUNT() FROM PC1_Inbound_Email_DLQ__c]);
+        System.assertEquals(true, PC1_InboundEmailHandler.lastDlqAlerted, 'somebody is told about the lost reply');
+
+        run(mail('b'.repeat(1100) + '@example.org', 'y', 'body'));
+        System.assertEquals(2, [SELECT COUNT() FROM PC1_Inbound_Email_DLQ__c]);
+        System.assertEquals(false, PC1_InboundEmailHandler.lastDlqAlerted, 'a second failure in the hour does not send another email');
+    }
+
     @IsTest static void helpers() {
         System.assertEquals(null, PC1_InboundEmailHandler.stripHtml(null));
         System.assertEquals(null, PC1_InboundEmailHandler.serialiseHeaders(null));

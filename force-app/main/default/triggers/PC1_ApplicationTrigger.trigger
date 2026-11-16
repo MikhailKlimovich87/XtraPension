@@ -44,6 +44,9 @@ trigger PC1_ApplicationTrigger on PC1_Application__c (before insert, before upda
         PC1_StageTransitionHelper.handleTransitions(Trigger.new, Trigger.oldMap);
         // Bank digits edited on the record: reset trust + park the mandate.
         PC1_ApplicationFieldSync.onParentBankChange(Trigger.new, Trigger.oldMap);
+        // Award / plan / first date are frozen once the fee is being collected,
+        // whatever writes them (inline edit, data load, API).
+        PC1_GoCardlessController.enforceFeeFreeze(Trigger.new, Trigger.oldMap);
     }
     if (Trigger.isAfter && Trigger.isInsert) {
         PC1_DefaultAnswersHelper.seedDefaults(Trigger.new);

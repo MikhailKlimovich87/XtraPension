@@ -226,4 +226,66 @@ private class AA_StageTransitionHelperTest {
             AA_StageTransitionHelper.DIALABLE_STAGES,
             'keep in step with the scheduler tick filter in src/webhooks/scheduler.js');
     }
+
+    // ── DWP decision stages need the decision on record (audit 2026-11-11 AA-SFUI-4) ──
+
+    private static String stageOf(Id appId) {
+        return [SELECT Stage__c FROM AA_Application__c WHERE Id = :appId].Stage__c;
+    }
+
+    // A bare stage pick must not be able to send the once-only approval email.
+    @isTest static void awarded_without_the_award_on_record_is_refused() {
+        AA_Application__c a = makeApp('Awaiting DWP Decision');
+        String msg;
+        Test.startTest();
+        try {
+            update new AA_Application__c(Id = a.Id, Stage__c = 'Awarded');
+        } catch (DmlException e) {
+            msg = e.getDmlMessage(0);
+        }
+        Test.stopTest();
+
+        System.assert(msg != null && msg.contains('Award card'), 'refused with the reason: ' + msg);
+        System.assertEquals('Awaiting DWP Decision', stageOf(a.Id));
+        System.assertEquals(0, [SELECT COUNT() FROM AA_Stage_Log__c WHERE Application__c = :a.Id], 'a refused move logs nothing');
+    }
+
+    // The Award card writes the amount and the stage in one save.
+    @isTest static void awarded_with_the_award_in_the_same_save_goes_through() {
+        AA_Application__c a = makeApp('Awaiting DWP Decision');
+        update new AA_Application__c(Id = a.Id, Award_Amount__c = 3988.40, Stage__c = 'Awarded');
+        System.assertEquals('Awarded', stageOf(a.Id));
+        System.assertEquals(null, AA_StageTransitionHelper.decisionGuard(
+            new AA_Application__c(Stage__c = 'Fee Charged'), null), 'other stages are not guarded');
+    }
+
+    @isTest static void closedRefused_needs_the_refusal_written_down() {
+        AA_Application__c a = makeApp('Awaiting DWP Decision');
+        String bareMsg;
+        try {
+            update new AA_Application__c(Id = a.Id, Stage__c = 'Closed - Refused');   // Path / Details tab: no note
+        } catch (DmlException e) {
+            bareMsg = e.getDmlMessage(0);
+        }
+        System.assert(bareMsg != null && bareMsg.contains('write the DWP refusal in the note'),
+            'a bare pick of Closed - Refused is refused with the reason: ' + bareMsg);
+
+        Boolean genericRefused = false;
+        try {
+            AA_RecordPageService.changeStage(a.Id, 'Closed - Refused', 'Changed via Stage card');   // not a refusal
+        } catch (AuraHandledException e) {
+            genericRefused = e.getMessage().contains('write the DWP refusal in the note');
+        }
+        System.assert(genericRefused, 'the generic note is not a refusal, and the Stage card gets the reason as its message');
+        System.assertEquals('Awaiting DWP Decision', stageOf(a.Id));
+
+        Test.startTest();
+        AA_RecordPageService.changeStage(a.Id, 'Closed - Refused', 'DWP letter of 3 Nov 2026: care needs not met');
+        Test.stopTest();
+
+        System.assertEquals('Closed - Refused', stageOf(a.Id));
+        AA_Stage_Log__c log = [SELECT Note__c FROM AA_Stage_Log__c
+                                WHERE Application__c = :a.Id AND To_Stage__c = 'Closed - Refused'];
+        System.assertEquals('DWP letter of 3 Nov 2026: care needs not met', log.Note__c, 'the refusal is kept on the stage log');
+    }
 }

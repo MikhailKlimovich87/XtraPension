@@ -3,25 +3,30 @@
  * 25% → 20% on 2026-08-18 (Fernando).
  *
  * The card is intentionally read-only until every gate is green:
- *   1. Mandate active            — DD_Mandate_Status__c = 'active'
+ *   1. Mandate active            — DD_Mandate_Status__c = 'active' and a
+ *                                  DD_Mandate_Id__c on the record
  *   2. Award amount recorded     — Award_Amount__c not null
- *   3. Not already charged       — Fee_Payment_Id__c is empty (installment #1
- *                                  id lives here for backward compat with the
- *                                  pre-plan single-charge flow)
+ *   3. Not already scheduled     — no plan registered yet
+ *                                  (Fee_Plan_Next_Charge_Date__c empty) and
+ *                                  Fee_Payment_Id__c empty (installment #1 id
+ *                                  lives there once it is at GoCardless)
  *
- * When all three are green, the "Charge Fee £X" button opens a
- * lightning-modal (pc1FeeChargeConfirmModal). The modal returns 'confirm'
- * only when both checkboxes are ticked, then this component calls
+ * When all three are green, the "Schedule…" button opens a lightning-modal
+ * (pc1FeeChargeConfirmModal). The modal returns 'confirm' only when both
+ * checkboxes are ticked, then this component calls
  * PC1_GoCardlessController.chargeFee(recordId).
  *
- * Payment plan (2026-08-18): if Fee_Plan_Installments__c > 1, the CTA is
- * relabelled "Charge installment 1 of N" and the amount displayed is the
- * PER-INSTALLMENT amount, not the total. The remaining installments are
- * fired automatically by PC1_FeeInstallmentScheduler (daily 08:00 UTC).
+ * Since the 2026-11-11 audit (PC-APEX-4 / PC-SFUI-4, port of the AA card)
+ * the button never collects on the spot: chargeFee registers the plan with
+ * installment 1 on the recorded first-charge date, never sooner than
+ * today + FIRST_CHARGE_MIN_DAYS, emails the Bacs advance notice, and
+ * PC1_FeeInstallmentScheduler (daily) creates each payment at GoCardless for
+ * the date its notice gave. If Fee_Plan_Installments__c > 1 the amount shown
+ * is the PER-INSTALLMENT amount, not the total.
  *
- * If the fee has already been charged (Fee_Payment_Id__c populated), the
- * card renders the total fee, plan summary, next-charge date, and
- * installment #1 payment id + status + charge date instead of the CTA.
+ * Once a plan exists the card renders the total fee, plan summary, next
+ * charge date and (when there is one) installment #1's payment id instead of
+ * the CTA; pc1FeeInstallments below lists every installment.
  */
 import { LightningElement, api, wire } from 'lwc';
 import { getRecord } from 'lightning/uiRecordApi';
@@ -32,6 +37,7 @@ import Pc1FeeChargeConfirmModal from 'c/pc1FeeChargeConfirmModal';
 
 const FIELDS = [
     'PC1_Application__c.DD_Mandate_Status__c',
+    'PC1_Application__c.DD_Mandate_Id__c',
     'PC1_Application__c.Award_Amount__c',
     'PC1_Application__c.Fee_Amount__c',
     'PC1_Application__c.Fee_Plan_Installments__c',
@@ -59,16 +65,24 @@ function addMonthsSafe(baseDate, n) {
     d.setDate(Math.min(day, lastDayOfNewMonth));
     return d;
 }
-function todayYmd() {
+function ymdPlusDays(days) {
     const d = new Date();
+    d.setDate(d.getDate() + days);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+
+// Mirror PC1_FeeInstallmentScheduler.NOTICE_DAYS (5 calendar days of advance
+// notice) and PC1_GoCardlessController.FIRST_CHARGE_MIN_DAYS (notice + 1 day:
+// the payment is created by the next morning's sweep).
+const NOTICE_DAYS = 5;
+const FIRST_CHARGE_MIN_DAYS = NOTICE_DAYS + 1;
 
 export default class Pc1FeeChargeCard extends LightningElement {
     @api recordId;
 
     wiredRecord;
     mandateStatus    = '';
+    mandateId        = '';
     awardAmount      = null;
     feeAmount        = null;
     installments     = 1;
@@ -88,6 +102,7 @@ export default class Pc1FeeChargeCard extends LightningElement {
         if (res.data) {
             const f = res.data.fields;
             this.mandateStatus     = f.DD_Mandate_Status__c?.value || '';
+            this.mandateId         = f.DD_Mandate_Id__c?.value || '';
             this.awardAmount       = f.Award_Amount__c?.value ?? null;
             this.feeAmount         = f.Fee_Amount__c?.value ?? null;
             this.installments      = f.Fee_Plan_Installments__c?.value ?? 1;
@@ -102,11 +117,18 @@ export default class Pc1FeeChargeCard extends LightningElement {
     }
 
     // ── gates ────────────────────────────────────────────────────────
-    get mandateActive() { return this.mandateStatus === 'active'; }
+    // Status alone is not enough: the webhook can set 'active' while the
+    // mandate id is still blank (mandate document pending), and chargeFee
+    // refuses to schedule for such a record.
+    get mandateActive() { return this.mandateStatus === 'active' && !!this.mandateId; }
     get awardRecorded() { return this.awardAmount !== null && this.awardAmount !== undefined && this.awardAmount !== ''; }
-    get notCharged()    { return !this.feePaymentId; }
+    // chargeFee stamps Fee_Plan_Next_Charge_Date__c when it registers the plan;
+    // Fee_Payment_Id__c only arrives when the sweep creates installment 1.
+    get hasPlan()       { return !!this.nextChargeDate; }
+    get notCharged()    { return !this.feePaymentId && !this.hasPlan; }
 
-    get alreadyCharged() { return !!this.feePaymentId; }
+    get alreadyCharged() { return !this.notCharged; }
+    get bannerLabel()    { return this.feePaymentId ? 'Collection started' : 'Collection scheduled'; }
 
     get allGatesGreen() {
         return this.mandateActive && this.awardRecorded && this.notCharged;
@@ -128,9 +150,12 @@ export default class Pc1FeeChargeCard extends LightningElement {
     get chargeDisabled() { return !this.allGatesGreen || this.charging; }
 
     get chargeTooltip() {
+        if (this.mandateStatus === 'active' && !this.mandateId) {
+            return 'The Direct Debit document has not arrived yet, so no fee can be scheduled. Try again in a few minutes.';
+        }
         if (!this.mandateActive) return 'DD mandate is not active yet — cannot charge.';
         if (!this.awardRecorded) return 'Award amount not recorded yet.';
-        if (!this.notCharged)    return 'Fee has already been charged for this application.';
+        if (!this.notCharged)    return 'The fee is already scheduled for this application.';
         return '';
     }
 
@@ -144,33 +169,28 @@ export default class Pc1FeeChargeCard extends LightningElement {
             ? this.installmentAmount
             : this.feeAmount;
     }
-    // ── deferred-charge helpers ────────────────────────────────────
+    // ── scheduling helpers ─────────────────────────────────────────
     /**
-     * `true` when the agent chose a first-charge date that hasn't arrived
-     * yet. The CTA relabels and the modal copy calls out the deferral —
-     * important because the button no longer fires today, it just registers
-     * the schedule with the daily sweeper.
+     * The date the server will actually use for installment #1: the recorded
+     * first-charge date, but never sooner than today + FIRST_CHARGE_MIN_DAYS
+     * (chargeFee moves a closer, past or missing date forward and writes it
+     * back). The modal and the dates below are all counted from this one.
      */
-    get isDeferred() {
-        if (!this.firstChargeDate) return false;
-        return this.firstChargeDate > todayYmd();
+    get effectiveFirstChargeDate() {
+        const earliest = ymdPlusDays(FIRST_CHARGE_MIN_DAYS);
+        return (this.firstChargeDate && this.firstChargeDate >= earliest) ? this.firstChargeDate : earliest;
     }
     get firstChargeDateDisplay() {
-        if (!this.firstChargeDate) return '';
+        const ymd = this.effectiveFirstChargeDate;
         try {
-            const [y, m, d] = this.firstChargeDate.split('-').map(Number);
+            const [y, m, d] = ymd.split('-').map(Number);
             return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-        } catch (_) { return this.firstChargeDate; }
+        } catch (_) { return ymd; }
     }
     get ctaLabel() {
-        if (this.isDeferred) {
-            return this.multiInstallment
-                ? `Schedule 6-part fee (starts ${this.firstChargeDateDisplay})`.replace('6-part', `${this.installmentsCount}-part`)
-                : `Schedule fee for ${this.firstChargeDateDisplay}`;
-        }
         return this.multiInstallment
-            ? `Charge installment 1 of ${this.installmentsCount}`
-            : 'Charge Fee';
+            ? `Schedule ${this.installmentsCount} monthly payments (first on ${this.firstChargeDateDisplay})`
+            : `Schedule fee collection for ${this.firstChargeDateDisplay}`;
     }
     get planSummary() {
         const n = this.installmentsCount;
@@ -183,13 +203,14 @@ export default class Pc1FeeChargeCard extends LightningElement {
         // Human-readable list of scheduled charge dates for installments 2..N,
         // anchored to the agent-chosen first-charge date (Fee_First_Charge_Date__c)
         // so the val team sees the actual schedule the server will register.
-        // Falls back to today when the field isn't populated yet (pre-Record
-        // preview). Uses addMonthsSafe to match the SF Apex Date.addMonths
+        // Falls back to the earliest date the server accepts when the field
+        // isn't populated yet or is sooner than that. Uses addMonthsSafe to
+        // match the SF Apex Date.addMonths
         // month-end snap semantics — otherwise Jan 31 renders as Mar 3 here
         // but the server schedules Feb 28 and the preview lies.
         const n = this.installmentsCount;
         if (n <= 1) return '';
-        const anchorYmd = this.firstChargeDate || todayYmd();
+        const anchorYmd = this.effectiveFirstChargeDate;
         const [ay, am, ad] = anchorYmd.split('-').map(Number);
         const base = new Date(ay, am - 1, ad);
         const labels = [];
@@ -225,6 +246,10 @@ export default class Pc1FeeChargeCard extends LightningElement {
             awardAmount:   this.awardAmount,
             clientName:    this.clientName,
             installments:  this.installmentsCount,
+            // Without this the modal counted the remaining dates from today
+            // with no month-end clamp, whatever first date was recorded
+            // (audit 2026-11-11 PC-SFUI-4).
+            firstChargeDate: this.effectiveFirstChargeDate,
         });
         if (result !== 'confirm') return;
         await this.doCharge();
@@ -235,26 +260,18 @@ export default class Pc1FeeChargeCard extends LightningElement {
         try {
             const r = await chargeFee({ recordId: this.recordId });
             if (r && r.ok) {
-                if (r.deferred) {
-                    const firstCharge = r.first_charge_date ? this.fmtDate(r.first_charge_date) : 'TBD';
-                    const planTail = (r.installments && r.installments > 1)
-                        ? ` — schedule of ${r.installments} monthly, first on ${firstCharge}`
-                        : ` — scheduled for ${firstCharge}`;
-                    this.toast(
-                        'Fee charge scheduled',
-                        'success',
-                        `Client mandate on record. Daily sweeper will attempt DD on the scheduled date${planTail}. Client gets a 5-day-advance email before each charge.`
-                    );
+                if (r.existed && r.payment_id) {
+                    // Installment 1 was already at GoCardless: nothing new was scheduled.
+                    this.toast('Fee already scheduled', 'success', `Payment ${r.payment_id} is already with GoCardless.`);
                 } else {
-                    const chargeDate = r.charge_date ? ` (settles ${r.charge_date})` : '';
-                    const planTail = (r.installments && r.installments > 1)
-                        ? ` — installment 1 of ${r.installments}, next on ${this.fmtDate(r.next_charge_date) || 'TBD'}`
-                        : '';
-                    this.toast(
-                        'Fee charge submitted',
-                        'success',
-                        `Payment ${r.payment_id || ''}${chargeDate}${planTail}`
-                    );
+                    const firstCharge = r.first_charge_date ? this.fmtDate(r.first_charge_date) : 'TBD';
+                    const plan = (r.installments && r.installments > 1)
+                        ? `${r.installments} monthly payments, the first on ${firstCharge}.`
+                        : `One payment on ${firstCharge}.`;
+                    const notice = r.notice_sent
+                        ? ' The advance notice for the first payment has been emailed to the client.'
+                        : ` The client is emailed an advance notice at least ${NOTICE_DAYS} days before each payment.`;
+                    this.toast(r.existed ? 'Fee already scheduled' : 'Fee collection scheduled', 'success', plan + notice);
                 }
                 await refreshApex(this.wiredRecord);
                 const list = this.template.querySelector('c-pc1-fee-installments');

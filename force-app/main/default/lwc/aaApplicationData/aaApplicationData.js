@@ -7,7 +7,9 @@ import LightningConfirm from 'lightning/confirm';
 import {
     buildLoopIndex, collectLoopEntries, checkTextValue, checkDateParts,
     choiceOptions, choiceState, checkboxState, sourceBadge, postcodeRowState, MAX_LOOP_ENTRIES,
-    declarationVoided, DECLARATION_VOID_NOTICE
+    declarationVoided, DECLARATION_VOID_NOTICE,
+    CONDITION_LIST_FIELD, CONDITION_MANUAL_FIELD, CONDITION_HINT,
+    isConditionListField, checkConditionName, conditionRowWarning
 } from './aaDataRules';
 
 const CDC_APP_CHANNEL    = '/data/AA_Application__ChangeEvent';
@@ -128,6 +130,9 @@ const datePartId = (id, part) => (id === 'decldate' ? `${id}_${part}` : `${id}-$
  *     and keep a saved tick that is not an option ticked (aaDataRules).
  *   • Select editors keep a saved choice that is not an option selected
  *     (aaDataRules).
+ *   • The health-conditions editor saves a name from DWP's list or nothing;
+ *     a name that is not on the list gets the closest entries to choose
+ *     from, or goes to health-conditions-manual (aaDataRules).
  */
 export default class AaApplicationData extends LightningElement {
     @api recordId;
@@ -143,6 +148,7 @@ export default class AaApplicationData extends LightningElement {
     extraEntries = {}; // loop group -> entry number opened via "Add another entry", not saved yet
     recordPostcode = '';
     declVoided = false; // signed declaration later cleared: client must re-sign (aaDataRules declarationVoided)
+    conditionHelp = null; // { editKey, typed, choices, picked }: a health-conditions Save refused, name not on DWP's list
     liveOff = false;  // CDC unavailable: polling instead (shown as a hint)
     _pollTimer = null;
 
@@ -351,6 +357,16 @@ export default class AaApplicationData extends LightningElement {
         return (this.pathData && this.pathData.blockedReasonById) || {};
     }
 
+    /** DWP's list of health conditions: the top-level CONDITIONS array of
+     *  aaFlowConfig (scripts/gen-aa-flow-config.cjs copies it from
+     *  config/aa-flow.json, the list the fill and the Heroku save paths
+     *  check against). Empty when the resource carries none: the editor then
+     *  refuses every name rather than save one it cannot check. */
+    get conditions() {
+        const list = this.flow && this.flow.CONDITIONS;
+        return Array.isArray(list) ? list : [];
+    }
+
     // ── section computation ──────────────────────────────────────────────
     recompute() {
         if (!this.flowLoaded || !this.flow) { this.allSections = []; this.pathSections = []; return; }
@@ -527,6 +543,8 @@ export default class AaApplicationData extends LightningElement {
         let src = null;
         let editorSpec = { kind: 'text', value: '', options: [] };
         let hint = field.hint || '';
+        let conditionWarning = '';
+        let conditionHelp = null;
 
         if (field.type === 'date') {
             let d = val(datePartId(field.id, 'day'))?.Value__c;
@@ -585,6 +603,22 @@ export default class AaApplicationData extends LightningElement {
                     valueHtml = raw || null;
                 }
                 editorSpec = { kind: 'text', value: raw || '' };
+                // audit 2026-11-11 AA-ENGINE-1: a condition is saved in DWP's
+                // wording or not at all. A stored name that is not a list
+                // entry (Mary, the client form, an older save) is flagged on
+                // the row. After a refused Save the editor keeps what was
+                // typed (a re-render would put the stored value back) and
+                // lists the closest entries.
+                if (field.id === CONDITION_LIST_FIELD) {
+                    hint = hint ? `${hint} ${CONDITION_HINT}` : CONDITION_HINT;
+                    conditionWarning = conditionRowWarning(raw, this.conditions);
+                    const help = this.conditionHelp;
+                    if (isEditing && help && help.editKey === editKey) {
+                        editorSpec = { kind: 'text', value: help.typed };
+                        // A chosen entry sits in the box waiting for Save.
+                        if (!help.picked) conditionHelp = help;
+                    }
+                }
             }
         }
 
@@ -606,6 +640,7 @@ export default class AaApplicationData extends LightningElement {
         // The re-sign notice sits on the decl row (the first declaration row,
         // in both tabs), so the operator sees it next to what must be signed.
         if (field.id === 'decl' && !suffix && this.declVoided) warning = DECLARATION_VOID_NOTICE;
+        if (conditionWarning && !isBlocked) warning = conditionWarning;
         // Also shown under the editor, where the display-mode warning is hidden.
         if (warning) hint = hint ? `${hint} ${warning}` : warning;
         const isLocked = isBlocked || !!readOnlyReason;
@@ -661,7 +696,20 @@ export default class AaApplicationData extends LightningElement {
             isDeclName: field.id === 'declname',
             isDeclDate: field.id === 'decldate',
             suggestedName: field.id === 'declname' ? (this.suggestedName || '') : '',
-            hasSuggestedName: field.id === 'declname' && !!this.suggestedName
+            hasSuggestedName: field.id === 'declname' && !!this.suggestedName,
+            // health-conditions only, after a Save refused for a name that is
+            // not on DWP's list: the closest entries, and the way out for a
+            // condition DWP does not list.
+            hasConditionHelp: !!conditionHelp,
+            conditionChoices: conditionHelp ? conditionHelp.choices : [],
+            conditionHelpText: conditionHelp
+                ? (conditionHelp.choices.length
+                    ? `"${conditionHelp.typed}" is not on DWP's list. Closest entries (choose one, then Save):`
+                    : `"${conditionHelp.typed}" is not on DWP's list and no entry is close to it. Type the condition in DWP's wording.`)
+                : '',
+            conditionManualLabel: conditionHelp
+                ? `DWP does not list it: save "${conditionHelp.typed}" as a condition typed by hand`
+                : ''
         };
     }
 
@@ -690,12 +738,14 @@ export default class AaApplicationData extends LightningElement {
             return;
         }
         this.editingKey = key;
+        this.conditionHelp = null;
         this.recompute();
     }
 
     cancelEditor() {
         this.editingKey = null;
         this.extraEntries = {};
+        this.conditionHelp = null;
         this.recompute();
     }
 
@@ -707,6 +757,7 @@ export default class AaApplicationData extends LightningElement {
         if (!group || !n || n > MAX_LOOP_ENTRIES) return;
         this.extraEntries = { [group]: n };
         this.editingKey = `${part}::${group}__${n}`;
+        this.conditionHelp = null;
         this.recompute();
     }
 
@@ -742,7 +793,21 @@ export default class AaApplicationData extends LightningElement {
         } else {
             const el = wrap.querySelector('[data-input]');
             const raw = el ? el.value : '';
-            if (kind === 'text' || kind === 'textarea') {
+            if (kind === 'text' && isConditionListField(fieldId)) {
+                // audit 2026-11-11 AA-ENGINE-1: only a name from DWP's list,
+                // saved in the list's spelling. Anything else is refused and
+                // the closest entries are offered (see buildRow).
+                const cond = checkConditionName(raw, this.conditions);
+                if (!cond.ok) {
+                    // No list loaded: nothing to offer, and no "typed by
+                    // hand" way out for a name that could not be checked.
+                    if (cond.noList) return this.toast(cond.error, 'error');
+                    this.conditionHelp = { editKey: this.editingKey, typed: String(raw == null ? '' : raw).trim(), choices: cond.nearest };
+                    this.recompute();
+                    return this.toast(cond.error, 'error');
+                }
+                saves.push([key, cond.value]);
+            } else if (kind === 'text' || kind === 'textarea') {
                 // Same NI / phone / postcode / email rules the Heroku save
                 // paths apply (mary-validator FORMAT_RULES); the SF form used
                 // to store anything verbatim (F40/F58/F171).
@@ -760,6 +825,7 @@ export default class AaApplicationData extends LightningElement {
             }
             this.toast('Saved', 'success');
             this.editingKey = null;
+            this.conditionHelp = null;
             // Refresh BOTH wires so blocked / required lists reflect the newly-
             // answered gate immediately (unlocking downstream fields).
             await Promise.all([
@@ -786,6 +852,47 @@ export default class AaApplicationData extends LightningElement {
 
     handleEditorKey(evt) {
         if (evt.key === 'Escape') this.cancelEditor();
+    }
+
+    // ── health conditions: DWP's list only (AA-ENGINE-1) ─────────────────
+    /** One of the closest list entries was clicked: it goes into the box, in
+     *  DWP's spelling. Nothing is written until Save. */
+    handleConditionChoice(evt) {
+        const name = evt.currentTarget.dataset.name;
+        if (!name || !this.conditionHelp) return;
+        this.conditionHelp = { ...this.conditionHelp, typed: name, choices: [], picked: true };
+        this.recompute();
+    }
+
+    /** The condition is not one DWP lists: save what was typed as this
+     *  entry's health-conditions-manual answer (DWP's own "I cannot find my
+     *  health condition" field) and empty the entry's list answer, since an
+     *  entry carries one or the other. Never saved into health-conditions. */
+    async handleConditionManual(evt) {
+        const wrap = evt.currentTarget.closest('.editor');
+        const help = this.conditionHelp;
+        if (!wrap || !help || !help.typed || help.picked || !this.recordId) return;
+        const suffix = wrap.dataset.suffix || '';
+        const listId = CONDITION_LIST_FIELD + suffix;
+        try {
+            await saveField({ applicationId: this.recordId, fieldId: CONDITION_MANUAL_FIELD + suffix, value: help.typed, source: 'human' });
+            const stored = this.answerMap[listId];
+            if (stored && stored.Value__c != null && stored.Value__c !== '') {
+                await saveField({ applicationId: this.recordId, fieldId: listId, value: '', source: 'human' });
+            }
+            this.toast('Saved as a condition typed by hand', 'success');
+            this.editingKey = null;
+            this.conditionHelp = null;
+            await Promise.all([
+                refreshApex(this.wiredAnswers),
+                refreshApex(this.wiredPath)
+            ]);
+            this.extraEntries = {};
+            this.recompute();
+            this.notifyParentChanged();
+        } catch (e) {
+            this.toast(e?.body?.message || e.message || 'Save failed', 'error');
+        }
     }
 
     // ── Declaration quick-fill helpers ───────────────────────────────────

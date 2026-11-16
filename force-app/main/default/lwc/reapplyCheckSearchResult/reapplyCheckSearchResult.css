@@ -1,0 +1,17 @@
+p {
+    font-weight: bold;
+    font-size: 0.7;
+}
+
+.main-block {
+    border: 1px solid black;
+    border-radius: 5px;
+}
+
+span {
+    font-weight: normal !important;
+}
+.history-row {
+    font-size: 0.75rem;
+    margin: 0.25rem 0.5rem;
+}

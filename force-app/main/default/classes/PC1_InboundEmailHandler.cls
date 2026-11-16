@@ -39,6 +39,8 @@ global class PC1_InboundEmailHandler implements Messaging.InboundEmailHandler {
             } catch (Exception dlqErr) {
                 System.debug(LoggingLevel.ERROR, 'PC1_InboundEmailHandler: DLQ insert failed: ' + dlqErr.getMessage());
             }
+            // Nobody was told about a new DLQ row (audit 2026-11-11 PC-APEX-11).
+            alertDlq(email, e);
             System.debug(LoggingLevel.ERROR, 'PC1_InboundEmailHandler failure: ' + e.getMessage() + '\n' + e.getStackTraceString());
             result.success = true;
             result.message = 'Handled with warnings: ' + e.getMessage();
@@ -155,8 +157,13 @@ global class PC1_InboundEmailHandler implements Messaging.InboundEmailHandler {
         em.FromName = email.fromName;
         em.ToAddress = joinList(email.toAddresses);
         em.CcAddress = joinList(email.ccAddresses);
-        em.HtmlBody = String.isNotBlank(email.htmlBody) ? email.htmlBody : null;
-        em.TextBody = String.isNotBlank(email.plainTextBody) ? email.plainTextBody : null;
+        // Audit 2026-11-11 PC-APEX-11: a reply longer than the field (long
+        // threads, inline images, most webmail replies that quote a formatted
+        // message) failed the insert with STRING_TOO_LONG, so it went to the
+        // DLQ as plain text with its attachments dropped and never showed on
+        // the application. Cut the body to the field size instead.
+        em.HtmlBody = String.isNotBlank(email.htmlBody) ? clip(email.htmlBody, MAX_BODY_CHARS) : null;
+        em.TextBody = String.isNotBlank(email.plainTextBody) ? clip(email.plainTextBody, MAX_BODY_CHARS) : null;
         em.MessageDate = Datetime.now();
         em.MessageIdentifier = truncateTo(extractHeader(email, 'Message-Id'), 255);
         em.ThreadIdentifier = truncateTo(extractHeader(email, 'Thread-Index'), 255);
@@ -311,6 +318,56 @@ global class PC1_InboundEmailHandler implements Messaging.InboundEmailHandler {
     private static String truncateTo(String s, Integer max) {
         if (String.isBlank(s)) return null;
         return s.length() > max ? s.substring(0, max) : s;
+    }
+
+    /** EmailMessage.HtmlBody / TextBody hold 131,072 characters; a margin is
+     *  left for the note that says the body was cut. */
+    @TestVisible private static final Integer MAX_BODY_CHARS = 131000;
+    private static final String CLIPPED_NOTE = ' [message cut here: longer than Salesforce can store; the full text is in the clients@ mailbox]';
+
+    private static String clip(String s, Integer max) {
+        if (s == null || s.length() <= max) return s;
+        return s.substring(0, max - CLIPPED_NOTE.length()) + CLIPPED_NOTE;
+    }
+
+    /** True when the last failure tried to email the admin (tests). */
+    @TestVisible private static Boolean lastDlqAlerted = false;
+
+    /**
+     * One email to the admin address when a reply could not be saved. At most
+     * one an hour: a second failure inside the hour is on the DLQ list the
+     * first email points to.
+     */
+    private static void alertDlq(Messaging.InboundEmail email, Exception cause) {
+        lastDlqAlerted = false;
+        try {
+            Datetime hourAgo = Datetime.now().addHours(-1);
+            if ([SELECT COUNT() FROM PC1_Inbound_Email_DLQ__c WHERE CreatedDate >= :hourAgo] > 1) return;
+            String to = null;
+            PC1_Config__c cfg = PC1_Config__c.getOrgDefaults();
+            if (cfg != null) {
+                Object v = cfg.get('Admin_Alert_Email__c');
+                if (v != null && String.isNotBlank(String.valueOf(v))) to = String.valueOf(v).trim();
+            }
+            if (String.isBlank(to)) return;
+            Messaging.SingleEmailMessage msg = new Messaging.SingleEmailMessage();
+            msg.setToAddresses(new List<String>{ to });
+            msg.setSubject('A client reply could not be saved in Salesforce (inbound email queue)');
+            msg.setPlainTextBody(
+                'An email forwarded from the clients@ mailbox could not be saved on its application, so it is NOT on the record. '
+                + 'It was kept in the PC Inbound Email DLQ list (plain text only, attachments dropped).\n\n'
+                + 'From: ' + (email == null || email.fromAddress == null ? '(unknown)' : email.fromAddress) + '\n'
+                + 'Subject: ' + (email == null || email.subject == null ? '(none)' : email.subject.left(200)) + '\n'
+                + 'Error: ' + (cause == null ? '' : cause.getMessage().left(500)) + '\n\n'
+                + 'Open the original in the clients@ mailbox and add it to the application by hand, then tick Resolved on the DLQ row. '
+                + 'Further failures within the hour do not send another email: check the list.'
+            );
+            msg.setSaveAsActivity(false);
+            lastDlqAlerted = true;
+            Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{ msg }, false);
+        } catch (Exception alertErr) {
+            System.debug(LoggingLevel.ERROR, 'PC1_InboundEmailHandler: DLQ alert failed: ' + alertErr.getMessage());
+        }
     }
     private static String joinList(List<String> lst) {
         if (lst == null || lst.isEmpty()) return null;

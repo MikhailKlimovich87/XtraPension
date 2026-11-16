@@ -1,0 +1,41 @@
+/* Last Contact on the Application and the Claim. Same look as the Call History card. */
+
+.xp-lc {
+  position: relative;
+  min-height: 2.5rem;
+}
+.xp-lc__loading {
+  position: relative;
+  height: 2.5rem;
+}
+.xp-lc__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.xp-lc__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 1rem;
+  padding: 0 1rem;
+  margin: 0;
+}
+.xp-lc__cell {
+  min-width: 0;
+}
+.xp-lc__label {
+  font-size: 0.75rem;
+  color: var(--slds-g-color-neutral-base-30, #5c5c5c);
+}
+.xp-lc__value {
+  margin: 0.125rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--slds-g-color-neutral-base-10, #181818);
+  overflow-wrap: anywhere;
+}
+.xp-lc__hint {
+  padding: 0.5rem 1rem 0;
+  font-size: 0.75rem;
+  color: var(--slds-g-color-neutral-base-30, #5c5c5c);
+}

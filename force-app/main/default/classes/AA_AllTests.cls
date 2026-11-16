@@ -137,14 +137,11 @@ private class AA_AllTests {
     // on Heroku (src/webhooks/mary.js#rescheduleCall) which creates a
     // AA_Call_Schedule__c row instead of writing Next_Call_At__c directly.
 
-    @isTest static void flagForHuman_createsHandoff() {
-        AA_Application__c a = makeApp();
-        reqWith('{"application_id":"' + a.Id + '","escalation_type":"confused","reason":"can\'t hear"}');
-        AA_FlagForHuman.doPost();
-        System.assertEquals(1, [SELECT COUNT() FROM AA_Handoff__c WHERE Application__c=:a.Id]);
-        AA_Application__c after = [SELECT Stage__c FROM AA_Application__c WHERE Id=:a.Id];
-        System.assertEquals('Needs Human', after.Stage__c);
-    }
+    // flagForHuman_createsHandoff: removed 2026-11-11 with AA_FlagForHuman
+    // (audit AA-APEX-8), the last Apex REST mock of a Mary tool. Nothing called
+    // it (Mary's flag_for_human is /webhooks/mary/flag-for-human on Heroku) and
+    // it still forced 'Needs Human' from any stage. AA_RestUtil and its test
+    // went with it: it had no other caller.
 
     // ----------------------------- Val Agent auto-assignment
     //
@@ -276,11 +273,16 @@ private class AA_AllTests {
         insert new AA_Fill_Run__c(Application__c = a.Id, Status__c = 'failed', Error_Code__c = 'missing_answer');
         insert new AA_Fill_Run__c(Application__c = a.Id, Status__c = 'failed', Error_Code__c = 'lost_race');
         insert new AA_Message_Send_Log__c(Application__c = a.Id, Status__c = 'Skipped-Do-Not-Contact');
+        // audit 2026-11-11: the values added with that fix wave (AA-APEX-12,
+        // AA-ENGINE-1, AA-PLATFORM-4).
+        insert new AA_Message_Send_Log__c(Application__c = a.Id, Status__c = 'Skipped-Stage-Gate');
+        insert new AA_Service_Health__c(Service__c = 'Org Storage', Status__c = 'ok');
+        insert new AA_Fill_Run__c(Application__c = a.Id, Status__c = 'failed', Error_Code__c = 'condition_not_on_list');
         for (String s : new List<String>{ 'pending_customer_approval', 'consumed', 'blocked' }) {
             a.DD_Mandate_Status__c = s;
             update a;
         }
-        System.assertEquals(2, [SELECT COUNT() FROM AA_Fill_Run__c WHERE Application__c = :a.Id]);
+        System.assertEquals(3, [SELECT COUNT() FROM AA_Fill_Run__c WHERE Application__c = :a.Id]);
     }
 
     // F39: Answer_Key__c is unique; rows with different field ids coexist.

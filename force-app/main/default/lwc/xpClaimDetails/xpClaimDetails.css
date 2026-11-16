@@ -1,0 +1,142 @@
+.details {
+    padding-bottom: 0.5rem;
+}
+.finder {
+    padding: 0.75rem 0.75rem 0;
+}
+.results {
+    margin-top: 0.5rem;
+    max-height: 24rem;
+    overflow-y: auto;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.25rem;
+}
+.result {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: #fff;
+    border: 0;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+}
+.result:hover,
+.result:focus {
+    background: #f3f6fb;
+}
+.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+}
+.label {
+    font-weight: 600;
+}
+.where {
+    font-size: 0.75rem;
+    color: #3b6aa0;
+    background: #eef4fb;
+    border-radius: 0.2rem;
+    padding: 0 0.4rem;
+    white-space: nowrap;
+}
+.value {
+    display: block;
+    margin-top: 0.125rem;
+    overflow-wrap: anywhere;
+}
+.empty,
+.none {
+    color: #706e6b;
+}
+.empty {
+    font-style: italic;
+}
+.none {
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+}
+.slds-section {
+    margin: 0.5rem 0.75rem;
+}
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 1.5rem;
+    padding: 0 0.5rem;
+}
+.col {
+    min-width: 0;
+}
+.fld {
+    position: relative;
+    padding-right: 1.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.6s;
+}
+.pen {
+    position: absolute;
+    right: 0;
+    bottom: 0.5rem;
+    opacity: 0;
+}
+.fld:hover .pen,
+.pen:focus-within {
+    opacity: 1;
+}
+.addr {
+    white-space: pre-line;
+    min-height: 1.25rem;
+}
+.addr-edit {
+    margin: 0 0 0.5rem;
+    padding: 0.25rem 0 0;
+    border: 0;
+}
+.flash {
+    background: #fff4c2;
+}
+.footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #f3f3f3;
+    border-top: 1px solid #dddbda;
+}
+.loading {
+    position: relative;
+    min-height: 6rem;
+}
+/* Só no Claim: lista dentro da seção (imóveis no UK) e as sub-abas dos editores. */
+.list {
+    padding: 0 0.5rem 0.5rem;
+}
+.list-row {
+    display: block;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.list-main {
+    display: block;
+}
+.list-sub,
+.list-empty {
+    display: block;
+    font-size: 0.75rem;
+    color: #706e6b;
+}
+.editors {
+    display: block;
+    margin: 0.5rem 0.75rem;
+}
+@media (prefers-reduced-motion: reduce) {
+    .fld {
+        transition: none;
+    }
+}

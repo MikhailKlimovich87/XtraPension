@@ -1,0 +1,148 @@
+<template>
+    <lightning-card title="Missing Information" icon-name="standard:task">
+        <div slot="actions">
+            <lightning-button-icon icon-name="utility:refresh" variant="bare" alternative-text="Refresh" title="Refresh" onclick={handleRefresh}
+                disabled={isLoading}></lightning-button-icon>
+        </div>
+
+        <div class="slds-p-horizontal_medium slds-p-bottom_small slds-is-relative">
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+            </template>
+
+            <template if:true={hasItems}>
+                <p class="summary">{summary}</p>
+            </template>
+            <template if:true={stepText}>
+                <p class="meta-line">{stepText}</p>
+            </template>
+            <template if:true={lastAsked}>
+                <p class="meta-line">{lastAsked}</p>
+            </template>
+
+            <template if:false={nothingToAsk}>
+                <div class="send-row">
+                    <lightning-button label="WhatsApp" icon-name="utility:chat" onclick={handleOpenWhatsApp} stretch
+                        disabled={whatsAppDisabled} title={whatsAppTitle} class="send-button"></lightning-button>
+                    <lightning-button label="Email the client" variant="brand" icon-name="utility:email" onclick={handleOpenPreview} stretch
+                        disabled={emailDisabled} title={emailTitle} class="send-button"></lightning-button>
+                </div>
+            </template>
+
+            <template if:true={hasItems}>
+                <template for:each={groups} for:item="g">
+                    <div key={g.key} class={g.className}>
+                        <p class="group-label">
+                            <template if:true={g.agentOnly}>
+                                <lightning-icon icon-name="utility:warning" size="xx-small" variant="warning" class="slds-m-right_xx-small"></lightning-icon>
+                            </template>
+                            {g.label}
+                        </p>
+                        <ul class="items">
+                            <template for:each={g.items} for:item="i">
+                                <li key={i.key} class="item" title={i.clientText}>
+                                    <span>{i.agentText}</span>
+                                    <template if:true={i.tag}>
+                                        <span class="tag">{i.tag}</span>
+                                    </template>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </template>
+            </template>
+
+            <template if:false={hasItems}>
+                <template if:false={isLoading}>
+                    <p class="slds-text-color_success">{emptyText}</p>
+                </template>
+            </template>
+        </div>
+    </lightning-card>
+
+    <template if:true={showPreview}>
+        <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="xmi-title" class="slds-modal slds-fade-in-open slds-modal_medium">
+            <div class="slds-modal__container">
+                <button class="slds-button slds-button_icon slds-modal__close" title="Close" onclick={handleClose}>
+                    <lightning-icon icon-name="utility:close" size="small" variant="inverse" alternative-text="Close"></lightning-icon>
+                </button>
+                <div class="slds-modal__header">
+                    <h1 id="xmi-title" class="slds-modal__title slds-hyphenate">Email the client</h1>
+                </div>
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative">
+                    <template if:true={previewLoading}>
+                        <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                    </template>
+                    <dl class="meta">
+                        <dt>To</dt><dd>{mail.to}</dd>
+                        <template if:true={mail.cc}><dt>Copy</dt><dd>{mail.cc}</dd></template>
+                        <dt>From</dt><dd>clients@xtrapension.com</dd>
+                        <dt>Subject</dt><dd>{mail.subject}</dd>
+                    </dl>
+                    <fieldset class="picks">
+                        <legend class="picks-label">What the email asks</legend>
+                        <template for:each={picks} for:item="p">
+                            <lightning-input key={p.key} type="checkbox" label={p.label} checked={p.checked} data-key={p.key}
+                                onchange={handlePick} class="pick"></lightning-input>
+                        </template>
+                        <template if:true={emailNothingTicked}>
+                            <p class="hint pick-none">Nothing is ticked: tick at least one item.</p>
+                        </template>
+                    </fieldset>
+                    <lightning-textarea label="Add a line of your own (optional)" placeholder="For example: Following our call today,"
+                        value={note} onchange={handleNote} max-length="600" class="slds-m-bottom_small"></lightning-textarea>
+                    <template if:true={isClaim}>
+                        <lightning-textarea label="Questions for the client (optional, one per line)"
+                            placeholder="For example: When did you leave the UK, at the end of 1970 or 1971?"
+                            value={questions} onchange={handleQuestions} max-length="3000" class="slds-m-bottom_small"></lightning-textarea>
+                    </template>
+                    <div class="preview">
+                        <lightning-formatted-rich-text value={mail.html}></lightning-formatted-rich-text>
+                    </div>
+                    <p class="hint">{savedHint}</p>
+                </div>
+                <div class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={handleClose}></lightning-button>
+                    <lightning-button label={sendLabel} variant="brand" onclick={handleSend} disabled={sendDisabled} class="slds-m-left_x-small"></lightning-button>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </template>
+
+    <template if:true={showWhatsApp}>
+        <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="xmi-wa-title" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <button class="slds-button slds-button_icon slds-modal__close" title="Close" onclick={handleCloseWhatsApp}>
+                    <lightning-icon icon-name="utility:close" size="small" variant="inverse" alternative-text="Close"></lightning-icon>
+                </button>
+                <div class="slds-modal__header">
+                    <h1 id="xmi-wa-title" class="slds-modal__title slds-hyphenate">Message for WhatsApp</h1>
+                </div>
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative">
+                    <template if:true={waLoading}>
+                        <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                    </template>
+                    <fieldset class="picks">
+                        <legend class="picks-label">What the message asks</legend>
+                        <template for:each={picks} for:item="p">
+                            <lightning-input key={p.key} type="checkbox" label={p.label} checked={p.checked} data-key={p.key}
+                                onchange={handleWaPick} class="pick"></lightning-input>
+                        </template>
+                        <template if:true={nothingTicked}>
+                            <p class="hint pick-none">Nothing is ticked: tick at least one item.</p>
+                        </template>
+                    </fieldset>
+                    <p class="hint wa-hint">Tick what to ask first (a tick rewrites the message), then change anything you like, copy it and paste it in the client's WhatsApp chat. Nothing is sent or saved from here.</p>
+                    <lightning-textarea label="Message" variant="label-hidden" value={waText} onchange={handleWaText} class="wa-text"></lightning-textarea>
+                </div>
+                <div class="slds-modal__footer">
+                    <lightning-button label="Close" onclick={handleCloseWhatsApp}></lightning-button>
+                    <lightning-button label="Copy message" variant="brand" icon-name="utility:copy" onclick={handleCopyWhatsApp}
+                        disabled={copyDisabled} class="slds-m-left_x-small"></lightning-button>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </template>
+</template>

@@ -315,6 +315,13 @@ private class PC1_GoCardlessControllerTest {
         System.assert(after.DD_Mandate_Failure_Reason__c != null &&
             after.DD_Mandate_Failure_Reason__c.contains('gocardless_rejected'),
             'failure reason must be persisted, got: ' + after.DD_Mandate_Failure_Reason__c);
+        // Audit 2026-11-11 PC-APEX-13: the stage-log half of the failure trail
+        // was never written (To_Stage__c is required and was left blank).
+        List<PC1_Stage_Log__c> trail = [SELECT From_Stage__c, To_Stage__c, Actor__c FROM PC1_Stage_Log__c
+                                         WHERE Application__c = :a.Id AND Note__c LIKE 'Mandate create failed%'];
+        System.assertEquals(1, trail.size(), 'the failure is on the stage timeline');
+        System.assertEquals(trail[0].From_Stage__c, trail[0].To_Stage__c, 'a note row, not a stage change');
+        System.assertEquals('system', trail[0].Actor__c);
     }
 
     // -----------------------------------------------------------------
@@ -460,72 +467,89 @@ private class PC1_GoCardlessControllerTest {
     // -----------------------------------------------------------------
     // chargeFee — happy path + gates + idempotent
     // -----------------------------------------------------------------
-    @isTest static void chargeFee_happyPath() {
-        upsertConfig();
+    // Since 2026-11-11 (audit PC-APEX-4 / PC-SFUI-4) Charge Fee never calls
+    // GoCardless itself: it schedules the plan no sooner than
+    // FIRST_CHARGE_MIN_DAYS out and emails the advance notice; the daily
+    // sweep creates each payment with the noticed date. None of these tests
+    // sets a callout mock: a callout from chargeFee would fail them.
+
+    /** Award recorded, mandate active: ready for Charge Fee. */
+    private static PC1_Application__c makeChargeableApp(Integer plan) {
         PC1_Application__c a = makeApp();
-        // Manually stage the pre-conditions instead of running createMandate
-        // + waiting for the webhook to flip status→active.
         a.Bank_Verification_Status__c = 'Modulus Passed';
         a.DD_Terms_Read_By_Sales__c   = true;
         a.DD_Mandate_Id__c            = 'MD-ACTIVE';
         a.DD_Mandate_Status__c        = 'active';
         a.Award_Amount__c             = 800;
+        a.Fee_Plan_Installments__c    = plan;
         a.Stage__c                    = 'Awarded';
         update a;
+        return a;
+    }
 
-        Test.setMock(HttpCalloutMock.class, successMock());
+    private static void bacsTemplate() {
+        insert new PC1_Message_Template__c(Channel__c = 'Email', Trigger_Event__c = 'Bacs_Advance_Notice',
+            Active__c = true, Subject_Template__c = 'Notice', Body_Template__c = 'Hi');
+    }
+
+    @isTest static void chargeFee_happyPath_schedulesAndNotices_noGoCardlessCall() {
+        upsertConfig();
+        bacsTemplate();
+        PC1_Application__c a = makeChargeableApp(1);
+        PC1_FeeInstallmentScheduler.testBypass = true;
+        PC1_FeeInstallmentScheduler.testDispatched.clear();
+        Date earliest = Date.today().addDays(PC1_GoCardlessController.FIRST_CHARGE_MIN_DAYS);
+
         Test.startTest();
         Map<String,Object> res = PC1_GoCardlessController.chargeFee(a.Id);
         Test.stopTest();
 
         System.assertEquals(true, res.get('ok'));
-        System.assertEquals('PM0001', res.get('payment_id'));
-        // installment #1 amount — single-charge plan (Fee_Plan_Installments__c
-        // defaults to 1) → 20% of 800 = 160
+        System.assertEquals(true, res.get('deferred'), 'nothing is taken at click time any more');
+        System.assertEquals(true, res.get('notice_sent'), 'the client is emailed the date and amount at once');
+        System.assertEquals(earliest, (Date) res.get('first_charge_date'));
+        // installment #1 amount — single-charge plan → 20% of 800 = 160
         System.assertEquals(160, ((Decimal) res.get('amount_pounds')));
-        System.assertEquals(1, ((Decimal) res.get('installments')).intValue());
+        System.assertEquals(1, (Integer) res.get('installments'));
+        System.assertEquals(1, PC1_FeeInstallmentScheduler.testDispatched.size(), 'one advance notice');
 
-        PC1_Application__c after = [SELECT Fee_Payment_Id__c, Fee_Payment_Status__c, Fee_Charged_At__c, Stage__c
+        PC1_Application__c after = [SELECT Fee_Payment_Id__c, Fee_First_Charge_Date__c, Fee_Plan_Next_Charge_Date__c, Stage__c
                                     FROM PC1_Application__c WHERE Id = :a.Id];
-        System.assertEquals('PM0001', after.Fee_Payment_Id__c);
-        System.assertEquals('pending_submission', after.Fee_Payment_Status__c);
-        System.assertNotEquals(null, after.Fee_Charged_At__c);
-        System.assertEquals('Fee Charged', after.Stage__c);
+        System.assertEquals(null, after.Fee_Payment_Id__c, 'the payment is created by the sweep, not here');
+        System.assertEquals(earliest, after.Fee_First_Charge_Date__c, 'the date really used is written back for the card');
+        System.assertEquals(earliest, after.Fee_Plan_Next_Charge_Date__c);
+        System.assertEquals('Awarded', after.Stage__c, 'Fee Charged lands when the payment exists');
 
-        // Installment row exists for the single charge.
         List<PC1_Fee_Installment__c> rows = [
-            SELECT Installment_Number__c, Amount__c, Payment_Id__c, Payment_Status__c
+            SELECT Installment_Number__c, Amount__c, Payment_Id__c, Payment_Status__c, Scheduled_Date__c, Bacs_Notice_Sent__c
             FROM PC1_Fee_Installment__c WHERE Application__c = :a.Id ORDER BY Installment_Number__c
         ];
         System.assertEquals(1, rows.size(), 'single-charge plan → 1 installment row');
         System.assertEquals(160, rows[0].Amount__c);
-        System.assertEquals('PM0001', rows[0].Payment_Id__c);
+        System.assertEquals('pending', rows[0].Payment_Status__c);
+        System.assertEquals(null, rows[0].Payment_Id__c);
+        System.assertEquals(earliest, rows[0].Scheduled_Date__c);
+        System.assertEquals(true, rows[0].Bacs_Notice_Sent__c);
     }
 
-    @isTest static void chargeFee_threeInstallments_insertsRows_firesFirst() {
+    @isTest static void chargeFee_threeInstallments_insertsRows_aMonthApart() {
         upsertConfig();
-        PC1_Application__c a = makeApp();
-        a.Bank_Verification_Status__c = 'Modulus Passed';
-        a.DD_Terms_Read_By_Sales__c   = true;
-        a.DD_Mandate_Id__c            = 'MD-ACTIVE';
-        a.DD_Mandate_Status__c        = 'active';
-        a.Award_Amount__c             = 800;
-        a.Fee_Plan_Installments__c    = 3;
-        a.Stage__c                    = 'Awarded';
-        update a;
+        bacsTemplate();
+        PC1_Application__c a = makeChargeableApp(3);
+        PC1_FeeInstallmentScheduler.testBypass = true;
+        Date earliest = Date.today().addDays(PC1_GoCardlessController.FIRST_CHARGE_MIN_DAYS);
 
-        Test.setMock(HttpCalloutMock.class, successMock());
         Test.startTest();
         Map<String,Object> res = PC1_GoCardlessController.chargeFee(a.Id);
         Test.stopTest();
 
         System.assertEquals(true, res.get('ok'));
-        System.assertEquals(3, ((Decimal) res.get('installments')).intValue());
+        System.assertEquals(3, (Integer) res.get('installments'));
         System.assertEquals(53.33, ((Decimal) res.get('installment_amount')));
 
         List<PC1_Fee_Installment__c> rows = [
             SELECT Installment_Number__c, Amount__c, Scheduled_Date__c,
-                   Payment_Id__c, Payment_Status__c
+                   Payment_Id__c, Payment_Status__c, Bacs_Notice_Sent__c
             FROM PC1_Fee_Installment__c WHERE Application__c = :a.Id
             ORDER BY Installment_Number__c
         ];
@@ -537,13 +561,200 @@ private class PC1_GoCardlessControllerTest {
         // Sum equals total fee exactly.
         Decimal sum = rows[0].Amount__c + rows[1].Amount__c + rows[2].Amount__c;
         System.assertEquals(160, sum);
-        // Only installment #1 has a payment id after chargeFee.
-        System.assertEquals('PM0001', rows[0].Payment_Id__c);
-        System.assertEquals('submitted', rows[0].Payment_Status__c);
-        System.assertEquals(null, rows[1].Payment_Id__c);
-        System.assertEquals('pending', rows[1].Payment_Status__c);
-        System.assertEquals(null, rows[2].Payment_Id__c);
-        System.assertEquals('pending', rows[2].Payment_Status__c);
+        System.assertEquals(earliest, rows[0].Scheduled_Date__c);
+        System.assertEquals(earliest.addMonths(1), rows[1].Scheduled_Date__c);
+        System.assertEquals(earliest.addMonths(2), rows[2].Scheduled_Date__c);
+        for (PC1_Fee_Installment__c r : rows) {
+            System.assertEquals(null, r.Payment_Id__c, 'no payment exists yet');
+            System.assertEquals('pending', r.Payment_Status__c);
+        }
+        System.assertEquals(true, rows[0].Bacs_Notice_Sent__c, 'installment 1 is noticed now');
+        System.assertEquals(false, rows[1].Bacs_Notice_Sent__c, 'the others by the daily sweep');
+    }
+
+    // PC-SFUI-4: the award was recorded weeks ago, Charge is clicked today.
+    // The stale date used to be the anchor: #1 went out at once and #2 was
+    // already overdue, collected the next morning with no notice.
+    @isTest static void chargeFee_pastFirstChargeDate_isMovedForward() {
+        upsertConfig();
+        bacsTemplate();
+        PC1_Application__c a = makeChargeableApp(3);
+        update new PC1_Application__c(Id = a.Id, Fee_First_Charge_Date__c = Date.today().addDays(-35));
+        PC1_FeeInstallmentScheduler.testBypass = true;
+        Date earliest = Date.today().addDays(PC1_GoCardlessController.FIRST_CHARGE_MIN_DAYS);
+
+        Map<String,Object> res = PC1_GoCardlessController.chargeFee(a.Id);
+
+        System.assertEquals(earliest, (Date) res.get('first_charge_date'));
+        List<PC1_Fee_Installment__c> rows = [SELECT Scheduled_Date__c FROM PC1_Fee_Installment__c
+                                              WHERE Application__c = :a.Id ORDER BY Installment_Number__c];
+        System.assertEquals(earliest, rows[0].Scheduled_Date__c);
+        System.assertEquals(earliest.addMonths(1), rows[1].Scheduled_Date__c, 'a full month after installment 1');
+        System.assertEquals(earliest, [SELECT Fee_First_Charge_Date__c FROM PC1_Application__c WHERE Id = :a.Id].Fee_First_Charge_Date__c);
+    }
+
+    @isTest static void chargeFee_laterDateChosenByTheAgent_isKept_noticeLeftToTheSweep() {
+        upsertConfig();
+        bacsTemplate();
+        PC1_Application__c a = makeChargeableApp(1);
+        Date chosen = Date.today().addDays(30);
+        update new PC1_Application__c(Id = a.Id, Fee_First_Charge_Date__c = chosen);
+        PC1_FeeInstallmentScheduler.testBypass = true;
+
+        Map<String,Object> res = PC1_GoCardlessController.chargeFee(a.Id);
+
+        System.assertEquals(chosen, (Date) res.get('first_charge_date'));
+        System.assertEquals(false, res.get('notice_sent'), 'too early for the notice');
+        PC1_Fee_Installment__c row = [SELECT Scheduled_Date__c, Bacs_Notice_Sent__c FROM PC1_Fee_Installment__c WHERE Application__c = :a.Id];
+        System.assertEquals(chosen, row.Scheduled_Date__c);
+        System.assertEquals(false, row.Bacs_Notice_Sent__c);
+    }
+
+    @isTest static void chargeFee_secondClick_returnsTheSchedule_withoutRebuildingIt() {
+        upsertConfig();
+        bacsTemplate();
+        PC1_Application__c a = makeChargeableApp(3);
+        PC1_FeeInstallmentScheduler.testBypass = true;
+        PC1_GoCardlessController.chargeFee(a.Id);
+        Set<Id> before = new Map<Id, PC1_Fee_Installment__c>([SELECT Id FROM PC1_Fee_Installment__c WHERE Application__c = :a.Id]).keySet();
+        PC1_FeeInstallmentScheduler.testDispatched.clear();
+
+        Map<String,Object> res = PC1_GoCardlessController.chargeFee(a.Id);
+
+        System.assertEquals(true, res.get('existed'));
+        System.assertEquals(3, (Integer) res.get('installments'));
+        Set<Id> after = new Map<Id, PC1_Fee_Installment__c>([SELECT Id FROM PC1_Fee_Installment__c WHERE Application__c = :a.Id]).keySet();
+        System.assertEquals(before, after, 'same rows: their notice stamps survive');
+        System.assertEquals(0, PC1_FeeInstallmentScheduler.testDispatched.size(), 'no second advance notice');
+    }
+
+    @isTest static void chargeFee_refusedWhereTheSweepWouldNeverCollect() {
+        upsertConfig();
+        disableAutoCreate();   // clearing the mandate id below must not start a new mandate
+        PC1_Application__c a = makeChargeableApp(1);
+        Boolean t1 = false, t2 = false, t3 = false;
+        update new PC1_Application__c(Id = a.Id, Do_Not_Contact__c = true);
+        try { PC1_GoCardlessController.chargeFee(a.Id); } catch (AuraHandledException e) { t1 = true; }
+        update new PC1_Application__c(Id = a.Id, Do_Not_Contact__c = false, Stage__c = 'Needs Human');
+        try { PC1_GoCardlessController.chargeFee(a.Id); } catch (AuraHandledException e) { t2 = true; }
+        update new PC1_Application__c(Id = a.Id, Stage__c = 'Awarded', DD_Mandate_Id__c = null);
+        try { PC1_GoCardlessController.chargeFee(a.Id); } catch (AuraHandledException e) { t3 = true; }
+        System.assert(t1, 'Do Not Contact: the advance notice cannot be sent');
+        System.assert(t2, 'not a collectable stage');
+        System.assert(t3, 'mandate document pending: Heroku would refuse every charge');
+        System.assertEquals(0, [SELECT COUNT() FROM PC1_Fee_Installment__c WHERE Application__c = :a.Id]);
+    }
+
+    // -----------------------------------------------------------------
+    // Award / plan freeze on direct field writes (audit PC-APEX-9)
+    // -----------------------------------------------------------------
+    @isTest static void feeFreeze_blocksDirectFieldWrites_onceCollectionStarted() {
+        upsertConfig();
+        bacsTemplate();
+        PC1_Application__c a = makeChargeableApp(3);
+        // Before any installment: free to correct.
+        update new PC1_Application__c(Id = a.Id, Award_Amount__c = 900);
+        PC1_FeeInstallmentScheduler.testBypass = true;
+        PC1_GoCardlessController.chargeFee(a.Id);
+
+        Boolean b1 = false, b2 = false, b3 = false;
+        try { update new PC1_Application__c(Id = a.Id, Award_Amount__c = 700); } catch (DmlException e) { b1 = e.getMessage().contains('administrator'); }
+        try { update new PC1_Application__c(Id = a.Id, Fee_Plan_Installments__c = 1); } catch (DmlException e) { b2 = true; }
+        try { update new PC1_Application__c(Id = a.Id, Fee_First_Charge_Date__c = Date.today().addDays(50)); } catch (DmlException e) { b3 = true; }
+        System.assert(b1, 'an inline edit of the award after the plan exists is refused, and says who can help');
+        System.assert(b2, 'so is the plan');
+        System.assert(b3, 'and the first charge date');
+        System.assertEquals(900, [SELECT Award_Amount__c FROM PC1_Application__c WHERE Id = :a.Id].Award_Amount__c);
+        // Everything else on the record still saves.
+        update new PC1_Application__c(Id = a.Id, Notes__c = 'still editable', DWP_Lump_Sum_Received__c = 100);
+    }
+
+    // PC-SFUI-10: the award card re-sends the stored first date on every Edit.
+    @isTest static void recordAward_unchangedStaleDate_isNotRefused() {
+        upsertConfig();
+        PC1_Application__c a = makeApp();
+        Date stale = Date.today().addDays(-3);
+        update new PC1_Application__c(Id = a.Id, Award_Amount__c = 800, Fee_Plan_Installments__c = 1, Fee_First_Charge_Date__c = stale);
+
+        Map<String,Object> res = PC1_GoCardlessController.recordAward(a.Id, 800, 1, 250, stale);
+        System.assertEquals(true, res.get('ok'), 'the same date sent back is not a new choice');
+        System.assertEquals(250, ((Decimal) res.get('lump_sum_received')));
+
+        Boolean threw = false;
+        try { PC1_GoCardlessController.recordAward(a.Id, 800, 1, null, Date.today().addDays(-1)); }
+        catch (AuraHandledException e) { threw = true; }
+        System.assert(threw, 'a NEW date in the past is still refused');
+    }
+
+    // -----------------------------------------------------------------
+    // Held installment (no GoCardless payment) → Retry puts it back
+    // -----------------------------------------------------------------
+    @isTest static void retryInstallment_heldRowWithoutPayment_isPutBackWithAFreshNotice() {
+        upsertConfig();
+        bacsTemplate();
+        PC1_Application__c a = makeChargeableApp(2);
+        PC1_Fee_Installment__c held = new PC1_Fee_Installment__c(Application__c = a.Id, Installment_Number__c = 1,
+            Amount__c = 80, Scheduled_Date__c = Date.today().addDays(-2), Payment_Status__c = 'failed',
+            Bacs_Notice_Sent__c = true, Bacs_Notice_Sent_At__c = Datetime.now().addDays(-9));
+        insert held;
+        PC1_FeeInstallmentScheduler.testBypass = true;
+        PC1_FeeInstallmentScheduler.testDispatched.clear();
+
+        Map<String,Object> r = PC1_GoCardlessController.retryInstallment(held.Id);
+
+        Date nd = Date.today().addDays(PC1_GoCardlessController.FIRST_CHARGE_MIN_DAYS);
+        System.assertEquals(true, r.get('requeued'));
+        System.assertEquals(true, r.get('notice_sent'));
+        System.assertEquals(String.valueOf(nd), r.get('charge_date'));
+        PC1_Fee_Installment__c after = [SELECT Payment_Status__c, Scheduled_Date__c, Bacs_Notice_Sent__c, Bacs_Notice_Sent_At__c
+                                          FROM PC1_Fee_Installment__c WHERE Id = :held.Id];
+        System.assertEquals('pending', after.Payment_Status__c);
+        System.assertEquals(nd, after.Scheduled_Date__c);
+        System.assertEquals(true, after.Bacs_Notice_Sent__c, 'noticed afresh for the new date');
+        System.assert(after.Bacs_Notice_Sent_At__c > Datetime.now().addHours(-1));
+        System.assertEquals(1, PC1_FeeInstallmentScheduler.testDispatched.size());
+        System.assertEquals(nd, [SELECT Fee_Plan_Next_Charge_Date__c FROM PC1_Application__c WHERE Id = :a.Id].Fee_Plan_Next_Charge_Date__c);
+    }
+
+    // -----------------------------------------------------------------
+    // Replacement mandate resumes the plan (audit PC-APEX-10)
+    // -----------------------------------------------------------------
+    @isTest static void createMandate_replacement_putsCancelledInstallmentsBack() {
+        upsertConfig();
+        disableAutoCreate();
+        PC1_Application__c a = makeChargeableApp(3);
+        update new PC1_Application__c(Id = a.Id, DD_Mandate_Id__c = 'MD-DEAD', DD_Mandate_Status__c = 'cancelled');
+        // What the GoCardless webhook leaves behind when a mandate dies:
+        // #1 paid, #2 cancelled at GoCardless (it had a payment), #3 never sent.
+        PC1_Fee_Installment__c p1 = new PC1_Fee_Installment__c(Application__c = a.Id, Installment_Number__c = 1,
+            Amount__c = 53.33, Scheduled_Date__c = Date.today().addDays(-40), Payment_Status__c = 'paid', Payment_Id__c = 'PM_A1');
+        PC1_Fee_Installment__c p2 = new PC1_Fee_Installment__c(Application__c = a.Id, Installment_Number__c = 2,
+            Amount__c = 53.33, Scheduled_Date__c = Date.today().addDays(-10), Payment_Status__c = 'cancelled', Payment_Id__c = 'PM_A2');
+        PC1_Fee_Installment__c p3 = new PC1_Fee_Installment__c(Application__c = a.Id, Installment_Number__c = 3,
+            Amount__c = 53.34, Scheduled_Date__c = Date.today().addDays(20), Payment_Status__c = 'cancelled',
+            Bacs_Notice_Sent__c = true, Bacs_Notice_Sent_At__c = Datetime.now().addDays(-3));
+        insert new List<PC1_Fee_Installment__c>{ p1, p2, p3 };
+
+        GcMock m = successMock();
+        m.mandateBody = '{"ok":true,"mandate_id":"MD0010","status":"pending_submission","mandate_pdf":{"ok":true},'
+                      + '"replaced":{"id":"MD-DEAD","cancelled":false,"note":"already_inactive"}}';
+        Test.setMock(HttpCalloutMock.class, m);
+        Test.startTest();
+        PC1_GoCardlessController.createMandateForApplication(a.Id);
+        Test.stopTest();
+
+        Map<Id, PC1_Fee_Installment__c> rows = new Map<Id, PC1_Fee_Installment__c>(
+            [SELECT Payment_Status__c, Bacs_Notice_Sent__c FROM PC1_Fee_Installment__c WHERE Application__c = :a.Id]);
+        System.assertEquals('pending', rows.get(p3.Id).Payment_Status__c,
+            'never reached GoCardless: collected on the new Direct Debit');
+        System.assertEquals(false, rows.get(p3.Id).Bacs_Notice_Sent__c, 'with a fresh advance notice');
+        System.assertEquals('cancelled', rows.get(p2.Id).Payment_Status__c,
+            'its GoCardless payment was cancelled and cannot be collected again');
+        System.assertEquals('paid', rows.get(p1.Id).Payment_Status__c);
+        List<PC1_Handoff__c> h = [SELECT Next_Step_Suggestion__c FROM PC1_Handoff__c
+                                   WHERE Application__c = :a.Id AND Reason__c LIKE 'New Direct Debit set up%'];
+        System.assertEquals(1, h.size(), 'somebody decides about installment 2');
+        System.assert(h[0].Next_Step_Suggestion__c.contains('PM_A2'), h[0].Next_Step_Suggestion__c);
     }
 
     @isTest static void chargeFee_mandateNotActive_throws() {

@@ -28,8 +28,6 @@
  * Sanity flags (surfaced inline BEFORE Record):
  *   • award < £100    → warn (unusually low)
  *   • award > £50,000 → warn (unusually high)
- *   • VAT-included checkbox — off by default; explanatory copy only, the
- *     controller decides whether to strip VAT.
  */
 import { LightningElement, api, wire } from 'lwc';
 import { getRecord } from 'lightning/uiRecordApi';
@@ -64,10 +62,13 @@ const PLAN_OPTIONS_OVERRIDE = [
     { label: 'Split in 6 monthly installments (6x)', value: '6' },
 ];
 
-// Agent-chosen first-charge date can be today through today+90 days.
-// Matches PC1_GoCardlessController.FIRST_CHARGE_MAX_DAYS_AHEAD (server
-// validates the same range — client picker is UX guidance, server is
-// truth).
+// Agent-chosen first-charge date can be today+FIRST_CHARGE_MIN_DAYS through
+// today+90 days. Matches PC1_GoCardlessController.FIRST_CHARGE_MIN_DAYS
+// (NOTICE_DAYS of advance notice + 1 day) and FIRST_CHARGE_MAX_DAYS_AHEAD.
+// The picker is UX guidance, the server is truth: recordAward still takes a
+// sooner date, and chargeFee then moves it to the minimum.
+const NOTICE_DAYS = 5;
+const FIRST_CHARGE_MIN_DAYS = NOTICE_DAYS + 1;
 const FIRST_CHARGE_MAX_DAYS_AHEAD = 90;
 
 // ── date helpers ────────────────────────────────────────────────────
@@ -117,10 +118,10 @@ export default class Pc1AwardRecorder extends LightningElement {
     // Draft (only meaningful when editing or first-entry)
     draftAmount           = null;
     draftLumpSum          = null;
-    draftIncludesVat      = false;
     draftPlan             = '1';          // lightning-radio-group values are strings
     draftOverride         = false;        // false = auto-recommend, true = manual picker
-    draftFirstChargeDate  = todayYmd();   // default: charge today
+    draftFirstChargeDate  = ymdPlusDays(FIRST_CHARGE_MIN_DAYS);   // default: earliest date the fee can be collected
+    firstChargeDateTouched = false;       // the agent picked a date in this edit
     saving                = false;
     editing               = false;        // true = show input even when awardAmount is set
 
@@ -140,7 +141,7 @@ export default class Pc1AwardRecorder extends LightningElement {
     }
 
     // ── first-charge date bounds + display ─────────────────────────
-    get firstChargeDateMin() { return todayYmd(); }
+    get firstChargeDateMin() { return ymdPlusDays(FIRST_CHARGE_MIN_DAYS); }
     get firstChargeDateMax() { return ymdPlusDays(FIRST_CHARGE_MAX_DAYS_AHEAD); }
 
     /**
@@ -153,12 +154,15 @@ export default class Pc1AwardRecorder extends LightningElement {
         if (!this.draftFirstChargeDate) return '';
         const today = todayYmd();
         if (this.draftFirstChargeDate < today) return 'That date is in the past — the server will reject on save.';
-        if (this.draftFirstChargeDate === today) return '';
+        if (this.draftFirstChargeDate < this.firstChargeDateMin) {
+            return `The first charge can be no sooner than ${FIRST_CHARGE_MIN_DAYS} days from today, so the client gets the ${NOTICE_DAYS}-day advance notice first. An earlier date is moved to that day when the fee is scheduled.`;
+        }
         const [y, m, d] = this.draftFirstChargeDate.split('-').map(Number);
         const picked = new Date(y, m - 1, d);
         const daysAhead = Math.round((picked - new Date(today.split('-')[0], Number(today.split('-')[1]) - 1, Number(today.split('-')[2]))) / 86400000);
         if (daysAhead > FIRST_CHARGE_MAX_DAYS_AHEAD) return `Max is ${FIRST_CHARGE_MAX_DAYS_AHEAD} days from today — the server will reject on save.`;
-        return `First charge deferred by ${daysAhead} day${daysAhead === 1 ? '' : 's'}. Client mandate will be authorised now, DD attempt fires on that date.`;
+        if (daysAhead === FIRST_CHARGE_MIN_DAYS) return '';
+        return `First charge ${daysAhead} days from today. The client is emailed an advance notice at least ${NOTICE_DAYS} days before each collection.`;
     }
 
     get firstChargeDisplay() {
@@ -279,15 +283,17 @@ export default class Pc1AwardRecorder extends LightningElement {
         if (n === null || n <= 0) return '';
         const fee = round2(n * FEE_RATE);
         const plan = this.effectivePlan;
-        // Anchor to draft date; fall back to today if the picker is somehow empty.
-        const anchorYmd = this.draftFirstChargeDate || todayYmd();
+        // Anchor to the draft date, or to the earliest date the server uses
+        // when the draft is sooner than that (chargeFee moves it there, audit
+        // 2026-11-11 PC-SFUI-4) or the picker is somehow empty.
+        const earliest = ymdPlusDays(FIRST_CHARGE_MIN_DAYS);
+        const anchorYmd = (this.draftFirstChargeDate && this.draftFirstChargeDate >= earliest)
+            ? this.draftFirstChargeDate : earliest;
         const [ay, am, ad] = anchorYmd.split('-').map(Number);
         const anchor = new Date(ay, am - 1, ad);
         const anchorLabel = anchor.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-        const anchorIsToday = anchorYmd === todayYmd();
-        const firstAdverb = anchorIsToday ? 'today' : `on ${anchorLabel}`;
         if (plan === 1) {
-            return `You'll charge £${fmtMoney(fee)} ${firstAdverb} in a single Direct Debit.`;
+            return `You'll charge £${fmtMoney(fee)} on ${anchorLabel} in a single Direct Debit.`;
         }
         const per = round2(fee / plan);
         const finalRow = round2(fee - per * (plan - 1));
@@ -299,7 +305,7 @@ export default class Pc1AwardRecorder extends LightningElement {
             parts.push(`£${amt} on ${dLabel}`);
         }
         const spacing = plan === 2 ? 'one month apart' : `across ${plan} months`;
-        return `You'll charge ${parts.join(', ')} (${spacing}${anchorIsToday ? '' : ', starting ' + anchorLabel}).`;
+        return `You'll charge ${parts.join(', ')} (${spacing}, starting ${anchorLabel}).`;
     }
 
     /**
@@ -313,7 +319,7 @@ export default class Pc1AwardRecorder extends LightningElement {
         const feeStr = this.draftFee === null ? '—' : `£${fmtMoney(this.draftFee)}`;
         if (rec === 1) {
             return [
-                { label: `Single charge (${feeStr} today)`, value: '1' },
+                { label: `Single charge (${feeStr})`, value: '1' },
             ];
         }
         // rec === 3
@@ -360,9 +366,6 @@ export default class Pc1AwardRecorder extends LightningElement {
     handleLumpSumChange(e) {
         this.draftLumpSum = e.target.value;
     }
-    handleVatChange(e) {
-        this.draftIncludesVat = e.target.checked;
-    }
     handlePlanChange(e) {
         this.draftPlan = e.detail.value;
     }
@@ -376,29 +379,35 @@ export default class Pc1AwardRecorder extends LightningElement {
         }
     }
     handleFirstChargeDateChange(e) {
-        this.draftFirstChargeDate = e.target.value || todayYmd();
+        this.draftFirstChargeDate = e.target.value || ymdPlusDays(FIRST_CHARGE_MIN_DAYS);
+        this.firstChargeDateTouched = true;
     }
     handleEdit() {
         this.editing = true;
         this.draftAmount     = this.awardAmount;
         this.draftLumpSum    = this.lumpSumReceived;
-        this.draftIncludesVat = false;
-        this.draftOverride   = false;
         // Preserve the existing plan when re-editing (val team is usually just
-        // fixing the amount, not the plan).
+        // fixing the amount, not the plan). Override mode on: in auto mode
+        // effectivePlan ignores draftPlan and a plan picked by hand (say 6)
+        // was saved back as the recommended 3 or 1 (audit 2026-11-11 PC-SFUI-10).
+        this.draftOverride   = true;
         this.draftPlan = String(this.installments || 1);
-        // Preserve the existing first-charge date on edit; if unset, default
-        // to today (matches server behaviour where null → today at chargeFee).
-        this.draftFirstChargeDate = this.firstChargeDate || todayYmd();
+        // Preserve the existing first-charge date on edit unless it is sooner
+        // than the earliest date the fee can be collected (or unset); then
+        // show that earliest date, which is what chargeFee will use.
+        const earliest = ymdPlusDays(FIRST_CHARGE_MIN_DAYS);
+        this.draftFirstChargeDate = (this.firstChargeDate && this.firstChargeDate >= earliest)
+            ? this.firstChargeDate : earliest;
+        this.firstChargeDateTouched = false;
     }
     handleCancelEdit() {
         this.editing = false;
         this.draftAmount     = null;
         this.draftLumpSum    = null;
-        this.draftIncludesVat = false;
         this.draftPlan       = '1';
         this.draftOverride   = false;
-        this.draftFirstChargeDate = todayYmd();
+        this.draftFirstChargeDate = ymdPlusDays(FIRST_CHARGE_MIN_DAYS);
+        this.firstChargeDateTouched = false;
     }
 
     async handleRecord() {
@@ -412,7 +421,12 @@ export default class Pc1AwardRecorder extends LightningElement {
                 amount:          Number(this.draftAmount),
                 installments:    chosenPlan,
                 lumpSum:         lumpArg === null ? null : Number(lumpArg),
-                firstChargeDate: this.draftFirstChargeDate || null,
+                // On Edit, a date the agent did not pick is not sent (null =
+                // keep what is stored). Sending it back made every edit from
+                // the next day fail with "First charge date cannot be in the
+                // past", and after the plan was scheduled with "can no longer
+                // be changed here" (audit 2026-11-11 PC-SFUI-10).
+                firstChargeDate: (this.editing && !this.firstChargeDateTouched) ? null : (this.draftFirstChargeDate || null),
             });
             if (r && r.ok) {
                 const feeMsg = r.fee_amount !== undefined
@@ -425,10 +439,10 @@ export default class Pc1AwardRecorder extends LightningElement {
                 this.editing = false;
                 this.draftAmount     = null;
                 this.draftLumpSum    = null;
-                this.draftIncludesVat = false;
                 this.draftPlan       = '1';
                 this.draftOverride   = false;
-                this.draftFirstChargeDate = todayYmd();
+                this.draftFirstChargeDate = ymdPlusDays(FIRST_CHARGE_MIN_DAYS);
+                this.firstChargeDateTouched = false;
                 await refreshApex(this.wiredRecord);
             } else {
                 this.toast('Record award failed', 'error', 'Controller returned ok=false');

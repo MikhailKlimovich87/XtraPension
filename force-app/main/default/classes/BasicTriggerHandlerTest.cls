@@ -504,4 +504,73 @@ static void testDistribution_SkipsIneligibleStatus() {
             );
         }
     }
+
+    // Fernando, 10 Nov 2026: every AUS/NZ claim to Becky; the rest Becky 25%, Ciara 37.5%, Sean B 37.5%.
+    @IsTest
+    static void testDistribution_AusNzGoesToBecky() {
+        List<Basic__c> claims = new List<Basic__c>{
+            new Basic__c(Status__c = 'Form In Progress', Current_Address_Abroad_Country__c = 'AU'),
+            new Basic__c(Status__c = 'Validation Call', Current_Address_Abroad_Country__c = 'nz'),
+            new Basic__c(Status__c = 'Pending Client', Current_Address_Abroad_Country__c = ' AU '),
+            new Basic__c(Status__c = 'Form In Progress', Current_Address_Abroad_Country_Name__c = 'Australia'),
+            new Basic__c(Status__c = 'Form completed', Current_Address_Abroad_Country_Name__c = 'new zealand')
+        };
+
+        BasicTriggerHandler handler = new BasicTriggerHandler(claims, new Map<Id, Basic__c>(), new Map<Id, Basic__c>());
+        handler.distributeBetweenAgents();
+
+        for (Basic__c claim : claims) {
+            System.assertEquals('Becky', claim.Validation_Agent__c, 'Every AUS/NZ claim goes to Becky.');
+        }
+    }
+
+    @IsTest
+    static void testDistribution_AusNzKeepsAnAgentSetByHand() {
+        Basic__c kept = new Basic__c(Status__c = 'Form In Progress', Current_Address_Abroad_Country__c = 'AU', Validation_Agent__c = 'Ciara');
+        Basic__c ireland = new Basic__c(Status__c = 'Form In Progress', Current_Address_Abroad_Country__c = 'IE', Current_Address_Abroad_Country_Name__c = 'Australia');
+
+        BasicTriggerHandler handler = new BasicTriggerHandler(new List<Basic__c>{ kept, ireland }, new Map<Id, Basic__c>(), new Map<Id, Basic__c>());
+        handler.distributeBetweenAgents();
+
+        System.assertEquals('Ciara', kept.Validation_Agent__c, 'An agent already on the claim stays.');
+        System.assertEquals(false, BasicTriggerHandler.isAusNz(ireland), 'The country code wins over the name.');
+        System.assertEquals(false, BasicTriggerHandler.isAusNz(new Basic__c()), 'No country is not AUS/NZ.');
+    }
+
+    @IsTest
+    static void testDistribution_SplitsTheRest() {
+        List<Basic__c> claims = new List<Basic__c>();
+        for (Integer i = 0; i < 8; i++) {
+            claims.add(new Basic__c(Status__c = 'Form In Progress', Current_Address_Abroad_Country__c = 'IE'));
+        }
+
+        BasicTriggerHandler handler = new BasicTriggerHandler(claims, new Map<Id, Basic__c>(), new Map<Id, Basic__c>());
+        handler.distributeBetweenAgents();
+
+        Map<String, Integer> got = new Map<String, Integer>{ 'Sean B' => 0, 'Ciara' => 0, 'Becky' => 0 };
+        for (Basic__c claim : claims) {
+            got.put(claim.Validation_Agent__c, got.get(claim.Validation_Agent__c) + 1);
+        }
+        System.assertEquals(3, got.get('Sean B'), '37.5% of 8');
+        System.assertEquals(3, got.get('Ciara'), '37.5% of 8');
+        System.assertEquals(2, got.get('Becky'), '25% of 8');
+    }
+
+    @IsTest
+    static void testDistribution_AusNzLoadDoesNotCountForTheRest() {
+        // Becky has 5 open AUS/NZ claims and none of the rest; Sean B and Ciara have one each.
+        List<Basic__c> existing = new List<Basic__c>();
+        for (Integer i = 0; i < 5; i++) {
+            existing.add(new Basic__c(Status__c = 'Form In Progress', Current_Address_Abroad_Country__c = 'AU', Validation_Agent__c = 'Becky'));
+        }
+        existing.add(new Basic__c(Status__c = 'Form In Progress', Current_Address_Abroad_Country__c = 'IE', Validation_Agent__c = 'Sean B'));
+        existing.add(new Basic__c(Status__c = 'Form In Progress', Current_Address_Abroad_Country__c = 'GB', Validation_Agent__c = 'Ciara'));
+        insert existing;
+
+        Basic__c claim = new Basic__c(Status__c = 'Form In Progress', Current_Address_Abroad_Country__c = 'IE');
+        BasicTriggerHandler handler = new BasicTriggerHandler(new List<Basic__c>{ claim }, new Map<Id, Basic__c>(), new Map<Id, Basic__c>());
+        handler.distributeBetweenAgents();
+
+        System.assertEquals('Becky', claim.Validation_Agent__c, 'Her AUS/NZ claims do not take from her share of the rest.');
+    }
 }

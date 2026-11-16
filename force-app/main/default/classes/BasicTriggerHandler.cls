@@ -13,12 +13,18 @@ public without sharing class BasicTriggerHandler {
         'Pending Client'
     };
 
-    // Single source of truth for the distribution weights (30 / 30 / 40).
-    // AGENTS is derived from this map so the two can never drift apart.
+    // Every claim from Australia or New Zealand goes to Becky (Fernando, 10 Nov 2026): she takes the
+    // AUS/NZ validation calls (book.xtrapension.com/go/claim-aus books the claim's own agent).
+    private static final String AUS_NZ_AGENT = 'Becky';
+    private static final List<String> AUS_NZ_CODES = new List<String>{ 'AU', 'NZ' };
+    private static final List<String> AUS_NZ_NAMES = new List<String>{ 'Australia', 'New Zealand' };
+
+    // Single source of truth for the split of every other claim (Fernando, 10 Nov 2026:
+    // Becky 25%, Ciara 37.5%, Sean B 37.5%), counted over the open claims that are not AUS/NZ.
     private static final Map<String, Decimal> WEIGHTS = new Map<String, Decimal>{
-        'Sean B' => 30,
-        'Ciara'  => 30,
-        'Becky'  => 40
+        'Sean B' => 37.5,
+        'Ciara'  => 37.5,
+        'Becky'  => 25
     };
 
     // Preserve an explicit order for deterministic tie-breaking.
@@ -30,6 +36,11 @@ public without sharing class BasicTriggerHandler {
     private static final String STATUS_SIGNED_WAITING_DOCS = 'Signed - Waiting Docs at WDM';
     private static final String STATUS_SENT_FOR_ESIG = 'Sent for eSignature';
     private static final String STATUS_FORM_COMPLETED = 'Form completed';
+
+    // The pack exists and has not gone out for signature yet: a data change regenerates it (also used by the editors).
+    public static final Set<String> PACK_EDIT_STATUSES = new Set<String>{
+        STATUS_FORM_COMPLETED, 'Pending Client', 'Agent Check', 'QC Approved'
+    };
 
     // One pack regeneration per claim and transaction
     private static Set<Id> packRegenerationQueued = new Set<Id>();
@@ -64,25 +75,46 @@ public without sharing class BasicTriggerHandler {
     // Data changed after the pack was generated and before it was sent: regenerate every document
     // so BR1, IPC1394, Client Summary and DD mandate stay consistent with each other.
     public void regeneratePackOnSourceChange() {
-        if (System.isBatch() || System.isFuture()) {
+        // The client's own form (portal, Apex REST) autosaves every minute; it regenerates the pack on its last step.
+        if (System.isBatch() || System.isFuture() || RestContext.request != null) {
             return;
         }
         for (Basic__c claim : newClaimsList) {
             Basic__c old = oldClaim.get(claim.Id);
-            if (old == null || claim.Status__c != STATUS_FORM_COMPLETED || old.Status__c != STATUS_FORM_COMPLETED
+            if (old == null || !PACK_EDIT_STATUSES.contains(claim.Status__c) || old.Status__c != claim.Status__c
                 || packRegenerationQueued.contains(claim.Id)
                 || Limits.getQueueableJobs() >= Limits.getLimitQueueableJobs()) {
                 continue;
             }
             if (!BP_ClaimPackGuard.changedSourceFields(old, claim).isEmpty()) {
-                packRegenerationQueued.add(claim.Id);
-                try {
-                    System.enqueueJob(new BP_RegeneratePackQueueable(claim.Id));
-                } catch (Exception ex) {
-                    System.debug(LoggingLevel.ERROR, 'Pack regeneration was not queued: ' + ex.getMessage());
-                }
+                queuePackRegeneration(claim.Id);
             }
         }
+    }
+
+    // One whole-pack regeneration per claim and transaction. Also used by the IPCBR1 / IPC1394 editors
+    // (XpEditorDocsAfterSave), which save in the same transaction as this trigger. Returns true when a
+    // regeneration is queued for the claim (now or earlier in the transaction).
+    public static Boolean queuePackRegeneration(Id claimId) {
+        if (packRegenerationQueued.contains(claimId)) {
+            return true;
+        }
+        if (Limits.getQueueableJobs() >= Limits.getLimitQueueableJobs()) {
+            return false;
+        }
+        packRegenerationQueued.add(claimId);
+        // XpClaimDocs: an agent cannot add versions to the claim's files, so for them the job runs as XtraPension Admin
+        try {
+            if (!XpClaimDocs.request(claimId, XpClaimDocs.REGENERATE)) {
+                packRegenerationQueued.remove(claimId);
+                return false;
+            }
+        } catch (Exception ex) {
+            System.debug(LoggingLevel.ERROR, 'Pack regeneration was not queued: ' + ex.getMessage());
+            packRegenerationQueued.remove(claimId);
+            return false;
+        }
+        return true;
     }
 
     public void generatePdfFiles() {
@@ -102,17 +134,79 @@ public without sharing class BasicTriggerHandler {
         }
     }
 
+    // A claim from Australia or New Zealand, by its country code or, when that is empty, its country name.
+    public static Boolean isAusNz(Basic__c claim) {
+        String code = claim.Current_Address_Abroad_Country__c == null ? '' : claim.Current_Address_Abroad_Country__c.trim().toUpperCase();
+        if (String.isNotBlank(code)) {
+            return AUS_NZ_CODES.contains(code);
+        }
+        String name = claim.Current_Address_Abroad_Country_Name__c == null ? '' : claim.Current_Address_Abroad_Country_Name__c.trim();
+        for (String n : AUS_NZ_NAMES) {
+            if (n.equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Emails of our own and the devs' test claims: their Stage 1 pack is never queued for the printing house
+    // (Is_Test_Claim__c, read by BP_PortalUtils.generateZipArchiveAfterCreatedClaim). Added 10/11/2026.
+    private static final List<String> TEST_EMAIL_PARTS = new List<String>{
+        '@xtrapension.com', '@tinderpoint.com', '@succraft.com', '@success-craft.com', 'mihail.klimovich@', '+test'
+    };
+
+    @TestVisible
+    private static Boolean isTestEmail(String email) {
+        if (String.isBlank(email)) {
+            return false;
+        }
+        String e = email.trim().toLowerCase();
+        for (String part : TEST_EMAIL_PARTS) {
+            if (e.contains(part)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void markTestClaims() {
+        for (Basic__c claim : newClaimsList) {
+            if (claim.Is_Test_Claim__c != true && isTestEmail(claim.Email__c)) {
+                claim.Is_Test_Claim__c = true;
+            }
+        }
+    }
+
+    // "Ever Work in the UK" changed on the Claim page counts as answered: the long form shows Yes until
+    // Ever_Work_UK_approved__c is set (BP_ResponseWrappers), and its next autosave would write Yes back (10/11/2026).
+    public void markWorkedInUkAnswered() {
+        if (RestContext.request != null) {
+            return;
+        }
+        for (Basic__c claim : newClaimsList) {
+            Basic__c old = oldClaim.get(claim.Id);
+            if (old != null && claim.Claimant_Ever_Worked_UK__c != old.Claimant_Ever_Worked_UK__c && claim.Ever_Work_UK_approved__c != true) {
+                claim.Ever_Work_UK_approved__c = true;
+            }
+        }
+    }
+
     public void distributeBetweenAgents() {
+        // Runs on before insert (BasicTrigger): also the place to mark test claims, without touching the trigger
+        markTestClaims();
         Map<String, Integer> counts = new Map<String, Integer>();
         for (String agent : AGENTS) {
             counts.put(agent, 0);
         }
 
+        // Only the open claims that are not AUS/NZ: Becky's AUS/NZ claims do not take from her 25% of the rest.
         for (AggregateResult result : [
             SELECT Validation_Agent__c agent, COUNT(Id) recordCount
             FROM Basic__c
             WHERE Validation_Agent__c IN :AGENTS
               AND Status__c IN :DISTRIBUTION_STATUSES
+              AND (Current_Address_Abroad_Country__c = null OR Current_Address_Abroad_Country__c NOT IN :AUS_NZ_CODES)
+              AND (Current_Address_Abroad_Country__c != null OR Current_Address_Abroad_Country_Name__c = null OR Current_Address_Abroad_Country_Name__c NOT IN :AUS_NZ_NAMES)
             GROUP BY Validation_Agent__c
         ]) {
             String agentName = (String) result.get('agent');
@@ -134,6 +228,10 @@ public without sharing class BasicTriggerHandler {
                 continue;
             }
             if (String.isNotBlank(claim.Validation_Agent__c)) {
+                continue;
+            }
+            if (isAusNz(claim)) {
+                claim.Validation_Agent__c = AUS_NZ_AGENT;
                 continue;
             }
 

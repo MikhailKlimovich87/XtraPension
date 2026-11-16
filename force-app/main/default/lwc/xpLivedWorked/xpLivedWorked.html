@@ -1,0 +1,177 @@
+<template>
+    <lightning-card title={cardTitle}>
+        <div slot="actions">
+            <template lwc:if={ipcbr1Id}>
+                <a class="view-all" onclick={openIpcbr1} title="Open the latest IPCBR1 (not the wet-signature one)">IPCBR1 ↗</a>
+            </template>
+        </div>
+        <div class="lived">
+            <template lwc:if={isLoading}>
+                <div class="note">Loading…</div>
+            </template>
+            <template lwc:if={error}>
+                <div class="note err">Couldn't load Lived &amp; Worked: {error}</div>
+            </template>
+            <template lwc:if={view}>
+                <template lwc:if={view.empty}>
+                    <div class="note">{view.empty}</div>
+                </template>
+                <template lwc:else>
+                    <div class="block">
+                        <template for:each={view.header} for:item="h">
+                            <span key={h.labelKey} class="label">{h.label}:</span>
+                            <span key={h.key} class="value">
+                                <span class={h.valueClass}>{h.value}</span>
+                                <template lwc:if={h.sub}>
+                                    <span class="sub">{h.sub}</span>
+                                </template>
+                            </span>
+                        </template>
+                    </div>
+
+                    <template for:each={view.blocks} for:item="b">
+                        <div key={b.key} class="group after">
+                            <template lwc:if={b.heading}>
+                                <div class="s-head">
+                                    <span class="s-title">{b.heading}</span>
+                                    <span class="chip"></span>
+                                    <template for:each={b.actions} for:item="a">
+                                        <a key={a.kind} class="add" data-kind={a.kind} onclick={openAdd}>+ {a.label}</a>
+                                    </template>
+                                </div>
+                            </template>
+                            <template for:each={b.lines} for:item="l">
+                                <div key={l.key} class="block tight">
+                                    <span class="label">{l.label}:</span>
+                                    <span>{l.value}</span>
+                                </div>
+                            </template>
+                            <template lwc:if={b.empty}>
+                                <div class={b.empty.cls}>{b.empty.text}</div>
+                            </template>
+                            <template for:each={b.sections} for:item="s">
+                                <div key={s.key} class="section">
+                                    <div class="s-head">
+                                        <span class="s-title">{s.title}</span>
+                                        <span class="chip">{s.chip}</span>
+                                        <template lwc:if={s.canAdd}>
+                                            <a class="add" data-kind={s.addKind} onclick={openAdd}>+ Add</a>
+                                        </template>
+                                    </div>
+                                    <template for:each={s.rows} for:item="r">
+                                        <div key={r.key} class="row">
+                                            <div class="l1">
+                                                <template lwc:if={r.dot}>
+                                                    <span class="dot" title={r.dotTitle}></span>
+                                                </template>
+                                                <span class="main">{r.line1}</span>
+                                                <template lwc:if={r.badge}>
+                                                    <span class="badge">{r.badge}</span>
+                                                </template>
+                                                <template lwc:if={r.canEdit}>
+                                                    <span class="acts">
+                                                        <lightning-button-icon icon-name="utility:edit" variant="bare" size="small"
+                                                            alternative-text="Edit" title="Edit" data-id={r.id} data-kind={r.kind}
+                                                            onclick={openEdit}></lightning-button-icon>
+                                                        <lightning-button-icon icon-name="utility:delete" variant="bare" size="small"
+                                                            alternative-text="Delete" title="Delete" data-id={r.id}
+                                                            onclick={remove}></lightning-button-icon>
+                                                    </span>
+                                                </template>
+                                            </div>
+                                            <div class="l2">
+                                                <template for:each={r.parts} for:item="p">
+                                                    <span key={p.key} class={p.cls}>
+                                                        <template lwc:if={p.href}>
+                                                            <a href={p.href} target="_blank" rel="noopener noreferrer">{p.text}</a>
+                                                        </template>
+                                                        <template lwc:else>{p.text}</template>
+                                                    </span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template lwc:if={s.empty}>
+                                        <div class={s.empty.cls}>{s.empty.text}</div>
+                                    </template>
+                                    <template for:each={s.notes} for:item="n">
+                                        <div key={n.key} class="info">{n.text}</div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <template lwc:if={view.hasChecks}>
+                        <div class="group after">
+                            <div class="s-head">
+                                <span class="s-title">Checks</span>
+                            </div>
+                            <template for:each={view.checks} for:item="c">
+                                <div key={c.key} class="check"><span class="dot"></span><span>{c.text}</span></div>
+                            </template>
+                            <template lwc:if={view.more}>
+                                <div class="info">{view.more}</div>
+                            </template>
+                        </div>
+                    </template>
+                </template>
+
+                <template lwc:if={view.hasFoot}>
+                    <div class="foot after">
+                        <template lwc:if={view.hasExtraAdds}>
+                            <div class="extra">
+                                <span class="label">Add:</span>
+                                <template for:each={view.extraAdds} for:item="a">
+                                    <a key={a.kind} class="add" data-kind={a.kind} onclick={openAdd}>{a.label}</a>
+                                </template>
+                            </div>
+                        </template>
+                        <template for:each={view.notes} for:item="n">
+                            <div key={n.key} class="info">{n.text}</div>
+                        </template>
+                    </div>
+                </template>
+            </template>
+        </div>
+    </lightning-card>
+
+    <template lwc:if={modal}>
+        <section role="dialog" tabindex="-1" aria-modal="true" aria-label={modal.title} class="slds-modal slds-fade-in-open slds-modal_small">
+            <div class="slds-modal__container">
+                <div class="slds-modal__header">
+                    <h1 class="slds-modal__title slds-hyphenate">{modal.title}</h1>
+                </div>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <div class="modal-fields">
+                        <template for:each={modalFields} for:item="f">
+                            <div key={f.name} class={f.cls}>
+                                <template lwc:if={f.isCombo}>
+                                    <lightning-combobox label={f.label} data-name={f.name} value={f.value} options={f.options}
+                                        required={f.required} placeholder="Select" onchange={handleField}></lightning-combobox>
+                                </template>
+                                <template lwc:elseif={f.isCheckbox}>
+                                    <lightning-input type="checkbox" label={f.label} data-name={f.name} checked={f.checked}
+                                        onchange={handleField}></lightning-input>
+                                </template>
+                                <template lwc:else>
+                                    <lightning-input type={f.type} label={f.label} data-name={f.name} value={f.value}
+                                        required={f.required} disabled={f.disabled} max-length={f.max}
+                                        onchange={handleField}></lightning-input>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                    <template lwc:if={formError}>
+                        <div class="form-error">{formError}</div>
+                    </template>
+                </div>
+                <div class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={closeModal} disabled={saving}></lightning-button>
+                    <lightning-button class="slds-m-left_x-small" variant="brand" label="Save" onclick={save} disabled={saving}></lightning-button>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </template>
+</template>

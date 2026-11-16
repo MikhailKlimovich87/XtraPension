@@ -244,4 +244,132 @@ private class AA_ApplicationFieldSyncTest {
         System.assertEquals('M1 2AB', reload(a.Id).Postcode__c,
             'no-context overload still mirrors the manual postcode');
     }
+
+    // ── record edit -> answers / declaration (audit 2026-11-11 AA-SFUI-2, AA-SFUI-3) ──
+
+    private static Map<String, AA_Answer__c> answersByField(Id appId) {
+        Map<String, AA_Answer__c> out = new Map<String, AA_Answer__c>();
+        for (AA_Answer__c r : [SELECT Field_Id__c, Value__c, Source__c FROM AA_Answer__c WHERE Application__c = :appId]) {
+            out.put(r.Field_Id__c, r);
+        }
+        return out;
+    }
+
+    private static void sign(Id appId) {
+        insert new List<AA_Answer__c>{
+            ans(appId, 'decl', '["agree"]'),
+            ans(appId, 'declname', 'Field Sync'),
+            ans(appId, 'decldate_day', '2'),
+            ans(appId, 'decldate_month', '11'),
+            ans(appId, 'decldate_year', '2026')
+        };
+    }
+
+    private static Boolean signed(Id appId) {
+        return [SELECT Declaration_Complete__c FROM AA_Application__c WHERE Id = :appId].Declaration_Complete__c;
+    }
+
+    // AA-SFUI-3: a name, date of birth or email corrected on the record used
+    // to change the header only; DWP still received the old answers.
+    @isTest static void recordEdit_nameDobEmail_reachTheAnswersTheFillReads() {
+        AA_Application__c a = makeApp();
+        insert new List<AA_Answer__c>{
+            ans(a.Id, 'first-name', 'Field'),
+            ans(a.Id, 'birth-date-day', '1'),
+            ans(a.Id, 'birth-date-month', '2'),
+            ans(a.Id, 'birth-date-year', '1950')
+        };
+        System.assertEquals(Date.newInstance(1950, 2, 1), reload(a.Id).DOB__c, 'precondition: the answers set the record');
+
+        Test.startTest();
+        update new AA_Application__c(Id = a.Id, First_Name__c = 'Margaret',
+            DOB__c = Date.newInstance(1949, 12, 25), Email__c = 'new@example.com');
+        Test.stopTest();
+
+        Map<String, AA_Answer__c> rows = answersByField(a.Id);
+        System.assertEquals('Margaret', rows.get('first-name').Value__c);
+        System.assertEquals('human', rows.get('first-name').Source__c, 'an operator edit');
+        System.assertEquals('25', rows.get('birth-date-day').Value__c);
+        System.assertEquals('12', rows.get('birth-date-month').Value__c);
+        System.assertEquals('1949', rows.get('birth-date-year').Value__c);
+        System.assertNotEquals(null, rows.get('contact-by-email'), 'a missing answer row is created');
+        System.assertEquals('new@example.com', rows.get('contact-by-email').Value__c);
+        AA_Application__c after = reload(a.Id);
+        System.assertEquals('Margaret', after.First_Name__c, 'the answer-to-record sync does not undo the edit');
+        System.assertEquals(Date.newInstance(1949, 12, 25), after.DOB__c);
+    }
+
+    // An emptied record field leaves no answer, as when the client clears it on the form.
+    @isTest static void recordEdit_blankedEmail_removesTheAnswer() {
+        AA_Application__c a = makeApp();
+        insert ans(a.Id, 'contact-by-email', 'old@example.com');
+        System.assertEquals('old@example.com', reload(a.Id).Email__c, 'precondition');
+
+        Test.startTest();
+        update new AA_Application__c(Id = a.Id, Email__c = null);
+        Test.stopTest();
+
+        System.assertEquals(null, answersByField(a.Id).get('contact-by-email'), 'no answer left for DWP to receive');
+        System.assertEquals(null, reload(a.Id).Email__c);
+    }
+
+    // The record write that mirrors an answer is not an edit on the record.
+    @isTest static void answerSave_isNotWrittenBackAsAnOperatorEdit() {
+        AA_Application__c a = makeApp();
+        Test.startTest();
+        insert ans(a.Id, 'first-name', 'Zed');
+        Test.stopTest();
+        System.assertEquals('Zed', reload(a.Id).First_Name__c);
+        System.assertEquals('form', answersByField(a.Id).get('first-name').Source__c,
+            'the mirror of an answer must not come back as a human edit of that answer');
+    }
+
+    // AA-SFUI-2: the fill types the home address from the record, so an
+    // address changed there after signing must clear the declaration.
+    @isTest static void recordEdit_address_clearsASignedDeclaration() {
+        AA_Application__c a = makeApp();
+        sign(a.Id);
+        System.assertEquals(true, signed(a.Id), 'precondition: signed');
+
+        Test.startTest();
+        update new AA_Application__c(Id = a.Id, Postcode__c = 'M1 2AB');
+        Test.stopTest();
+
+        System.assertEquals(false, signed(a.Id), 'the client must sign again before Fill on DWP');
+        System.assertEquals(0, [SELECT COUNT() FROM AA_Answer__c WHERE Application__c = :a.Id AND Field_Id__c LIKE 'decl%'],
+            'the declaration rows are gone');
+        String notes = [SELECT Notes__c FROM AA_Application__c WHERE Id = :a.Id].Notes__c;
+        System.assert(notes != null && notes.contains('Declaration cleared'), 'ops can see why: ' + notes);
+        System.assertEquals('M1 2AB', reload(a.Id).Postcode__c, 'the edit itself is kept');
+    }
+
+    // Same stage scope as the answer void: once the claim is filed the rows
+    // are the record of what DWP received.
+    @isTest static void recordEdit_address_afterTheClaimIsFiled_keepsTheDeclaration() {
+        AA_Application__c a = makeApp();
+        sign(a.Id);
+        update new AA_Application__c(Id = a.Id, Stage__c = 'Awaiting DWP Decision');
+
+        Test.startTest();
+        update new AA_Application__c(Id = a.Id, Address_Line1__c = '9 New Road');
+        Test.stopTest();
+
+        System.assertEquals(true, signed(a.Id), 'the signature DWP received stays on record');
+    }
+
+    // A system write (intake seed) never voids a signature, and the record
+    // mirror of that answer must not void it either.
+    @isTest static void addressAnswerFromASystemSource_doesNotClearTheDeclaration() {
+        AA_Application__c a = makeApp();
+        sign(a.Id);
+        AA_Answer__c seeded = ans(a.Id, 'home-address-manual-postcode', 'M1 2AB');
+        seeded.Source__c = 'intake';
+
+        Test.startTest();
+        insert seeded;
+        Test.stopTest();
+
+        System.assertEquals('M1 2AB', reload(a.Id).Postcode__c, 'the record follows the answer');
+        System.assertEquals(true, signed(a.Id), 'not an edit: the declaration stays');
+    }
 }

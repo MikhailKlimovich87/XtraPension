@@ -19,6 +19,9 @@
  *   3b. retryInstallment / getFeeInstallments — re-collect a failed or
  *      cancelled instalment with a fresh notice, and list the plan for the
  *      Fee Charge card (audit 2026-10-02 F110).
+ *   3c. cancelFeePlan — administrator only: delete a plan nothing has been
+ *      set up for at GoCardless yet, so a wrong award can be corrected
+ *      (audit 2026-11-11 AA-APEX-3).
  *   4. getDDStatus                  — cacheable read of every DD/fee field so
  *      the LWC can render the panel without a wire per field.
  *
@@ -111,6 +114,23 @@ public with sharing class AA_GoCardlessController {
     // year (2027 typo when meaning 2026) fails loudly rather than silently
     // sitting in the scheduler queue for months.
     private static final Integer FIRST_CHARGE_MAX_DAYS_AHEAD = 90;
+
+    // Stages at or after the award. recordAward never moves a case out of one
+    // of them (audit 2026-11-11 AA-SFUI-5): the old test listed only Awarded /
+    // Fee Charged / Closed - Paid, so re-saving the award on a 'DD Chargeback'
+    // or 'Closed - Fee Failed' case put it back to 'Awarded', a stage the fee
+    // sweep collects in.
+    @TestVisible private static final Set<String> POST_AWARD_STAGES = new Set<String>{
+        'Awarded', 'Fee Charged', 'Closed - Paid', 'Closed - Fee Failed', 'DD Chargeback',
+        'Change of Circumstances Review'
+    };
+
+    // Shown by recordAward once a plan or a payment exists (audit 2026-11-11
+    // AA-APEX-3: the old text pointed to a "cancel/refund" that did not exist).
+    @TestVisible private static final String AWARD_FROZEN_MSG =
+        'This award already has a fee plan (or a payment), so the amount and the plan can no longer be changed here. ' +
+        'While no payment has been set up at GoCardless, an administrator can use "Cancel fee plan" on the Fee Charge card ' +
+        'and then record the award again. If a payment already exists, ask the tech team: it has to be cancelled at GoCardless first.';
 
     // Wave-3 W3-2: shown when a new mandate would replace a dead one without
     // the client's fresh agreement on record.
@@ -359,9 +379,14 @@ public with sharing class AA_GoCardlessController {
             }
         }
 
-        Integer plan = normalisePlan(installments);
-
         AA_Application__c app = loadApp(recordId);
+        // audit 2026-11-11 AA-SFUI-1: a null plan means "the caller did not
+        // choose one". On an award that is already recorded that keeps the
+        // stored plan (it may be one the agent agreed with the client by
+        // hand); it no longer resets it to a single charge.
+        Integer plan = (installments == null && app.Award_Amount__c != null && app.Fee_Plan_Installments__c != null)
+            ? normalisePlan(app.Fee_Plan_Installments__c.intValue())
+            : normalisePlan(installments);
         // audit #7/#47: once charging has started (a base-fee payment id exists, or
         // AA_Fee_Installment__c child rows were created), the child schedule is
         // immutable — changing Award_Amount__c / Fee_Plan_Installments__c here would
@@ -373,8 +398,13 @@ public with sharing class AA_GoCardlessController {
             Boolean amountChanged = app.Award_Amount__c == null || app.Award_Amount__c != amount;
             Boolean planChanged   = plan != (Integer) app.Fee_Plan_Installments__c;
             if (amountChanged || planChanged) {
-                throw new AuraHandledException('This award has already been charged (or has an installment schedule), so the amount and plan can no longer be changed here. Cancel/refund the existing plan first, then re-record.');
+                throw new AuraHandledException(AWARD_FROZEN_MSG);
             }
+            // audit 2026-11-11 AA-APEX-14 / AA-SFUI-5: same amount, same plan,
+            // so there is nothing to save. The old code still rewrote
+            // Fee_First_Charge_Date__c (the rows keep their own dates) and
+            // could move the Stage. Answer with what is on the record.
+            return awardSnapshot(recordId);
         }
         app.Award_Amount__c = amount;
         app.Fee_Plan_Installments__c = plan;
@@ -390,13 +420,18 @@ public with sharing class AA_GoCardlessController {
         if (firstChargeDate != null) {
             app.Fee_First_Charge_Date__c = firstChargeDate;
         }
-        // Only advance if we're not already at/past this milestone — keep the
-        // stage-log tidy on re-saves of the same amount.
-        if (app.Stage__c != 'Awarded' && app.Stage__c != 'Fee Charged' && app.Stage__c != 'Closed - Paid') {
+        // Only advance if we're not already at/past this milestone (see
+        // POST_AWARD_STAGES): keeps the stage log tidy on re-saves and never
+        // takes a case out of a halt stage.
+        if (!POST_AWARD_STAGES.contains(app.Stage__c)) {
             app.Stage__c = 'Awarded';
         }
         update app;
+        return awardSnapshot(recordId);
+    }
 
+    /** What recordAward answers with: the award as it now stands on the record. */
+    private static Map<String, Object> awardSnapshot(Id recordId) {
         // Re-select for the recalculated formula (Fee_Amount__c +
         // Fee_Plan_Installment_Amount__c) — formulas aren't materialised on
         // the in-memory record after the update.
@@ -654,7 +689,74 @@ public with sharing class AA_GoCardlessController {
     }
 
     // -----------------------------------------------------------------
-    // 3c. getFeeInstallments — the plan rows for the Fee Charge card.
+    // 3c. cancelFeePlan — undo a plan nothing has been collected on
+    //
+    // audit 2026-11-11 AA-APEX-3: once Charge Fee had built the rows a wrong
+    // award (lower rate typed for a higher-rate letter, or the reverse) could
+    // not be corrected: recordAward refuses, chargeFee never rebuilds a plan,
+    // and no user or method could remove the rows. An administrator can now
+    // delete the plan while NO payment exists for it: every row uncreated at
+    // GoCardless (no Charged_At__c, no Payment_Id__c, not submitted or paid)
+    // and no fee payment id on the application. The operator then records
+    // the award again and clicks Charge Fee, which sends a fresh notice.
+    // A plan with a payment is refused: that payment has to be cancelled at
+    // GoCardless first, which this method does not do.
+    // -----------------------------------------------------------------
+    @AuraEnabled
+    public static Map<String, Object> cancelFeePlan(Id recordId) {
+        if (recordId == null) throw new AuraHandledException('recordId is required');
+        assertAdmin();
+        AA_Application__c app = loadApp(recordId);
+        if (String.isNotBlank(app.Fee_Payment_Id__c)) {
+            throw new AuraHandledException('A fee payment already exists for this application (' + app.Fee_Payment_Id__c +
+                '), so the plan cannot be cancelled here. Ask the tech team: the payment has to be cancelled at GoCardless first.');
+        }
+        List<AA_Fee_Installment__c> rows = [
+            SELECT Id, Installment_Number__c, Payment_Status__c, Payment_Id__c, Charged_At__c, Bacs_Notice_Sent__c
+              FROM AA_Fee_Installment__c
+             WHERE Application__c = :recordId
+             ORDER BY Installment_Number__c
+        ];
+        Boolean noticed = false;
+        for (AA_Fee_Installment__c r : rows) {
+            if (r.Charged_At__c != null || String.isNotBlank(r.Payment_Id__c)
+                    || r.Payment_Status__c == 'submitted' || r.Payment_Status__c == 'paid') {
+                throw new AuraHandledException('Instalment ' + r.Installment_Number__c + ' has already been set up at GoCardless (status "' +
+                    r.Payment_Status__c + '"), so the plan cannot be cancelled here. Ask the tech team: the payment has to be cancelled at GoCardless first.');
+            }
+            if (r.Bacs_Notice_Sent__c == true) noticed = true;
+        }
+        Integer deleted = rows.size();
+        if (!rows.isEmpty()) delete rows;
+        update new AA_Application__c(Id = recordId, Fee_Plan_Next_Charge_Date__c = null);
+        try {
+            insert new AA_Stage_Log__c(
+                Application__c = recordId,
+                Actor__c       = 'human',
+                Changed_At__c  = Datetime.now(),
+                Changed_By__c  = UserInfo.getUserId(),
+                Note__c        = safe('Fee plan cancelled: ' + deleted + ' instalment row(s) deleted, none set up at GoCardless.' +
+                    (noticed ? ' An advance notice had already gone to the client for the old plan.' : '') +
+                    ' Record the award again, then Charge Fee.')
+            );
+        } catch (Exception ignored) { /* best-effort */ }
+        return new Map<String, Object>{
+            'ok'          => true,
+            'deleted'     => deleted,
+            'notice_sent' => noticed
+        };
+    }
+
+    /** Money actions that undo a plan are for System Administrators (same rule as the template editor). */
+    private static void assertAdmin() {
+        List<Profile> p = [SELECT Name FROM Profile WHERE Id = :UserInfo.getProfileId() LIMIT 1];
+        if (p.isEmpty() || p[0].Name != 'System Administrator') {
+            throw new AuraHandledException('Only a System Administrator can cancel a fee plan.');
+        }
+    }
+
+    // -----------------------------------------------------------------
+    // 3d. getFeeInstallments — the plan rows for the Fee Charge card.
     // -----------------------------------------------------------------
     @AuraEnabled(cacheable=true)
     public static List<Map<String, Object>> getFeeInstallments(Id recordId) {

@@ -175,7 +175,7 @@ public class XtraPensionConstants {
         '<p>' +
         '<br>' +
         '</p>' +
-        '<p>Thank you for your recent letter advising us of HMRC\'s acceptance of our client\'s application to pay Class 2 voluntary NI contributions up until {NINO}.</p>' +
+        '<p>Thank you for your recent letter advising us of HMRC\'s acceptance of our client\'s application to pay Class 2 voluntary NI contributions up until {Current_Job_End_Date}.</p>' +
         '<p>' +
         '<br>' +
         '</p>' +
@@ -195,10 +195,7 @@ public class XtraPensionConstants {
         '<p>' +
         '<br>' +
         '</p>' +
-        '<p>Start Date:</p>' +
-        '<p>Employer Name:</p>' +
-        '<p>Employer Tel:</p>' +
-        '<p>Employer Address:</p>' +
+        '{Current_Job_Details}' +
         '<p>' +
         '<br>' +
         '</p>' +

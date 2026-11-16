@@ -1,5 +1,7 @@
 global class ClientSupportEmailServiceHandler implements Messaging.InboundEmailHandler {
     global final String ORG_WIDE_EMAIL_ADDRESS = 'clients@xtrapension.com';
+    // A claim reference (Basic__c.Name, "C05500"; 6 digits after C99999 and in tests) on its own in the subject: not inside a longer word or number.
+    static final Pattern CLAIM_REF = Pattern.compile('(?i)(?:^|[^A-Z0-9])(C\\d{5,6})(?![A-Z0-9])');
     global Messaging.InboundEmailResult handleInboundEmail(Messaging.InboundEmail email, Messaging.InboundEnvelope envelope) {
         Messaging.InboundEmailResult result = new Messaging.InboundEmailresult();
         String subject = email.subject;
@@ -41,6 +43,17 @@ global class ClientSupportEmailServiceHandler implements Messaging.InboundEmailH
                 bestWhen = applications[0].LastModifiedDate;
             }
         }
+        // Claims (Basic__c, 10/11/2026): the claim ref in the subject, else the client's email, else the helper's or the
+        // bank account owner's. The email is linked to the claim (Claim__c, the Claims email lists); it stays on the
+        // application, as before, unless the subject names the claim.
+        ClaimMatch claim = findClaim(subject, email.fromAddress);
+        if (claim != null) {
+            emailMessage.Claim__c = claim.claimId;
+            if (claim.fromSubject || emailMessage.Application__c == null) {
+                emailMessage.relatedToId = claim.claimId;
+            }
+        }
+
         // ── Multi-project routing across the shared clients@ mailbox ──────
         // Route to the MOST RECENTLY MODIFIED matching record; a pure-legacy
         // sender only matches Application__c so that flow is unchanged. Wrapped
@@ -174,6 +187,7 @@ global class ClientSupportEmailServiceHandler implements Messaging.InboundEmailH
                 contDocIds.add(version.ContentDocumentId);
             }
             List<ContentDocumentLink> newLinks = new List<ContentDocumentLink>();
+            // Files stay on the email only, never on the claim: the Claims code picks a claim's files by title ("Summary", "%Stage 1%", "%_Yellow"...).
             for (Id conDocId : contDocIds) {
                 ContentDocumentLink conDocLink = new ContentDocumentLink();
                 conDocLink.LinkedEntityId = emailMessage.Id;
@@ -188,6 +202,55 @@ global class ClientSupportEmailServiceHandler implements Messaging.InboundEmailH
         }
         result.success = true;
         return result;
+    }
+
+    class ClaimMatch {
+        Id claimId;
+        Boolean fromSubject;
+        ClaimMatch(Id claimId, Boolean fromSubject) {
+            this.claimId = claimId;
+            this.fromSubject = fromSubject;
+        }
+    }
+
+    /** The claim this email is about, or null. One query per step; several matches = the most recently created claim. */
+    static ClaimMatch findClaim(String subject, String fromAddress) {
+        try {
+            Set<String> refs = new Set<String>();
+            if (subject != null) {
+                Matcher m = CLAIM_REF.matcher(subject);
+                while (m.find()) {
+                    refs.add(m.group(1).toUpperCase());
+                }
+            }
+            if (!refs.isEmpty()) {
+                List<Basic__c> bySubject = [SELECT Id FROM Basic__c WHERE Name IN :refs ORDER BY CreatedDate DESC, Id DESC LIMIT 1];
+                if (!bySubject.isEmpty()) {
+                    return new ClaimMatch(bySubject[0].Id, true);
+                }
+            }
+            String sender = fromAddress == null ? null : fromAddress.trim();
+            if (String.isBlank(sender)) {
+                return null;
+            }
+            List<Basic__c> byClient = [SELECT Id FROM Basic__c WHERE Email__c = :sender ORDER BY CreatedDate DESC, Id DESC LIMIT 1];
+            if (!byClient.isEmpty()) {
+                return new ClaimMatch(byClient[0].Id, false);
+            }
+            List<Basic__c> byHelper = [
+                SELECT Id FROM Basic__c
+                WHERE Friend_Email__c = :sender OR Bank_Account_Owner_Email__c = :sender
+                ORDER BY CreatedDate DESC, Id DESC
+                LIMIT 1
+            ];
+            if (!byHelper.isEmpty()) {
+                return new ClaimMatch(byHelper[0].Id, false);
+            }
+        } catch (Exception e) {
+            // The client's email is always saved, linked or not.
+            System.debug(LoggingLevel.ERROR, 'ClientSupportEmailServiceHandler claim match: ' + e.getMessage());
+        }
+        return null;
     }
 
     // Added 2026-08-27 — parse In-Reply-To / References into a set of Message-Ids.

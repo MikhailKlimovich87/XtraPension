@@ -51,6 +51,7 @@ public with sharing class PC1_RecordPageService {
     public static Id saveField(Id applicationId, String fieldId, String value, String source) {
         if (String.isBlank(fieldId)) throw new AuraHandledException('field_id is required');
         if (String.isBlank(source))  source = 'human';
+        value = checkAnswer(fieldId, value);
 
         List<PC1_Answer__c> existing = [
             SELECT Id FROM PC1_Answer__c
@@ -75,6 +76,119 @@ public with sharing class PC1_RecordPageService {
         }
         try { PC1_MaryProgressCalculator.updateMaryProgress(applicationId); } catch (Exception ignore) {}
         return ans.Id;
+    }
+
+    /**
+     * Several answers in ONE transaction (audit 2026-11-11 PC-SFUI-11). A date
+     * is three answers (<id>_day / _month / _year); saved one call at a time,
+     * a refusal half way left the new day with the old month and year. Every
+     * value is checked before anything is written, and a date whose three
+     * parts are all in `values` must be a real calendar date (or all blank).
+     */
+    @AuraEnabled
+    public static void saveFields(Id applicationId, Map<String, String> values) {
+        if (applicationId == null) throw answerError('applicationId is required');
+        if (values == null || values.isEmpty()) return;
+        Map<String, String> clean = new Map<String, String>();
+        for (String fieldId : values.keySet()) {
+            if (String.isBlank(fieldId)) throw answerError('field_id is required');
+            clean.put(fieldId.trim(), checkAnswer(fieldId, values.get(fieldId)));
+        }
+        Set<String> stems = new Set<String>();
+        for (String fieldId : clean.keySet()) {
+            Matcher m = DATE_PART.matcher(fieldId);
+            if (m.matches()) stems.add(m.group(1));
+        }
+        for (String stem : stems) {
+            if (!clean.containsKey(stem + '_day') || !clean.containsKey(stem + '_month') || !clean.containsKey(stem + '_year')) continue;
+            String d = clean.get(stem + '_day');
+            String mo = clean.get(stem + '_month');
+            String y = clean.get(stem + '_year');
+            Integer filled = (String.isBlank(d) ? 0 : 1) + (String.isBlank(mo) ? 0 : 1) + (String.isBlank(y) ? 0 : 1);
+            if (filled == 0) continue;   // clearing the date
+            if (filled < 3) throw answerError('Enter the day, month and year of the date, or leave all three blank.');
+            Integer di = Integer.valueOf(d);
+            Integer mi = Integer.valueOf(mo);
+            Integer yi = Integer.valueOf(y);
+            Date parsed = Date.newInstance(yi, mi, di);
+            // Date.newInstance rolls an impossible date over (31/02 → 3 March).
+            if (parsed.day() != di || parsed.month() != mi || parsed.year() != yi) {
+                throw answerError(d + '/' + mo + '/' + y + ' is not a real date.');
+            }
+        }
+
+        Map<String, PC1_Answer__c> existing = new Map<String, PC1_Answer__c>();
+        for (PC1_Answer__c r : [
+            SELECT Id, Field_Id__c FROM PC1_Answer__c
+             WHERE Application__c = :applicationId AND Field_Id__c IN :clean.keySet()
+             ORDER BY LastModifiedDate DESC
+        ]) {
+            if (!existing.containsKey(r.Field_Id__c)) existing.put(r.Field_Id__c, r);
+        }
+        List<PC1_Answer__c> ups = new List<PC1_Answer__c>();
+        List<PC1_Answer__c> ins = new List<PC1_Answer__c>();
+        for (String fieldId : clean.keySet()) {
+            PC1_Answer__c row = existing.get(fieldId);
+            if (row != null) {
+                ups.add(new PC1_Answer__c(Id = row.Id, Value__c = clean.get(fieldId), Source__c = 'human'));
+            } else {
+                ins.add(new PC1_Answer__c(Application__c = applicationId, Field_Id__c = fieldId,
+                    Value__c = clean.get(fieldId), Source__c = 'human'));
+            }
+        }
+        if (!ups.isEmpty()) update ups;
+        if (!ins.isEmpty()) insert ins;
+        try { PC1_MaryProgressCalculator.updateMaryProgress(applicationId); } catch (Exception ignore) {}
+    }
+
+    // ── ANSWER CHECKS (audit 2026-11-11 PC-APEX-8 / PC-SFUI-11) ──────────
+    // The record-page editor wrote any field id and value verbatim. These are
+    // the checks that must hold whatever the browser sends; the flow's own
+    // rules (patterns, option lists, date ranges) are applied by the editor
+    // (pc1DataRules.js) before it calls here.
+
+    /** Answers only the server may set: the bank check writes this one. */
+    private static final Set<String> SERVER_ONLY_IDS = new Set<String>{ 'q_bank_verification_status' };
+    /** One part of a date answer: "<id>_day" / "_month" / "_year". */
+    private static final Pattern DATE_PART = Pattern.compile('^(.+)_(day|month|year)$');
+    /** PC1_Answer__c.Value__c is a Text Area(4000). */
+    private static final Integer MAX_ANSWER_CHARS = 4000;
+
+    private static AuraHandledException answerError(String msg) {
+        AuraHandledException e = new AuraHandledException(msg);
+        e.setMessage(msg);
+        return e;
+    }
+
+    /** Returns the value to store, or throws with a sentence the editor shows. */
+    @TestVisible
+    private static String checkAnswer(String fieldId, String value) {
+        String id = fieldId == null ? '' : fieldId.trim();
+        if (SERVER_ONLY_IDS.contains(id)) {
+            // A green status typed here was copied onto the Application and
+            // unlocked a Direct Debit on digits nobody checked.
+            throw answerError('The bank verification status is set by the bank check and cannot be typed in. Use Verify on the bank card.');
+        }
+        // "Who is applying" is always XtraPension: every other path locks it.
+        if (id == 'q221' && String.isNotBlank(value) && value.trim() != 'charity') {
+            throw answerError('"Who is applying" is always XtraPension (charity) and cannot be changed.');
+        }
+        if (value != null && value.length() > MAX_ANSWER_CHARS) {
+            throw answerError('This answer is too long (' + value.length() + ' characters; the limit is ' + MAX_ANSWER_CHARS + ').');
+        }
+        Matcher m = DATE_PART.matcher(id);
+        if (m.matches() && String.isNotBlank(value)) {
+            String part = m.group(2);
+            String v = value.trim();
+            if (!Pattern.matches('^[0-9]{1,4}$', v)) throw answerError('The ' + part + ' of a date must be a number.');
+            Integer n = Integer.valueOf(v);
+            if (part == 'day' && (n < 1 || n > 31)) throw answerError('Day must be between 1 and 31.');
+            if (part == 'month' && (n < 1 || n > 12)) throw answerError('Month must be between 1 and 12.');
+            // A year before 1900 failed the whole save on the DOB_Reasonable rule with a raw error.
+            if (part == 'year' && (n < 1900 || n > 2100)) throw answerError('Year must be between 1900 and 2100.');
+            return v;
+        }
+        return value;
     }
 
     // ── CALL HISTORY ─────────────────────────────────────────────────────

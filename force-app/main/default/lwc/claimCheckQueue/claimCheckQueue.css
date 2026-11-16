@@ -1,0 +1,71 @@
+.card-body {
+    margin: 0 1rem 1rem;
+}
+
+.comment-data {
+    color: grey;
+    font-weight: normal;
+    font-size: 0.8rem;
+}
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.75rem;
+}
+
+.search {
+    margin-left: auto;
+    min-width: 14rem;
+}
+
+.chip {
+    border: 1px solid #c9c9c9;
+    border-radius: 999px;
+    padding: 0.15rem 0.7rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.chip-active {
+    border-color: #0176d3;
+    box-shadow: 0 0 0 2px rgba(1, 118, 211, 0.25);
+}
+
+.chip-never { background: #f3f3f3; }
+.chip-red { background: #fef3f2; color: #9b2935; }
+.chip-yellow { background: #fffbea; color: #9f5919; }
+.chip-green { background: #effdf4; color: #076838; }
+
+.queue-table {
+    font-size: 0.8rem;
+}
+
+.num {
+    text-align: right;
+}
+
+.result {
+    border-radius: 4px;
+    padding: 0.05rem 0.4rem;
+    white-space: nowrap;
+}
+
+.result-never { background: #f3f3f3; color: #444444; }
+.result-red { background: #fef3f2; color: #9b2935; }
+.result-yellow { background: #fffbea; color: #9f5919; }
+.result-green { background: #effdf4; color: #076838; }
+
+.more {
+    text-align: center;
+    margin-top: 0.5rem;
+}
+
+.empty {
+    color: grey;
+    margin: 0.5rem 0;
+}

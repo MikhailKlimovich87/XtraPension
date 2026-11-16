@@ -427,6 +427,109 @@ export function choiceState(options, raw) {
     };
 }
 
+// ── health conditions: DWP's list only (audit 2026-11-11 AA-ENGINE-1) ──────
+// DWP's health-conditions page is an autocomplete over a fixed list. The fill
+// enters a condition only when the stored name equals a list entry; a name
+// typed freely here ("Diabetes") used to be saved as typed and the fill then
+// posted the first entry that starts with it ("Diabetes insipidus"). The
+// editor of health-conditions and its "__<n>" entries therefore saves a list
+// entry, in the list's own spelling, or nothing. A condition DWP does not
+// list goes in health-conditions-manual, DWP's own "I cannot find my health
+// condition" field.
+export const CONDITION_LIST_FIELD = 'health-conditions';
+export const CONDITION_MANUAL_FIELD = 'health-conditions-manual';
+export const CONDITION_HINT =
+    "Only a name from DWP's list of health conditions is saved here, in DWP's wording. " +
+    'Type the name and press Save: when it is not on the list, the closest entries are shown to choose from.';
+
+/** True for health-conditions and its "__<n>" entries (not the manual twin). */
+export function isConditionListField(fieldId) {
+    return parseFieldId(fieldId).base === CONDITION_LIST_FIELD;
+}
+
+// The comparison the fill makes on DWP's options (src/engine.js norm: lower
+// case, runs of spaces as one, trimmed). A curly apostrophe counts as a
+// straight one, since the list entry is what gets saved.
+const foldCondition = (s) => String(s == null ? '' : s).replace(/[‘’]/g, "'").trim().replace(/\s+/g, ' ').toLowerCase();
+
+/** The list entry a typed name equals (ignoring case and spacing), else null. */
+export function matchConditionName(raw, conditions) {
+    const q = foldCondition(raw);
+    if (!q) return null;
+    for (const c of Array.isArray(conditions) ? conditions : []) {
+        if (typeof c === 'string' && foldCondition(c) === q) return c;
+    }
+    return null;
+}
+
+/**
+ * Up to max list entries closest to a typed name, best first: entries that
+ * start with it, entries that contain it, then entries sharing the most of its
+ * words (a word of 3 letters or more; it matches an entry word that starts
+ * with it, or that it starts with). Apostrophes are ignored here, so
+ * "Parkinsons disease" finds "Parkinson's disease". Ties keep DWP's order.
+ */
+export function nearestConditions(raw, conditions, max = 6) {
+    const plain = (s) => foldCondition(s).replace(/'/g, '');
+    const wordsOf = (s) => s.split(/[^a-z0-9]+/).filter(Boolean);
+    const q = plain(raw);
+    if (!q) return [];
+    const words = wordsOf(q).filter(w => w.length >= 3);
+    const scored = [];
+    (Array.isArray(conditions) ? conditions : []).forEach((c, i) => {
+        if (typeof c !== 'string') return;
+        const e = plain(c);
+        let score = 0;
+        if (e.startsWith(q)) score = 1000;
+        else if (e.includes(q)) score = 500;
+        else if (words.length) {
+            const entryWords = wordsOf(e);
+            score = words.filter(w => entryWords.some(x => x.startsWith(w) || (x.length >= 4 && w.startsWith(x)))).length;
+        }
+        if (score > 0) scored.push({ c, i, score });
+    });
+    scored.sort((x, y) => y.score - x.score || x.i - y.i);
+    return scored.slice(0, max).map(s => s.c);
+}
+
+/**
+ * Check a name typed into a health-conditions editor before it is saved.
+ * Blank clears the answer. A list entry is saved in the list's spelling.
+ * Anything else is refused: { ok: false, error, nearest } with the closest
+ * list entries, and nothing is saved. With no list to check against
+ * (aaFlowConfig without CONDITIONS, or the flow did not load) nothing is
+ * saved either, and noList says why: the name could not be checked.
+ */
+export function checkConditionName(raw, conditions) {
+    const typed = raw == null ? '' : String(raw).trim();
+    if (typed === '') return { ok: true, value: '' };
+    if (!Array.isArray(conditions) || !conditions.length) {
+        return {
+            ok: false, noList: true, nearest: [],
+            error: "DWP's list of health conditions is not loaded on this page, so this name cannot be checked and was not saved. " +
+                'Reload the page. If this message comes back, tell the developer: the aaFlowConfig resource has no CONDITIONS list.'
+        };
+    }
+    const hit = matchConditionName(typed, conditions);
+    if (hit) return { ok: true, value: hit };
+    const nearest = nearestConditions(typed, conditions);
+    return {
+        ok: false,
+        nearest,
+        error: `"${typed}" is not on DWP's list of health conditions. Nothing was saved. ` +
+            (nearest.length ? 'Choose one of the closest entries shown under the box.' : "Type the condition in DWP's wording.")
+    };
+}
+
+/** Warning for a stored health-conditions name that is not a list entry. */
+export function conditionRowWarning(raw, conditions) {
+    const stored = raw == null ? '' : String(raw).trim();
+    if (stored === '' || !Array.isArray(conditions) || !conditions.length) return '';
+    if (matchConditionName(stored, conditions)) return '';
+    return `"${stored}" is not on DWP's list of health conditions, so the DWP fill cannot enter it. ` +
+        "Edit this row and choose DWP's wording.";
+}
+
 /** Same comparison src/fill/address-match.js normPostcode makes (uppercase,
  *  all whitespace removed), so the SF form and the fill agree on "differs". */
 export function normPostcode(s) {

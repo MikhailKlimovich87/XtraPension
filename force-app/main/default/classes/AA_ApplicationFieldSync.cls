@@ -117,6 +117,11 @@ public with sharing class AA_ApplicationFieldSync {
      */
     public static void syncFromAnswers(Set<Id> appIds, Set<String> affectedFieldIds) {
         if (appIds == null || appIds.isEmpty()) return;
+        // The answers being written right now come FROM the record
+        // (mirrorToAnswers): there is nothing to copy back, and a re-sync of
+        // every mapped field here would undo another record field edited in
+        // the same save (a phone number, an address line).
+        if (mirroringToAnswers) return;
         if (affectedFieldIds == null) affectedFieldIds = new Set<String>();
 
         // Preload existing Application values so we only DML when something
@@ -224,12 +229,174 @@ public with sharing class AA_ApplicationFieldSync {
         // passed undialled, DOB_Reasonable, ...) rolled back the client's answer
         // itself. The scalars are a display mirror and re-sync on the next
         // save; the answer must not be lost. Log instead.
-        Database.SaveResult[] saved = Database.update(toUpdate, false);
+        // The flag tells afterRecordEdit (AA_ApplicationTrigger) that this
+        // scalar write is the mirror of an answer, not an edit on the record.
+        Database.SaveResult[] saved;
+        syncingFromAnswers = true;
+        try {
+            saved = Database.update(toUpdate, false);
+        } finally {
+            syncingFromAnswers = false;
+        }
         for (Integer i = 0; i < saved.size(); i++) {
             if (saved[i].isSuccess()) continue;
             System.debug(LoggingLevel.ERROR, 'AA_ApplicationFieldSync: scalar sync skipped for '
                 + toUpdate[i].Id + ': ' + saved[i].getErrors()[0].getMessage());
         }
+    }
+
+    // ── record edit -> answers / declaration (audit 2026-11-11 AA-SFUI-2, AA-SFUI-3) ──
+
+    /** True while syncFromAnswers writes the scalars (answer -> record). */
+    public static Boolean syncingFromAnswers = false;
+    /** True while mirrorToAnswers writes the answers (record -> answer). */
+    private static Boolean mirroringToAnswers = false;
+
+    /**
+     * Record fields an operator can edit on the Details tab whose value the
+     * DWP fill takes from an ANSWER row (src/fill/adapter.js builds the fill
+     * from AA_Answer__c only). Until 2026-11-11 the sync ran one way (answer
+     * to record), so a name, date of birth or email corrected on the record
+     * changed the header and nothing else: DWP still got the old answer, and
+     * the next answer save overwrote the correction. Phone__c is left out on
+     * purpose: the record holds E.164 for dialling, the answer holds the
+     * number as the client gave it, and DWP gets the answer.
+     */
+    private static final Map<String, String> PARENT_TO_ANSWER = new Map<String, String>{
+        'First_Name__c'  => 'first-name',
+        'Middle_Name__c' => 'middle-name',
+        'Last_Name__c'   => 'last-name',
+        'Email__c'       => 'contact-by-email'
+    };
+
+    /** Record fields the DWP fill types the home address from (src/fill/address-match.js). */
+    private static final List<String> ADDRESS_FILL_FIELDS = new List<String>{
+        'Postcode__c', 'Address_Line1__c', 'Address_Line2__c'
+    };
+
+    /**
+     * After update of AA_Application__c (AA_ApplicationTrigger). For an edit
+     * made on the record itself, not for the mirror of an answer:
+     *   1. a changed home address clears a signed declaration, exactly as an
+     *      answer change does (AA_ProgressCalculator.voidDeclarationOnRecordChange).
+     *      The record is what the fill types, so there is no answer to write;
+     *   2. a changed name, date of birth or email is written to the answer
+     *      rows the fill reads, with Source__c 'human'. AA_AnswerTrigger then
+     *      does the rest (declaration void, progress).
+     * Fail closed: when the declaration cannot be cleared or an answer cannot
+     * be written, the record edit itself is refused, so the record and what
+     * DWP would receive never disagree.
+     */
+    public static void afterRecordEdit(List<AA_Application__c> newList, Map<Id, AA_Application__c> oldMap) {
+        if (syncingFromAnswers || mirroringToAnswers || newList == null || oldMap == null) return;
+
+        Map<Id, String> addressChanged = new Map<Id, String>();
+        for (AA_Application__c app : newList) {
+            AA_Application__c prev = oldMap.get(app.Id);
+            if (prev == null) continue;
+            for (String f : ADDRESS_FILL_FIELDS) {
+                if (!text(app.get(f)).equals(text(prev.get(f)))) {
+                    addressChanged.put(app.Id, 'home address (' + f + ' on the record)');
+                    break;
+                }
+            }
+        }
+        if (!addressChanged.isEmpty()) {
+            Map<Id, String> notCleared = AA_ProgressCalculator.voidDeclarationOnRecordChange(addressChanged);
+            for (AA_Application__c app : newList) {
+                if (!notCleared.containsKey(app.Id)) continue;
+                app.addError('The address was not saved, because the signed declaration on this application could not be cleared ('
+                    + notCleared.get(app.Id) + '). Please try again in a few minutes.');
+            }
+        }
+        mirrorToAnswers(newList, oldMap);
+    }
+
+    private static void mirrorToAnswers(List<AA_Application__c> newList, Map<Id, AA_Application__c> oldMap) {
+        // appId -> answer field id -> the value it must now hold (null = no answer)
+        Map<Id, Map<String, String>> wanted = new Map<Id, Map<String, String>>();
+        Set<String> fieldIds = new Set<String>();
+        for (AA_Application__c app : newList) {
+            AA_Application__c prev = oldMap.get(app.Id);
+            if (prev == null) continue;
+            Map<String, String> w = new Map<String, String>();
+            for (String parentApi : PARENT_TO_ANSWER.keySet()) {
+                String nv = text(app.get(parentApi));
+                if (!nv.equals(text(prev.get(parentApi)))) {
+                    w.put(PARENT_TO_ANSWER.get(parentApi), String.isEmpty(nv) ? null : nv);
+                }
+            }
+            if (app.DOB__c != prev.DOB__c) {
+                // No leading zeros, like the intake seeder and the form.
+                Date d = app.DOB__c;
+                w.put(DOB_ID + '-day',   d == null ? null : String.valueOf(d.day()));
+                w.put(DOB_ID + '-month', d == null ? null : String.valueOf(d.month()));
+                w.put(DOB_ID + '-year',  d == null ? null : String.valueOf(d.year()));
+            }
+            if (w.isEmpty()) continue;
+            wanted.put(app.Id, w);
+            fieldIds.addAll(w.keySet());
+        }
+        if (wanted.isEmpty()) return;
+
+        Map<String, List<AA_Answer__c>> rowsByKey = new Map<String, List<AA_Answer__c>>();
+        for (AA_Answer__c a : [
+            SELECT Id, Application__c, Field_Id__c, Value__c
+              FROM AA_Answer__c
+             WHERE Application__c IN :wanted.keySet() AND Field_Id__c IN :fieldIds
+        ]) {
+            String k = String.valueOf(a.Application__c) + '|' + a.Field_Id__c;
+            if (!rowsByKey.containsKey(k)) rowsByKey.put(k, new List<AA_Answer__c>());
+            rowsByKey.get(k).add(a);
+        }
+
+        List<AA_Answer__c> toInsert = new List<AA_Answer__c>();
+        List<AA_Answer__c> toChange = new List<AA_Answer__c>();
+        List<AA_Answer__c> toDelete = new List<AA_Answer__c>();
+        Set<Id> touched = new Set<Id>();
+        for (Id appId : wanted.keySet()) {
+            Map<String, String> w = wanted.get(appId);
+            for (String fieldId : w.keySet()) {
+                String v = w.get(fieldId);
+                List<AA_Answer__c> rows = rowsByKey.get(String.valueOf(appId) + '|' + fieldId);
+                if (v == null) {
+                    // The record field was emptied: no answer, as when the
+                    // client clears the field on the form.
+                    if (rows != null) { toDelete.addAll(rows); touched.add(appId); }
+                } else if (rows == null) {
+                    toInsert.add(new AA_Answer__c(
+                        Application__c = appId, Field_Id__c = fieldId, Value__c = v, Source__c = 'human'));
+                    touched.add(appId);
+                } else {
+                    for (AA_Answer__c r : rows) {
+                        if (text(r.Value__c).equals(v)) continue;
+                        toChange.add(new AA_Answer__c(Id = r.Id, Value__c = v, Source__c = 'human'));
+                        touched.add(appId);
+                    }
+                }
+            }
+        }
+        if (touched.isEmpty()) return;
+
+        mirroringToAnswers = true;
+        try {
+            if (!toDelete.isEmpty()) delete toDelete;
+            if (!toChange.isEmpty()) update toChange;
+            if (!toInsert.isEmpty()) insert toInsert;
+        } catch (DmlException e) {
+            for (AA_Application__c app : newList) {
+                if (!touched.contains(app.Id)) continue;
+                app.addError('This change was not saved, because the matching answer in the application data could not be updated ('
+                    + e.getDmlMessage(0) + ').');
+            }
+        } finally {
+            mirroringToAnswers = false;
+        }
+    }
+
+    /** A record value as trimmed text; null and blank are the same. */
+    private static String text(Object v) {
+        return v == null ? '' : String.valueOf(v).trim();
     }
 
     /**

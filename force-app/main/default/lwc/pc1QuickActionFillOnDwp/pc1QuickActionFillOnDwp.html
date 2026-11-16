@@ -40,7 +40,7 @@
 
             <div class="slds-text-align_right">
                 <template lwc:if={canForce}>
-                    <lightning-button variant="destructive-text" label={forceButtonLabel} onclick={handleForceStart} class="slds-m-right_x-small"></lightning-button>
+                    <lightning-button variant="destructive-text" label={forceButtonLabel} onclick={handleForceStart} disabled={working} class="slds-m-right_x-small"></lightning-button>
                 </template>
                 <lightning-button variant="brand" label="Close" onclick={handleClose}></lightning-button>
             </div>
@@ -68,7 +68,7 @@
             </div>
             <div class="slds-text-align_right">
                 <lightning-button label="Not yet" onclick={handleClose} class="slds-m-right_x-small"></lightning-button>
-                <lightning-button variant="brand" label="Start filling" onclick={handleStart}></lightning-button>
+                <lightning-button variant="brand" label="Start filling" onclick={handleStart} disabled={working}></lightning-button>
             </div>
         </div>
     </template>

@@ -1,0 +1,42 @@
+<template>
+    <lightning-card title="Last Contact" icon-name="standard:log_a_call">
+        <div slot="actions" class="xp-lc__actions">
+            <lightning-button-icon icon-name="utility:refresh" variant="bare" alternative-text="Refresh" title="Refresh" onclick={handleRefresh}></lightning-button-icon>
+        </div>
+
+        <div class="xp-lc">
+            <template lwc:if={loading}>
+                <div class="xp-lc__loading"><lightning-spinner alternative-text="Loading" size="small"></lightning-spinner></div>
+            </template>
+
+            <template lwc:if={error}>
+                <div class="slds-notify slds-notify_alert slds-theme_error slds-m-horizontal_medium slds-m-bottom_small" role="alert">{error}</div>
+            </template>
+
+            <template lwc:if={record}>
+                <dl class="xp-lc__grid">
+                    <div class="xp-lc__cell">
+                        <dt class="xp-lc__label">Contact</dt>
+                        <dd class="xp-lc__value">{contactType}</dd>
+                    </div>
+                    <div class="xp-lc__cell">
+                        <dt class="xp-lc__label">Last Contact</dt>
+                        <dd class="xp-lc__value">{who}</dd>
+                    </div>
+                    <div class="xp-lc__cell">
+                        <dt class="xp-lc__label">Date Since Contact</dt>
+                        <dd class="xp-lc__value">{dateLine}</dd>
+                    </div>
+                    <div class="xp-lc__cell">
+                        <dt class="xp-lc__label">Days Since Last Contact</dt>
+                        <dd class="xp-lc__value">{daysLine}</dd>
+                    </div>
+                </dl>
+                <p class="xp-lc__hint">
+                    <template lwc:if={hasContact}>Updated automatically from calls, emails and WhatsApp.</template>
+                    <template lwc:else>No contact yet. Calls, emails and WhatsApp fill this in automatically.</template>
+                </p>
+            </template>
+        </div>
+    </lightning-card>
+</template>

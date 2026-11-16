@@ -13,6 +13,12 @@ const FIELDS = [
     'AA_Application__c.Postcode__c',
 ];
 
+// The UK postcode shape the answer editors and the Apex already hold
+// home-address-postcode to (aaDataRules FORMAT_RULES, AA_RecordPageService
+// POSTCODE_RE). This card wrote anything typed to Postcode__c, the postcode
+// the DWP fill looks the address up with (audit 2026-11-11 AA-SFUI-2).
+const UK_POSTCODE_RE = /^(GIR ?0AA|[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2})$/;
+
 export default class AaAddressEditor extends LightningElement {
     @api recordId;
 
@@ -81,6 +87,11 @@ export default class AaAddressEditor extends LightningElement {
     }
 
     async handleSave() {
+        const postcode = this.draft.postcode.trim().toUpperCase();
+        if (!UK_POSTCODE_RE.test(postcode)) {
+            this.toast('Enter a real UK postcode, for example SW1A 2AA.', 'error');
+            return;
+        }
         this.saving = true;
         try {
             await updateRecord({ fields: {
@@ -89,7 +100,7 @@ export default class AaAddressEditor extends LightningElement {
                 Address_Line2__c: this.draft.line2.trim(),
                 City__c:          this.draft.city.trim(),
                 County__c:        this.draft.county.trim(),
-                Postcode__c:      this.draft.postcode.trim().toUpperCase(),
+                Postcode__c:      postcode,
             }});
             this.editing = false;
             await refreshApex(this.wiredRecord);

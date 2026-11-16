@@ -33,6 +33,12 @@
  *
  * Dedup: skip (template, app) if PC1_Message_Send_Log__c has Status__c='Sent'
  * within the last 24 h. Guards against trigger re-fires on record recovery.
+ *
+ * Do Not Contact (audit 2026-11-11 PC-APEX-6, port of AA): an app with
+ * Do_Not_Contact__c = true gets NO automated message of any kind. The flag
+ * also pauses fee collection (PC1_FeeInstallmentScheduler), so there is no
+ * collection to announce. Each suppressed send writes a log row so the val
+ * team can see why nothing went out.
  */
 public with sharing class PC1_MessageDispatcher implements Queueable, Database.AllowsCallouts {
 
@@ -201,11 +207,14 @@ public with sharing class PC1_MessageDispatcher implements Queueable, Database.A
                    Stage__c, Stage_Changed_At__c, Sales_Agent__c, Val_Agent__c,
                    DD_Mandate_Id__c, DD_Mandate_Status__c, DD_Mandate_Created_At__c,
                    Helper_First_Name__c, Helper_Last_Name__c, Helper_Email__c, Helper_Phone__c,
-                   Fee_Amount__c
+                   Fee_Amount__c, Do_Not_Contact__c
               FROM PC1_Application__c
              WHERE Id IN :chunkIds
         ]);
         if (appMap.isEmpty()) return;
+        String dncStatus = skipStatus(STATUS_SKIP_DNC);
+        // From address of every email in this run (audit 2026-11-11 PC-APEX-14).
+        Id clientsOweaId = loadClientsOwea();
 
         // 3. Latest PC1_Call_Schedule__c per app (CallDate / CallTime) ─
         Map<Id, Datetime> latestCallByApp = loadLatestCalls(appMap.keySet());
@@ -268,6 +277,19 @@ public with sharing class PC1_MessageDispatcher implements Queueable, Database.A
                     continue;
                 }
 
+                // Do Not Contact guard (audit 2026-11-11 PC-APEX-6). After
+                // Mary flags a client as deceased, the Direct Debit
+                // confirmation, the Bacs notice, the receipts and the
+                // "submitted" email all still went to the client and the
+                // helper in CC ───────────────────────────────────────
+                if (app.Do_Not_Contact__c == true) {
+                    log.Status__c        = dncStatus;
+                    log.Sent_At__c       = Datetime.now();
+                    log.Error_Message__c = 'Suppressed: Do_Not_Contact__c is true on this application. Nothing was sent.';
+                    pendingLogs.add(log);
+                    continue;
+                }
+
                 // Render ─────────────────────────────────────────────
                 Rendered rendered;
                 try {
@@ -305,7 +327,7 @@ public with sharing class PC1_MessageDispatcher implements Queueable, Database.A
                         pendingLogs.add(log);
                         continue;
                     }
-                    Messaging.SingleEmailMessage builtMsg = buildEmail(t, app, rendered, resourceByName, appFileByKey, log);
+                    Messaging.SingleEmailMessage builtMsg = buildEmail(t, app, rendered, resourceByName, appFileByKey, log, clientsOweaId);
                     // Fernando's rule (2026-08-18): if a required per-app
                     // attachment is missing (e.g. GC mandate PDF still being
                     // fetched by the Node endpoint), DO NOT send an
@@ -484,7 +506,13 @@ public with sharing class PC1_MessageDispatcher implements Queueable, Database.A
                         }
                         emailMessageAppFiles.add(perAppCvIds);
                         List<String> staticNames = new List<String>();
+                        // Same rule as buildEmail: the generic twin of a per-app
+                        // document is not an attachment of its own. When it stood
+                        // in for a missing per-app file it is not filed either:
+                        // it would land under the personalised title.
+                        Set<String> twinNames = fallbackNamesOf(tI);
                         for (String name : parseAttachmentList(tI.Attachment_Static_Resource_Name__c)) {
+                            if (twinNames.contains(name)) continue;
                             if (resourceByName.containsKey(name)) staticNames.add(name);
                         }
                         emailMessageStaticRes.add(staticNames);
@@ -786,7 +814,7 @@ public with sharing class PC1_MessageDispatcher implements Queueable, Database.A
                    Stage__c, Stage_Changed_At__c, Sales_Agent__c, Val_Agent__c,
                    DD_Mandate_Id__c, DD_Mandate_Status__c, DD_Mandate_Created_At__c,
                    Helper_First_Name__c, Helper_Last_Name__c, Helper_Email__c, Helper_Phone__c,
-                   Fee_Amount__c
+                   Fee_Amount__c, Do_Not_Contact__c
               FROM PC1_Application__c WHERE Id = :appId LIMIT 1];
         if (apps.isEmpty()) throw new AuraHandledException('Application not found.');
         Datetime callAt = loadLatestCalls(new Set<Id>{ apps[0].Id }).get(apps[0].Id);
@@ -1017,7 +1045,7 @@ public with sharing class PC1_MessageDispatcher implements Queueable, Database.A
             PC1_Message_Template__c t, PC1_Application__c app,
             Rendered rendered, Map<String, StaticResource> resources,
             Map<String, ContentVersion> appFiles,
-            PC1_Message_Send_Log__c log) {
+            PC1_Message_Send_Log__c log, Id clientsOweaId) {
         Messaging.SingleEmailMessage msg = new Messaging.SingleEmailMessage();
         msg.setToAddresses(new List<String>{ app.Email__c });
         // Helper CC (Fernando 2026-08-18): a friend/relative the client
@@ -1026,9 +1054,18 @@ public with sharing class PC1_MessageDispatcher implements Queueable, Database.A
         // equal to the client's own email — the intake form already blocks
         // the same-email case, but a stale record from before the check
         // shouldn't send two copies.
+        String ccDropped = null;
         if (String.isNotBlank(app.Helper_Email__c)
                 && !app.Helper_Email__c.equalsIgnoreCase(String.valueOf(app.Email__c))) {
-            msg.setCcAddresses(new List<String>{ app.Helper_Email__c });
+            // The sandbox gate checked the client's address only, so a record
+            // with an allow-listed client and a real helper address emailed
+            // the real helper (audit 2026-11-11 PC-APEX-16). The email still
+            // goes to the client; the log row says the CC was left out.
+            if (PC1_SendGate.allowEmail(app.Helper_Email__c)) {
+                msg.setCcAddresses(new List<String>{ app.Helper_Email__c });
+            } else {
+                ccDropped = app.Helper_Email__c;
+            }
         }
         // C1 threading (audit round-2 revision after H1 spoof finding).
         // SF's SingleEmailMessage doesn't expose Message-Id header, so our
@@ -1072,7 +1109,16 @@ public with sharing class PC1_MessageDispatcher implements Queueable, Database.A
         String replyToAddr = (cfgReply != null && String.isNotBlank(cfgReply.XP_Email__c))
             ? cfgReply.XP_Email__c : 'clients@xtrapension.com';
         msg.setReplyTo(replyToAddr);
-        msg.setSenderDisplayName('XtraPension');
+        // Audit 2026-11-11 PC-APEX-14: without an Org-Wide address the From
+        // was the RUNNING user (the rep who clicked, the integration user,
+        // whoever scheduled the job) while the mirrored EmailMessage recorded
+        // clients@. Salesforce refuses an Org-Wide address together with a
+        // sender display name, so the display name is only the fallback.
+        if (clientsOweaId != null) {
+            msg.setOrgWideEmailAddressId(clientsOweaId);
+        } else {
+            msg.setSenderDisplayName('XtraPension');
+        }
 
         // Attachments — two orthogonal sources:
         //   1) Attachment_Static_Resource_Name__c  → comma-list of StaticResource DevNames
@@ -1082,8 +1128,16 @@ public with sharing class PC1_MessageDispatcher implements Queueable, Database.A
         // logged (Error_Message__c) but never block the send.
         List<Messaging.EmailFileAttachment> atts = new List<Messaging.EmailFileAttachment>();
         List<String> missing = new List<String>();
+        List<String> substituted = new List<String>();
 
+        // A static PDF that is the generic twin of a per-app document in the
+        // same template ("PC1_Welcome_Guide" next to "Welcome Guide") is not
+        // attached on its own: it only stands in when the personalised copy is
+        // missing (loop below). Attaching both lists sent the Welcome Guide
+        // and the Service Agreement twice (audit 2026-11-11 PC-APEX-5).
+        Set<String> twinNames = fallbackNamesOf(t);
         for (String name : parseAttachmentList(t.Attachment_Static_Resource_Name__c)) {
+            if (twinNames.contains(name)) continue;
             StaticResource sr = resources.get(name);
             if (sr != null && sr.Body != null) {
                 Messaging.EmailFileAttachment att = new Messaging.EmailFileAttachment();
@@ -1103,6 +1157,7 @@ public with sharing class PC1_MessageDispatcher implements Queueable, Database.A
             // was logged Skipped-Missing-Attachment and has not gone out since
             // 2026-08-18. Same normaliser as the post-send link path.
             ContentVersion cv = appFiles == null ? null : appFiles.get(app.Id + '|' + friendlyDocTitle(app, title));
+            StaticResource fallback = resources == null ? null : resources.get(staticFallbackName(title));
             if (cv != null && cv.VersionData != null) {
                 Messaging.EmailFileAttachment att = new Messaging.EmailFileAttachment();
                 // Prefer PathOnClient (has the real extension) but fall back
@@ -1112,6 +1167,20 @@ public with sharing class PC1_MessageDispatcher implements Queueable, Database.A
                 att.setBody(cv.VersionData);
                 att.setContentType('application/pdf');
                 atts.add(att);
+            } else if (fallback != null && fallback.Body != null) {
+                // Audit 2026-11-11 PC-APEX-5 (port of AA F73): when the
+                // personalised render failed (Chromium down on the dyno...)
+                // the generic static PDF of the same document goes instead,
+                // so the welcome email is not held for a cosmetic cover page
+                // and the client still gets ONE copy of each. There is no
+                // static Mandate, so a missing mandate PDF still holds the
+                // email (it is personal and cannot be faked).
+                Messaging.EmailFileAttachment att = new Messaging.EmailFileAttachment();
+                att.setFileName('XtraPension ' + title + '.pdf'); // generic name: it is not personalised
+                att.setBody(fallback.Body);
+                att.setContentType('application/pdf');
+                atts.add(att);
+                substituted.add('fallback-static:' + staticFallbackName(title));
             } else {
                 missing.add('app:' + title);
             }
@@ -1130,7 +1199,83 @@ public with sharing class PC1_MessageDispatcher implements Queueable, Database.A
         if (!missing.isEmpty()) {
             log.Error_Message__c = 'Attachment(s) not found: ' + String.join(missing, ', ');
         }
+        if (!substituted.isEmpty()) {
+            // Not a reason to hold the email; recorded so the val team knows
+            // the client got the generic copy and the render needs a look.
+            log.Error_Message__c = (String.isBlank(log.Error_Message__c) ? '' : log.Error_Message__c + ' | ')
+                + 'Generic copy sent instead of the personalised file: ' + String.join(substituted, ', ');
+        }
+        if (ccDropped != null) {
+            // Appended, never first: hasMissingAppAttachment reads the start.
+            log.Error_Message__c = (String.isBlank(log.Error_Message__c) ? '' : log.Error_Message__c + ' | ')
+                + 'Helper CC not sent (' + ccDropped + '): ' + PC1_SendGate.blockReason(ccDropped);
+        }
+        lastBuiltEmail = msg;
+        lastOweaIdUsed = clientsOweaId;
         return msg;
+    }
+
+    /** The email buildEmail produced last, and the Org-Wide address it was
+     *  given (tests: recipients, attachments, From). */
+    @TestVisible private static Messaging.SingleEmailMessage lastBuiltEmail;
+    @TestVisible private static Id lastOweaIdUsed;
+
+    /** Status__c written for a send suppressed by Do Not Contact. */
+    @TestVisible private static final String STATUS_SKIP_DNC = 'Skipped-Do-Not-Contact';
+
+    /**
+     * Status for a suppressed send. Status__c is a restricted picklist and the
+     * org may not have the dedicated value yet (it is added in sf-src first),
+     * so this returns the value when it is active and 'Failed' (with an
+     * explicit "Suppressed:" message) until then. 'Failed' never counts for
+     * dedup, so nothing is lost when the flag is cleared.
+     */
+    @TestVisible
+    private static String skipStatus(String preferred) {
+        for (Schema.PicklistEntry pe : PC1_Message_Send_Log__c.Status__c.getDescribe().getPicklistValues()) {
+            if (pe.isActive() && pe.getValue() == preferred) return pe.getValue();
+        }
+        return 'Failed';
+    }
+
+    /** Address client emails are sent from and replied to. */
+    private static String clientFromAddress() {
+        PC1_Config__c cfg = PC1_Config__c.getOrgDefaults();
+        return (cfg != null && String.isNotBlank(cfg.XP_Email__c)) ? cfg.XP_Email__c : 'clients@xtrapension.com';
+    }
+
+    /** Id of the clients@ Org-Wide Email Address, or null when the org has none
+     *  (then the From stays the running user, as before). */
+    @TestVisible
+    private static Id loadClientsOwea() {
+        try {
+            String addr = clientFromAddress();
+            for (OrgWideEmailAddress o : [SELECT Id FROM OrgWideEmailAddress WHERE Address = :addr LIMIT 1]) {
+                return o.Id;
+            }
+        } catch (Exception e) {
+            System.debug(LoggingLevel.WARN, 'PC1_MessageDispatcher: OWEA lookup failed: ' + e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Generic StaticResource that may stand in for a missing per-app file:
+     * "Welcome Guide" -> PC1_Welcome_Guide, "Service Agreement" ->
+     * PC1_Service_Agreement. There is no static Mandate.
+     */
+    @TestVisible
+    private static String staticFallbackName(String rawTitle) {
+        if (String.isBlank(rawTitle)) return null;
+        String t = rawTitle.trim();
+        return t.startsWith('PC1_') ? t : 'PC1_' + t.replace(' ', '_');
+    }
+
+    /** Static resource names that are the generic twin of a per-app file of this template. */
+    private static Set<String> fallbackNamesOf(PC1_Message_Template__c t) {
+        Set<String> out = new Set<String>();
+        for (String title : parseAttachmentList(t.Attach_App_File_Titles__c)) out.add(staticFallbackName(title));
+        return out;
     }
 
     /** Returns true iff any of the missing markers are "app:*" — those are
@@ -1222,17 +1367,33 @@ public with sharing class PC1_MessageDispatcher implements Queueable, Database.A
 
     // ═════════════════════════ HELPERS ══════════════════════════════
 
+    /**
+     * {{CallTime}}/{{CallDate}} source per app: the EARLIEST Pending slot from
+     * the start of today (UK) onwards, i.e. the call that will actually happen.
+     * Only when there is none, the latest slot of any status (history).
+     * Audit 2026-11-11 PC-APEX-7 (port of AA F71): this used to take the
+     * latest slot of ANY status, and a reschedule cancels the old row but
+     * keeps its time, so a call moved EARLIER (Thu 15:00 -> Wed 10:00) made
+     * Wednesday's reminder say "Mary rings at 15:00 today".
+     */
+    @TestVisible
     private static Map<Id, Datetime> loadLatestCalls(Set<Id> appIds) {
-        Map<Id, Datetime> out = new Map<Id, Datetime>();
+        Map<Id, Datetime> nextPending = new Map<Id, Datetime>();
+        Map<Id, Datetime> latestAny   = new Map<Id, Datetime>();
+        Datetime todayStartUk = PC1_UkTime.ukDayBoundsUtc(Datetime.now())[0];
         for (PC1_Call_Schedule__c cs : [
-                SELECT Application__c, Scheduled_At__c
+                SELECT Application__c, Scheduled_At__c, Status__c
                   FROM PC1_Call_Schedule__c
                  WHERE Application__c IN :appIds AND Scheduled_At__c != null
-                 ORDER BY Scheduled_At__c DESC]) {
-            if (!out.containsKey(cs.Application__c)) {
-                out.put(cs.Application__c, cs.Scheduled_At__c);
+                 ORDER BY Scheduled_At__c ASC]) {
+            latestAny.put(cs.Application__c, cs.Scheduled_At__c); // ASC → last write wins = latest
+            if (cs.Status__c == 'Pending' && cs.Scheduled_At__c >= todayStartUk
+                    && !nextPending.containsKey(cs.Application__c)) {
+                nextPending.put(cs.Application__c, cs.Scheduled_At__c);
             }
         }
+        Map<Id, Datetime> out = new Map<Id, Datetime>(latestAny);
+        out.putAll(nextPending);
         return out;
     }
 
@@ -1387,6 +1548,8 @@ public with sharing class PC1_MessageDispatcher implements Queueable, Database.A
             for (String n : parseAttachmentList(t.Attachment_Static_Resource_Name__c)) {
                 names.add(n);
             }
+            // Possible stand-ins for per-app files (see buildEmail).
+            names.addAll(fallbackNamesOf(t));
         }
         Map<String, StaticResource> out = new Map<String, StaticResource>();
         if (names.isEmpty()) return out;

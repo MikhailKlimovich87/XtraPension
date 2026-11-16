@@ -159,6 +159,12 @@ export default class Pc1BankEditor extends LightningElement {
             this.draft.status = 'Unverified';
             this.draft.bankName = '';
         }
+        // So does a change of holder: "Name Verified" was for the old name.
+        // The bank name stays (same digits, same bank).
+        if (key === 'holder') {
+            this.verifyMsg = '';
+            this.draft.status = 'Unverified';
+        }
     }
 
     // ── Bank Verify (auto) ──────────────────────────────────────────

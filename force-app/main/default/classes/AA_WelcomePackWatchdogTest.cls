@@ -243,4 +243,26 @@ private class AA_WelcomePackWatchdogTest {
         Test.stopTest();
         System.assertEquals('0 20 * * * ?', [SELECT CronExpression FROM CronTrigger WHERE Id = :jobId].CronExpression);
     }
+
+    // audit 2026-11-11 AA-APEX-12: once the case sits at a stage where the
+    // welcome may not be sent, the watchdog stops re-dispatching it (the
+    // dispatcher would only suppress it, one more log row every hour).
+    @IsTest static void a_held_welcome_is_left_alone_at_a_stage_where_it_may_not_go() {
+        seedConfig(BASE, TOKEN);
+        AA_Application__c app = makeApp();
+        AA_Message_Template__c email = makeTemplate('Email', 'Hi', 'Mandate');
+        insert logRow(email.Id, app.Id, 'Email', 'Skipped-Missing-Attachment', Datetime.now().addHours(-2));
+        addMandateFile(app);
+        AA_StageTransitionHelper.noteByApp.put(app.Id, 'DWP refusal letter (test)');
+        update new AA_Application__c(Id = app.Id, Stage__c = 'Closed - Refused');
+        System.assert(!AA_MessageDispatcher.stageAllows('Intake_Created', 'Closed - Refused'), 'precondition: gated there');
+
+        Test.startTest();
+        Map<String, Set<Id>> resent = AA_WelcomePackWatchdog.resendHeld();
+        Test.stopTest();
+
+        System.assert(resent.isEmpty(), 'nothing is re-dispatched at a gated stage: ' + resent);
+        System.assertEquals(1, [SELECT COUNT() FROM AA_Message_Send_Log__c WHERE Application__c = :app.Id],
+            'no new log row');
+    }
 }

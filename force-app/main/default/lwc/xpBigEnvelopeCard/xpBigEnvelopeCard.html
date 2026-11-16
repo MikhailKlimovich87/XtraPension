@@ -1,0 +1,33 @@
+<template>
+    <article class="slds-card card">
+        <header class="head">
+            <lightning-icon icon-name="standard:document" size="small" alternative-text="Big Envelope and DWP"></lightning-icon>
+            <h2 class="title">Big Envelope &amp; DWP</h2>
+        </header>
+        <template lwc:if={loaded}>
+            <ul class="rows">
+                <template for:each={rows} for:item="r">
+                    <li key={r.key} class={r.rowClass} title={r.title}>
+                        <template lwc:if={r.id}>
+                            <a class={r.nameClass} data-id={r.id} onclick={openFile}>{r.label}</a>
+                        </template>
+                        <template lwc:else>
+                            <span class={r.nameClass}>{r.label}</span>
+                        </template>
+                        <span class={r.hintClass}>{r.hint}</span>
+                        <span class={r.dateClass}>{r.date}</span>
+                        <template for:each={r.details} for:item="d">
+                            <span key={d.key} class={d.cls}>{d.text}</span>
+                        </template>
+                    </li>
+                </template>
+            </ul>
+        </template>
+        <template lwc:if={isLoading}>
+            <div class="note">Loading…</div>
+        </template>
+        <template lwc:if={error}>
+            <div class="note err">Couldn't load the card: {error}</div>
+        </template>
+    </article>
+</template>

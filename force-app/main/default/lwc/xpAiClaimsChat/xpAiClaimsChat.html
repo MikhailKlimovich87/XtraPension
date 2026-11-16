@@ -1,0 +1,246 @@
+<template>
+    <div class={rootClass} ondragover={handleDragOver} ondragleave={handleDragLeave} ondrop={handleDrop}>
+        <template lwc:if={dragging}>
+            <div class="drop-overlay">Drop images or PDFs to attach</div>
+        </template>
+        <div class="head">
+            <div class="head-main">
+                <div class="chat-title" title={chatTitle}>{chatTitle}</div>
+                <div class="ctx">
+                    <template lwc:if={hasContext}>
+                        <span class="ctx-text muted">Chat about the record you have open</span>
+                        <button class="linkish" onclick={dropContext} title="Ask without this record">Not this one</button>
+                    </template>
+                    <template lwc:elseif={showContextOff}>
+                        <span class="ctx-text muted">Not using the open record</span>
+                        <button class="linkish" onclick={useContext}>Use it</button>
+                    </template>
+                    <template lwc:else>
+                        <span class="ctx-text muted">Open a record to chat about it</span>
+                    </template>
+                </div>
+            </div>
+            <lightning-button-icon icon-name="utility:clock" variant="bare" alternative-text="Recent chats" title="Recent chats" onclick={toggleRecent}></lightning-button-icon>
+            <lightning-button-icon icon-name="utility:new" variant="bare" alternative-text="New chat" title="Start this chat again" onclick={newChat}></lightning-button-icon>
+        </div>
+
+        <template lwc:if={showRecent}>
+            <div class="recent">
+                <div class="recent-head">Recent chats</div>
+                <template lwc:if={chatsLoading}>
+                    <div class="muted recent-empty">Loading…</div>
+                </template>
+                <template lwc:elseif={hasChats}>
+                    <template for:each={chats} for:item="c">
+                        <button key={c.rowKey} class={c.cls} data-record={c.recordId} onclick={openChat}>
+                            <span class="chat-row-top">
+                                <span class="chat-row-title">{c.title}</span>
+                                <span class="muted chat-row-when">{c.when}</span>
+                            </span>
+                            <span class="muted chat-row-preview">{c.preview}</span>
+                        </button>
+                    </template>
+                </template>
+                <template lwc:else>
+                    <div class="muted recent-empty">No chats yet.</div>
+                </template>
+            </div>
+        </template>
+
+        <div class="msgs">
+            <template lwc:if={isLoading}>
+                <div class="muted loading">Loading this chat…</div>
+            </template>
+            <template lwc:if={isEmpty}>
+                <div class="welcome">
+                    <div class="welcome-title">Hi! What do you need?</div>
+                    <div class="welcome-sub">I read Salesforce, calls, Close, WhatsApp, Drive and Slack. Drafts, notes and field changes come with a button, and nothing is written until you press it.</div>
+                    <div class="suggestions">
+                        <template for:each={suggestions} for:item="s">
+                            <button key={s.key} class="chip" data-text={s.text} onclick={pickSuggestion}>{s.text}</button>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+            <template for:each={messages} for:item="m">
+                <div key={m.key} class={m.cls}>
+                    <template lwc:if={m.isUser}>
+                        <div class="bubble bubble-user">{m.text}</div>
+                    </template>
+                    <template lwc:else>
+                        <template lwc:if={m.showBubble}>
+                            <div class={m.bubbleCls}>
+                                <template lwc:if={m.html}>
+                                    <div class="rt" lwc:dom="manual" data-html={m.key}></div>
+                                </template>
+                                <template lwc:else>{m.text}</template>
+                            </div>
+                        </template>
+
+                        <template lwc:if={m.hasNotes}>
+                            <template for:each={m.notes} for:item="n">
+                                <div key={n.key} class="note-warn">{n.text}</div>
+                            </template>
+                        </template>
+
+                        <template lwc:if={m.hasReports}>
+                            <template for:each={m.reports} for:item="r">
+                                <template lwc:if={r.isAudio}>
+                                    <div key={r.key} class="audio">
+                                        <div class="audio-head">
+                                            <lightning-icon icon-name="utility:call" size="x-small"></lightning-icon>
+                                            <span>{r.label}</span>
+                                            <a class="audio-dl" href={r.downloadUrl} target="_blank" rel="noopener">Download</a>
+                                        </div>
+                                        <audio class="audio-player" controls preload="metadata" src={r.url}></audio>
+                                    </div>
+                                </template>
+                                <template lwc:elseif={r.isFile}>
+                                    <div key={r.key} class="audio file">
+                                        <div class="audio-head">
+                                            <lightning-icon icon-name="doctype:pdf" size="x-small"></lightning-icon>
+                                            <a href={r.url} target="_blank" rel="noopener">{r.label}</a>
+                                            <a class="audio-dl" href={r.downloadUrl} target="_blank" rel="noopener">Download</a>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template lwc:else>
+                                    <a key={r.key} class="report" href={r.url} target="_blank" rel="noopener">
+                                        <lightning-icon icon-name="doctype:csv" size="x-small"></lightning-icon>
+                                        <span>Download CSV ({r.rows} rows)</span>
+                                    </a>
+                                </template>
+                            </template>
+                        </template>
+
+                        <template for:each={m.cards} for:item="c">
+                            <div key={c.key} class="card">
+                                <div class="card-head">
+                                    <template lwc:if={c.isDraft}><lightning-icon icon-name="utility:email" size="x-small"></lightning-icon></template>
+                                    <template lwc:if={c.isNote}><lightning-icon icon-name="utility:note" size="x-small"></lightning-icon></template>
+                                    <template lwc:if={c.isUpdate}><lightning-icon icon-name="utility:edit" size="x-small"></lightning-icon></template>
+                                    <span class="card-title">{c.heading}</span>
+                                </div>
+                                <template lwc:if={c.isDraft}>
+                                    <div class="card-sub">{c.subject}</div>
+                                </template>
+                                <template lwc:if={c.bodyHtml}>
+                                    <div class="card-body card-body-rich" lwc:dom="manual" data-note={c.key}></div>
+                                </template>
+                                <template lwc:elseif={c.body}>
+                                    <div class="card-body">{c.body}</div>
+                                </template>
+                                <template lwc:if={c.isUpdate}>
+                                    <ul class="card-lines">
+                                        <template for:each={c.lineItems} for:item="l">
+                                            <li key={l.key}>{l.text}</li>
+                                        </template>
+                                    </ul>
+                                </template>
+
+                                <template lwc:if={c.status}>
+                                    <div class={c.statusCls}>
+                                        {c.status}
+                                        <template lwc:if={c.statusUrl}>
+                                            <a class="status-link" href={c.statusUrl} target="_blank" rel="noopener">Open</a>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <template lwc:if={c.notDone}>
+                                    <div class="card-actions">
+                                        <template lwc:if={c.isDraft}>
+                                            <template lwc:if={c.showReply}>
+                                                <lightning-button variant="brand" label="Reply" icon-name="utility:reply" data-key={c.key} data-how="reply" onclick={openComposer}></lightning-button>
+                                                <lightning-button label="Reply All" data-key={c.key} data-how="replyall" onclick={openComposer}></lightning-button>
+                                            </template>
+                                            <template lwc:elseif={c.showOpenEmail}>
+                                                <lightning-button variant="brand" label="Reply" icon-name="utility:reply" data-key={c.key} data-how="reply" onclick={openComposer}></lightning-button>
+                                                <lightning-button label="Reply All" data-key={c.key} data-how="replyall" onclick={openComposer}></lightning-button>
+                                            </template>
+                                            <template lwc:elseif={c.showGoToEmail}>
+                                                <lightning-button variant="brand" label="Go to the email" icon-name="utility:email" data-key={c.key} onclick={goToEmail}></lightning-button>
+                                            </template>
+                                        </template>
+                                        <template lwc:else>
+                                            <lightning-button variant="brand" label={c.confirmLabel} data-key={c.key} onclick={confirmCard} disabled={c.working}></lightning-button>
+                                        </template>
+                                        <template lwc:if={c.isDraft}>
+                                            <lightning-button label="Shorter" data-key={c.key} data-kind="shorter" onclick={refineCard} disabled={c.working}></lightning-button>
+                                            <lightning-button label="Warmer" data-key={c.key} data-kind="warmer" onclick={refineCard} disabled={c.working}></lightning-button>
+                                            <lightning-button label="Redo" data-key={c.key} data-kind="redo" onclick={refineCard} disabled={c.working}></lightning-button>
+                                        </template>
+                                        <template lwc:else>
+                                            <lightning-button label="Discard" data-key={c.key} onclick={discardCard} disabled={c.working}></lightning-button>
+                                        </template>
+                                    </div>
+                                </template>
+                                <div class="card-foot">
+                                    <button class="linkish" data-key={c.key} onclick={copyCard}>
+                                        <template lwc:if={c.copied}>Copied</template>
+                                        <template lwc:else>Copy text</template>
+                                    </button>
+                                    <textarea class="copy-area" data-copy={c.key} tabindex="-1" aria-hidden="true"></textarea>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template lwc:if={m.turnId}>
+                            <div class="rate">
+                                <template lwc:if={m.thanked}>
+                                    <span class="muted">Thanks, noted.</span>
+                                </template>
+                                <template lwc:else>
+                                    <button class="rate-btn" title="Good answer" data-key={m.key} data-value="up" onclick={rate}>👍</button>
+                                    <button class="rate-btn" title="Not right" data-key={m.key} data-value="down" onclick={rate}>👎</button>
+                                </template>
+                            </div>
+                        </template>
+                    </template>
+                </div>
+            </template>
+
+            <template lwc:if={busy}>
+                <div class="row row-bot">
+                    <div class="bubble bubble-bot progress">
+                        <span class="dots"><span></span><span></span><span></span></span>
+                        <span>{progress}…</span>
+                        <template lwc:if={elapsed}><span class="muted">{elapsed}s</span></template>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <div class="foot">
+            <template lwc:if={hasFiles}>
+                <div class="files">
+                    <template for:each={files} for:item="f">
+                        <span key={f.key} class="file-chip">
+                            <template lwc:if={f.isImage}><lightning-icon icon-name="utility:image" size="xx-small"></lightning-icon></template>
+                            <template lwc:else><lightning-icon icon-name="utility:file" size="xx-small"></lightning-icon></template>
+                            {f.name}
+                            <template lwc:if={f.resized}><span class="muted" title="Large photo reduced before sending">(resized)</span></template>
+                            <button class="file-x" data-key={f.key} onclick={removeFile} title="Remove">×</button>
+                        </span>
+                    </template>
+                </div>
+            </template>
+            <div class="composer">
+                <lightning-button-icon icon-name="utility:attach" variant="bare" alternative-text="Attach a PDF or image" title="Attach a PDF or image (you can also paste or drop it here)" onclick={openFilePicker} disabled={busy}></lightning-button-icon>
+                <textarea
+                    class="input"
+                    rows="2"
+                    placeholder="Ask about this claim, a lead, or a Claims rule…"
+                    value={draft}
+                    oninput={handleInput}
+                    onkeydown={handleKey}
+                    onpaste={handlePaste}
+                ></textarea>
+                <lightning-button-icon icon-name="utility:send" variant="brand" alternative-text="Send" title="Send (Enter)" onclick={sendMessage} disabled={sendDisabled}></lightning-button-icon>
+                <input type="file" class="hidden" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif" multiple onchange={handleFiles} />
+            </div>
+            <div class="hint muted">Enter to send · Shift+Enter for a new line · Paste or drop images · I never send emails</div>
+        </div>
+    </div>
+</template>

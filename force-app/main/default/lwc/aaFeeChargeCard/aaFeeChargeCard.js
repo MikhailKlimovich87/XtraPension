@@ -22,6 +22,12 @@
  * Once a plan exists the card lists every instalment (date, amount, status,
  * notice) and offers "Retry" on a failed or cancelled one (audit 2026-10-02
  * F110: a failed instalment could not be re-collected in the system).
+ *
+ * "Cancel fee plan" (audit 2026-11-11 AA-APEX-3) is offered while nothing of
+ * the plan has been set up at GoCardless. It calls
+ * AA_GoCardlessController.cancelFeePlan, which deletes the instalment rows so
+ * a wrong award can be recorded again; the server allows it to a System
+ * Administrator only and refuses a plan that has a payment.
  */
 import { LightningElement, api, wire } from 'lwc';
 import { getRecord } from 'lightning/uiRecordApi';
@@ -31,6 +37,7 @@ import LightningConfirm from 'lightning/confirm';
 import chargeFee from '@salesforce/apex/AA_GoCardlessController.chargeFee';
 import getFeeInstallments from '@salesforce/apex/AA_GoCardlessController.getFeeInstallments';
 import retryInstallment from '@salesforce/apex/AA_GoCardlessController.retryInstallment';
+import cancelFeePlan from '@salesforce/apex/AA_GoCardlessController.cancelFeePlan';
 import AaFeeChargeConfirmModal from 'c/aaFeeChargeConfirmModal';
 
 // Mirrors AA_FeeInstallmentScheduler.NOTICE_DAYS (5 calendar days).
@@ -105,6 +112,7 @@ export default class AaFeeChargeCard extends LightningElement {
 
     charging = false;
     retryingId = null;
+    cancelling = false;
     wiredInstallments;
     installmentRows = [];
 
@@ -135,6 +143,9 @@ export default class AaFeeChargeCard extends LightningElement {
                 // at-GoCardless row too, since the client is Do Not Contact.
                 paused:      r.paused_dnc === true || r.dnc_at_gc === true,
                 canRetry:    r.can_retry === true,
+                // Set up at GoCardless, or with the bank: the plan can no
+                // longer be cancelled from here (see canCancelPlan).
+                atGc:        r.created_at_gc === true || r.status === 'submitted' || r.status === 'paid',
             }));
         }
     }
@@ -322,6 +333,41 @@ export default class AaFeeChargeCard extends LightningElement {
         }
     }
     get retryDisabled() { return !!this.retryingId; }
+
+    /** A plan nothing has been set up for at GoCardless: no fee payment id on
+     *  the application and no instalment created there. The server checks the
+     *  same and more (AA_GoCardlessController.cancelFeePlan). */
+    get canCancelPlan() {
+        return this.hasPlan && !this.feePaymentId && this.installmentRows.every((r) => !r.atGc);
+    }
+    get cancelDisabled() { return this.cancelling || !!this.retryingId; }
+
+    async handleCancelPlan() {
+        if (!this.canCancelPlan || this.cancelling) return;
+        const ok = await LightningConfirm.open({
+            label: 'Cancel this fee plan?',
+            message: 'This deletes the instalments listed on this card. None of them has been set up at GoCardless, so '
+                + 'nothing is collected. Use it to correct a wrong award: afterwards record the award again on the '
+                + 'Award card and schedule the fee again, and the client gets a new advance notice. '
+                + 'Only a System Administrator can do this.',
+            theme: 'warning',
+        });
+        if (ok !== true) return;
+        this.cancelling = true;
+        try {
+            const r = await cancelFeePlan({ recordId: this.recordId });
+            const noticed = !!(r && r.notice_sent);
+            this.toast('Fee plan cancelled', noticed ? 'warning' : 'success',
+                `${r && r.deleted != null ? r.deleted : 0} instalment(s) removed. Record the award again, then schedule the fee.`
+                + (noticed ? ' An advance notice for the old plan had already gone to the client: tell them it no longer applies.' : ''));
+            await refreshApex(this.wiredInstallments);
+            await refreshApex(this.wiredRecord);
+        } catch (err) {
+            this.toast('Fee plan not cancelled', 'error', this.errMsg(err));
+        } finally {
+            this.cancelling = false;
+        }
+    }
 
     async doCharge() {
         this.charging = true;

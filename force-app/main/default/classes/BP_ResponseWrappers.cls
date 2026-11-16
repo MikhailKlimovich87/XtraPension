@@ -76,12 +76,22 @@ public with sharing class BP_ResponseWrappers {
         @AuraEnabled public String tel;
         @AuraEnabled public String email;
         @AuraEnabled public String relationship;
+        // "Wants a helper?" (Wants_Helper__c, 11/11/2026): true / false, null while not answered. The key is always in
+        // the response: the form reads its presence as "Salesforce keeps this answer".
+        @AuraEnabled public Boolean wantsHelper;
         public ContactCommunicationWrapper(Basic__c app) {
             this.firstName = app.Friend_First_Name__c;
             this.lastName = app.Friend_Last_Name__c;
             this.tel = app.Friend_Phone__c;
             this.email = app.Friend_Email__c;
             this.relationship = app.Relationship__c;
+            // Read from the populated fields, so a caller whose query does not select it still works
+            String wants = (String) app.getPopulatedFieldsAsMap().get('Wants_Helper__c');
+            if (wants == 'Yes') {
+                this.wantsHelper = true;
+            } else if (wants == 'No') {
+                this.wantsHelper = false;
+            }
         }
         
     }
@@ -178,10 +188,28 @@ public with sharing class BP_ResponseWrappers {
         @AuraEnabled public Boolean wasCleansed;
         @AuraEnabled public Boolean everWorkedUKuseSameDates;
         @AuraEnabled public String phoneType;
-        @AuraEnabled public Integer approxYearsInUK;
+        @AuraEnabled public Decimal approxYearsInUK; // half years allowed (11/11/2026)
         @AuraEnabled public String everLivedUKNotes;
         @AuraEnabled public String state;
         @AuraEnabled public String stateName;
+        // HM Forces (BR1 Q17), so the long form shows what is saved (keys agreed with the devs 10/11/2026)
+        @AuraEnabled public Boolean hmForces;
+        @AuraEnabled public String hmForcesService;
+        @AuraEnabled public String hmForcesEnlisted;
+        @AuraEnabled public String hmForcesDischarged;
+        @AuraEnabled public String hmForcesDischargedWhere;
+        @AuraEnabled public String hmForcesRegiment;
+        @AuraEnabled public String hmForcesServiceNumber;
+        @AuraEnabled public String hmForcesRank;
+        // Call of 11/11/2026 17h13 (docs/claims-call-1111b/CONTRACT.md)
+        @AuraEnabled public String hasNinoValue;
+        @AuraEnabled public String previousMarriageEnded;
+        @AuraEnabled public String dateOfRemarriage;
+        @AuraEnabled public String currentSpouseFirstName;
+        @AuraEnabled public String currentSpouseLastName;
+        @AuraEnabled public String currentSpouseDob;
+        @AuraEnabled public String currentSpouseNino;
+        @AuraEnabled public String marriageNotes;
         //@AuraEnabled public Boolean verifiedReference;
         //@AuraEnabled public Boolean verificationDetails; 
 
@@ -191,7 +219,7 @@ public with sharing class BP_ResponseWrappers {
             this.verificationStatus = app.Verification_Status__c;
             this.wasCleansed = app.Was_Cleansed__c;
             this.phoneType = app.What_is_this_number__c;
-            this.approxYearsInUK = app.Approx_Years_in_UK__c != null ?  app.Approx_Years_in_UK__c.intValue() : null;
+            this.approxYearsInUK = app.Approx_Years_in_UK__c;
             this.everLivedUKNotes = app.Claimant_Ever_Lived_UK_Notes__c;
             //this.verifiedReference = app.Verified_Reference__c;
             //this.verificationDetails = app.Verification_Details__c;
@@ -229,6 +257,25 @@ public with sharing class BP_ResponseWrappers {
             this.mindedKids = app.Claimant_Minded_Kids__c;
             this.everWorkedUKuseSameDates = app.Ever_Worked_UK_Use_Same_Dates__c;
             this.middleName = app.Claimant_Middle_Name__c;
+            // HM Forces: read from the populated fields, so a caller whose query does not select them still works
+            Map<String, Object> given = app.getPopulatedFieldsAsMap();
+            this.hmForces = given.get('Claimant_HM_Forces__c') == true;
+            this.hmForcesService = (String) given.get('Claimant_HM_Forces_Service__c');
+            this.hmForcesEnlisted = given.get('Claimant_HM_Forces_Enlisted__c') != null ? String.valueOf((Date) given.get('Claimant_HM_Forces_Enlisted__c')) + 'T00:00:00.000Z' : '';
+            this.hmForcesDischarged = given.get('Claimant_HM_Forces_Discharged__c') != null ? String.valueOf((Date) given.get('Claimant_HM_Forces_Discharged__c')) + 'T00:00:00.000Z' : '';
+            this.hmForcesDischargedWhere = (String) given.get('Claimant_HM_Forces_Discharged_Where__c');
+            this.hmForcesRegiment = (String) given.get('Claimant_HM_Forces_Regiment__c');
+            this.hmForcesServiceNumber = (String) given.get('Claimant_HM_Forces_Service_No__c');
+            this.hmForcesRank = (String) given.get('Claimant_HM_Forces_Rank__c');
+            // Call of 11/11/2026 17h13: same pattern, so a query without the new fields still works
+            this.hasNinoValue = ninoValue((String) given.get('Has_Nino__c'), app.Claimant_hasNino__c);
+            this.previousMarriageEnded = (String) given.get('Previous_Marriage_Ended__c');
+            this.dateOfRemarriage = isoDate(given.get('Date_Of_Remarriage__c'));
+            this.currentSpouseFirstName = (String) given.get('Current_Spouse_First_Name__c');
+            this.currentSpouseLastName = (String) given.get('Current_Spouse_Last_Name__c');
+            this.currentSpouseDob = isoDate(given.get('Current_Spouse_DOB__c'));
+            this.currentSpouseNino = (String) given.get('Current_Spouse_Nino__c');
+            this.marriageNotes = (String) given.get('Marriage_Notes__c');
             this.countriesLived = new List<CountryLivedWrapper>();
             this.ukCompanies = new List<CompaniesWrapper>();
             this.ukCompaniesClaim = new List<CompaniesWrapper>(); 
@@ -237,6 +284,9 @@ public with sharing class BP_ResponseWrappers {
             this.children = new List<ChildrenWrapper>();
             if(app.ClaimantCountrieslived__r != null && app.ClaimantCountrieslived__r.size()>0) {    
                 for(Claimant_Country_lived__c itemwrap : app.ClaimantCountrieslived__r) {
+                    // Only the claimant's own countries: the form has no spouse list, and an autosave would save the
+                    // spouse's countries back as the claimant's (10/11/2026)
+                    if (itemwrap.getPopulatedFieldsAsMap().get('Is_Partner__c') == true) continue;
                     this.countriesLived.add(new CountryLivedWrapper(itemwrap));
                 }
             }
@@ -247,13 +297,15 @@ public with sharing class BP_ResponseWrappers {
             }
             if(app.Claimant_Companies__r != null && app.Claimant_Companies__r.size()>0) {    
                 for(Claimant_Company__c itemwrap : app.Claimant_Companies__r) {
-                    this.ukCompanies.add(new CompaniesWrapper(itemwrap));
                     if(itemwrap.Is_Partner__c && !itemwrap.Is_Addresses__c) {
                         this.ukCompaniesPartner.add(new CompaniesWrapper(itemwrap));
                     } else if(itemwrap.Is_Addresses__c) {
                         this.ukHadAddress.add(new CompaniesWrapper(itemwrap));
                     } else {
                         this.ukCompaniesClaim.add(new CompaniesWrapper(itemwrap));
+                        // The long form's employer list: only the claimant's own employers (not the UK addresses nor the
+                        // spouse's rows), from the Short Form, the Claim page or the long form. Saving replaces them all.
+                        this.ukCompanies.add(new CompaniesWrapper(itemwrap));
                     }
                 }
             }
@@ -397,7 +449,11 @@ public with sharing class BP_ResponseWrappers {
         //@AuraEnabled public Boolean verifiedReference;
         //@AuraEnabled public Boolean verificationDetails;
         @AuraEnabled public Boolean claimingUKPension;
+        @AuraEnabled public List<CompaniesWrapper> ukCompanies;
         @AuraEnabled public String referenceOnAnyDWPLetters;
+        // Call of 11/11/2026 17h13 (docs/claims-call-1111b/CONTRACT.md)
+        @AuraEnabled public String hasNinoValue;
+        @AuraEnabled public Boolean addressUnknown;
 
         public PartnerWrapper(Basic__c app) {
             this.title = app.Partner_Title__c;
@@ -427,6 +483,16 @@ public with sharing class BP_ResponseWrappers {
             //this.verifiedReference = app.Partner_Verified_Reference__c;
             //this.verificationDetails = app.Partner_Verification_Details__c;
             this.claimingUKPension = app.Partner_Claiming_UK_Pension__c;
+            Map<String, Object> given = app.getPopulatedFieldsAsMap();
+            this.hasNinoValue = ninoValue((String) given.get('Partner_Has_Nino_values__c'), app.Partner_Has_Nino__c);
+            this.addressUnknown = given.get('Partner_Address_Unknown__c') == true;
+            // The spouse's own UK employers (Short Form trace rows and the long form's spouse block), not the addresses
+            this.ukCompanies = new List<CompaniesWrapper>();
+            if (app.Claimant_Companies__r != null) {
+                for (Claimant_Company__c row : app.Claimant_Companies__r) {
+                    if (row.Is_Partner__c && !row.Is_Addresses__c) this.ukCompanies.add(new CompaniesWrapper(row));
+                }
+            }
             this.referenceOnAnyDWPLetters = app.Partner_Reference_on_Any_DWP_Letters__c;
         }
 
@@ -509,6 +575,12 @@ public with sharing class BP_ResponseWrappers {
         @AuraEnabled public String accountantPostcode;
         @AuraEnabled public String accountantName;
         @AuraEnabled public List<UkPropertiesWrapper> UkProperties;
+        // Notes for validation (Validation_Notes__c, 11/11/2026): the sales agent's internal notes. The key is always in
+        // the response (the form reads its presence as "Salesforce keeps these notes"), null when empty. Not filled here:
+        // this wrapper is also posted to the PDF service (IPC1394 wet signature) and answers the fill-* endpoints, and the
+        // notes must never reach a document. Only BP_PortalUtils.withValidationNotes puts the text in, for the long form's
+        // own responses (details and details-update).
+        @AuraEnabled public String validationNotes;
         public OtherWrapper(Basic__c app) {
             this.notes = String.isBlank(app.Notes__c) ? '' : app.Notes__c;
             this.docuSignDate = app.DocuSign_Date__c != null ? String.valueOf(app.DocuSign_Date__c) + 'T00:00:00.000Z': '';
@@ -559,6 +631,8 @@ public with sharing class BP_ResponseWrappers {
         @AuraEnabled public TrackAWrapper trackA;
         @AuraEnabled public TrackBWrapper trackB;
         @AuraEnabled public TrackCWrapper trackC;
+        // The Short Form's last page shows "Validation agent: <first name>" (it read a key that was never sent)
+        @AuraEnabled public String agent;
 
         public ShortApplicationDataWrapper(Basic__c app) {
             this.applicationId = app.Id;
@@ -568,6 +642,7 @@ public with sharing class BP_ResponseWrappers {
             this.trackA = new TrackAWrapper(app);
             this.trackB = new TrackBWrapper(app);
             this.trackC = new TrackCWrapper(app);
+            this.agent = (String) app.getPopulatedFieldsAsMap().get('Validation_Agent_Name__c');
         }
         public ShortApplicationDataWrapper(List<Basic__c> appList) {
             this.applicationId = appList[0].Id;
@@ -577,6 +652,7 @@ public with sharing class BP_ResponseWrappers {
             this.trackA = new TrackAWrapper(appList[0]);
             this.trackB = new TrackBWrapper(appList[0]);
             this.trackC = new TrackCWrapper(appList[0]);
+            this.agent = (String) appList[0].getPopulatedFieldsAsMap().get('Validation_Agent_Name__c');
         }
     }
 
@@ -612,7 +688,11 @@ public with sharing class BP_ResponseWrappers {
         //@AuraEnabled public Boolean verificationDetails;
 
         @AuraEnabled public String nationality;
-        @AuraEnabled public Integer approxYearsInUK;
+        @AuraEnabled public Decimal approxYearsInUK; // half years allowed (11/11/2026)
+        // Call of 11/11/2026 17h13 (docs/claims-call-1111b/CONTRACT.md)
+        @AuraEnabled public String previousMarriageEnded;
+        @AuraEnabled public String dateOfRemarriage;
+        @AuraEnabled public String marriageNotes;
 
         public ClientEnvWrapper(Basic__c app) {
             this.title = app.Claimant_title__c;
@@ -651,9 +731,11 @@ public with sharing class BP_ResponseWrappers {
             //this.verificationDetails = app.Verification_Details__c;
 
             this.nationality = app.Claimant_nationality__c;
-            this.approxYearsInUK = app.Approx_Years_in_UK__c != null ?  app.Approx_Years_in_UK__c.intValue() : null;
-            
-            
+            this.approxYearsInUK = app.Approx_Years_in_UK__c;
+            Map<String, Object> given = app.getPopulatedFieldsAsMap();
+            this.previousMarriageEnded = (String) given.get('Previous_Marriage_Ended__c');
+            this.dateOfRemarriage = isoDate(given.get('Date_Of_Remarriage__c'));
+            this.marriageNotes = (String) given.get('Marriage_Notes__c');
         }
     }
 
@@ -723,6 +805,9 @@ public with sharing class BP_ResponseWrappers {
         @AuraEnabled public String husbandFirstName;
         @AuraEnabled public String husbandSurname;
         @AuraEnabled public String husbandOtherName;
+        // "Is his address the same as yours?" answered "Not known" (12/11/2026 audit: the Short Form reads it on reload;
+        // without it the next Save sent false and wiped Partner_Address_Unknown__c)
+        @AuraEnabled public Boolean addressUnknown;
 
         @AuraEnabled public Boolean addressValidated;
         @AuraEnabled public String verificationStatus;
@@ -782,7 +867,13 @@ public with sharing class BP_ResponseWrappers {
                     }
                 }
             }
-            this.townsLived = app.Partner_Towns_Lived__c;
+            Map<String, Object> given = app.getPopulatedFieldsAsMap();
+            this.addressUnknown = given.get('Partner_Address_Unknown__c') == true;
+            // Before 12/11/2026 both Short Form saves wrote the address country code here instead of the towns typed:
+            // a value equal to that code is that old mistake, not towns, so the agent sees an empty box to fill in again
+            String towns = app.Partner_Towns_Lived__c;
+            String code = (String) given.get('Partner_Country_Code__c');
+            this.townsLived = String.isNotBlank(towns) && String.isNotBlank(code) && towns.trim().equalsIgnoreCase(code.trim()) ? '' : towns;
         }
     }
 
@@ -801,6 +892,7 @@ public with sharing class BP_ResponseWrappers {
         @AuraEnabled public String city;
         @AuraEnabled public String wifeHasNino;
         @AuraEnabled public String wifeNino;
+        @AuraEnabled public Boolean wifeGettinStatePensionNow;
         @AuraEnabled public List<CompaniesWrapper> employers;
         @AuraEnabled public List<CompaniesWrapper> addresses;
         @AuraEnabled public String state;
@@ -834,6 +926,7 @@ public with sharing class BP_ResponseWrappers {
 
             this.wifeHasNino = app.Partner_Has_Nino_values__c;
             this.wifeNino = app.Partner_Nino__c;
+            this.wifeGettinStatePensionNow = app.Partner_State_Pension__c;
             if(String.isNotBlank(app.Track__c) && app.Track__c == 'C') {
                 if(app.Claimant_Companies__r != null && app.Claimant_Companies__r.size()>0) {    
                     for(Claimant_Company__c itemwrap : app.Claimant_Companies__r) {
@@ -854,4 +947,15 @@ public with sharing class BP_ResponseWrappers {
             }
         }
     }      
+
+    /** 'Yes', 'Forgot' or 'Never Had' from the picklist; blank picklist: from the checkbox (true = 'Yes', false = '' so the agent answers). */
+    public static String ninoValue(String picklist, Boolean hasNino) {
+        if (String.isNotBlank(picklist)) return picklist;
+        return hasNino == true ? 'Yes' : '';
+    }
+
+    /** A date field as the forms expect it ('YYYY-MM-DDT00:00:00.000Z'), '' when blank. */
+    public static String isoDate(Object value) {
+        return value == null ? '' : String.valueOf((Date) value) + 'T00:00:00.000Z';
+    }
 }

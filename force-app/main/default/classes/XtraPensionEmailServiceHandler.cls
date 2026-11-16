@@ -111,7 +111,7 @@ global class XtraPensionEmailServiceHandler implements Messaging.InboundEmailHan
 			emailType = 'APPEAL';
 		} else if (subject != null && subject.contains('REAPPLY')) {
 			emailType = 'REAPPLY';
-		} else if (subject != null && subject.contains('BIG ENV POSTED')) {
+		} else if (isBigEnvPosted(subject)) {
 			emailType = 'BIG ENV POSTED';
 		} else if (subject != null && subject.toUpperCase().contains('BIG ENVELOPE')) {
 			emailType = 'BIG ENVELOPE';
@@ -122,6 +122,17 @@ global class XtraPensionEmailServiceHandler implements Messaging.InboundEmailHan
 		return new ParsedEmailData(applicationName, trackingNo, trackingNoSendDate, emailType);
 	}
 	
+	// Big Envelope (Stage 1) postado para o cliente: "BIG ENV POSTED" ou "BIG ENVELOPE POSTED", em maiúsculas ou
+	// minúsculas (04/11/2026). Vem antes do BIG ENVELOPE (documentos de volta na gráfica), que também casaria.
+	@TestVisible
+	private static Boolean isBigEnvPosted(String subject) {
+		if (subject == null) {
+			return false;
+		}
+		String upper = subject.toUpperCase().normalizeSpace();
+		return upper.contains('BIG ENV POSTED') || upper.contains('BIG ENVELOPE POSTED');
+	}
+
 	// Helper methods for parsing
 	private String extractValue(String line, String indicator) {
 		return line.substringAfter(indicator).trim();
@@ -135,38 +146,66 @@ global class XtraPensionEmailServiceHandler implements Messaging.InboundEmailHan
 	// Process Appeal email
 	private Messaging.InboundEmailResult processAppealEmail(ParsedEmailData data, Messaging.InboundEmail email) {
 		Messaging.InboundEmailResult result = new Messaging.InboundEmailResult();
-		
-		List<HMRC_Appeal_Reply__c> appealReplies = [
-			SELECT Id, Application__c, Application__r.Email__c, Application__r.Contact__c, Client_Attach_File_Ids__c
-			FROM HMRC_Appeal_Reply__c
-			WHERE Application__r.Name = :data.applicationName
-			ORDER BY CreatedDate DESC
-			LIMIT 1
-		];
-		
-		if (appealReplies.isEmpty()) {
+
+		HMRC_Appeal_Reply__c appealReply = findAppealReply(data.applicationName);
+
+		if (appealReply == null) {
 			result.success = false;
 			result.message = 'Appeal application not found: ' + data.applicationName;
 			return result;
 		}
-		
-		HMRC_Appeal_Reply__c appealReply = appealReplies[0];
+
 		appealReply.Sent_To_Client_Date__c = Date.today();
 		appealReply.Status__c = 'Sent to Client';
 		appealReply.Tracking_Number__c = data.trackingNo;
 		update appealReply;
-		
+
 		// Send email to client
 		sendClientEmail(
 			appealReply.Application__r.Contact__c,
-			appealReply.Application__r.Email__c,
+			appealReply.Reapply__c != null && String.isNotBlank(appealReply.Reapply__r.Email__c) ?
+				appealReply.Reapply__r.Email__c :
+				appealReply.Application__r.Email__c,
 			appealReply.Id,
 			appealReply.Client_Attach_File_Ids__c,
 			getAppealTemplate()
 		);
-		
+
 		result.success = true;
 		return result;
+	}
+
+	// An appeal about a re-application is posted under the Reapply's name (R12345, SFTPAppealReplyUploaderBatch), the
+	// application's own appeals under the application's name; the same client can have one of each.
+	private HMRC_Appeal_Reply__c findAppealReply(String name) {
+		List<HMRC_Appeal_Reply__c> reapplyReplies = [
+			SELECT Id, Application__c, Application__r.Email__c, Application__r.Contact__c, Client_Attach_File_Ids__c,
+				Reapply__c, Reapply__r.Email__c
+			FROM HMRC_Appeal_Reply__c
+			WHERE Reapply__r.Name = :name
+			ORDER BY CreatedDate DESC
+			LIMIT 1
+		];
+		if (!reapplyReplies.isEmpty()) {
+			return reapplyReplies[0];
+		}
+		HMRC_Appeal_Reply__c newest;
+		for (HMRC_Appeal_Reply__c reply : [
+			SELECT Id, Application__c, Application__r.Email__c, Application__r.Contact__c, Client_Attach_File_Ids__c,
+				Reapply__c, Reapply__r.Email__c
+			FROM HMRC_Appeal_Reply__c
+			WHERE Application__r.Name = :name
+			ORDER BY CreatedDate DESC
+			LIMIT 20
+		]) {
+			if (reply.Reapply__c == null) {
+				return reply;
+			}
+			if (newest == null) {
+				newest = reply;
+			}
+		}
+		return newest;
 	}
 	
 	// Process Reapply email
@@ -174,20 +213,26 @@ global class XtraPensionEmailServiceHandler implements Messaging.InboundEmailHan
 		Messaging.InboundEmailResult result = new Messaging.InboundEmailResult();
 		
 		List<Reapply__c> reapplies = [
-			SELECT Name, Email__c, Application__r.Contact__c, Application__c
+			SELECT Name, Email__c, Application__r.Contact__c, Application__c, Status__c
 			FROM Reapply__c
 			WHERE Name = :data.applicationName
 			ORDER BY CreatedDate DESC
 			LIMIT 1
 		];
-		
+
 		if (reapplies.isEmpty()) {
 			result.success = false;
 			result.message = 'Reapply record not found: ' + data.applicationName;
 			return result;
 		}
-		
+
 		Reapply__c reapply = reapplies[0];
+		// The Reapply's appeal is out with the printing house: this tracking is the appeal's, and must not repost the
+		// re-application (tracking, Posted, "on its way to HMRC" email)
+		if (reapply.Status__c == 'HMRC Appeal' &&
+			[SELECT COUNT() FROM HMRC_Appeal_Reply__c WHERE Reapply__c = :reapply.Id AND Status__c = 'Sent to HMRC'] > 0) {
+			return processAppealEmail(data, email);
+		}
 		reapply.Tracking_No_to_HMRC__c = data.trackingNo;
 		reapply.Tracking_Number_Send_Date__c = Date.today();
 		reapply.Tracking_No_Rx_d_by_XP__c = data.trackingNoSendDate;
@@ -263,11 +308,16 @@ global class XtraPensionEmailServiceHandler implements Messaging.InboundEmailHan
 			return result;
 		}
 		Basic__c currClaim = claims[0];
-		update new Basic__c(
-			Id = currClaim.Id,
-			Big_Envelop_Posted_Date__c = Date.today(),
-			Big_Envelop_Tracking_Number__c = data.trackingNo
-		);
+		Basic__c posted = new Basic__c(Id = currClaim.Id, Big_Envelop_Posted_Date__c = Date.today());
+		if (String.isNotBlank(data.trackingNo)) {
+			posted.Big_Envelop_Tracking_Number__c = data.trackingNo;
+		}
+		// Read before today's date is written: a second BIG ENV POSTED (a re-post) does not e-mail again (6 Nov 2026).
+		Boolean firstPosting = XpWelcomePackEmail.notPostedYet(currClaim.Id);
+		update posted;
+		if (firstPosting) {
+			XpWelcomePackEmail.send(currClaim.Id);
+		}
 		result.success = true;
 		return result;
 	}

@@ -6,12 +6,12 @@
  *      after the sales agent has verified bank + read the DD terms.
  *   2. recordAward                  — sales agent captures the DWP award amount
  *      and advances Stage__c to 'Awarded' (fee formula recalcs on save).
- *   3. chargeFee                    — POST /internal/gocardless/charge-fee
- *      once the mandate is active + award recorded (20% of award, in pence).
- *      Since 2026-08-18 the fee can be split into up to 3 monthly installments
- *      via Fee_Plan_Installments__c — this method inserts PC1_Fee_Installment__c
- *      rows for the plan and immediately fires installment #1 (installments
- *      #2..N are scheduled + fired by PC1_FeeInstallmentScheduler).
+ *   3. chargeFee                    — once the mandate is active + award
+ *      recorded (20% of award), inserts the PC1_Fee_Installment__c rows of the
+ *      plan (Fee_Plan_Installments__c, 1..6 monthly) and sends the Bacs
+ *      advance notice for installment #1. It no longer calls GoCardless
+ *      itself (audit 2026-11-11 PC-APEX-4): every payment, #1 included, is
+ *      created by PC1_FeeInstallmentScheduler with the noticed charge date.
  *   4. getDDStatus                  — cacheable read of every DD/fee field so
  *      the LWC can render the panel without a wire per field.
  *
@@ -78,7 +78,7 @@ public with sharing class PC1_GoCardlessController {
         'Fee_Payment_Status__c, Fee_Charged_At__c, ' +
         'Fee_Plan_Installments__c, Fee_Plan_Installment_Amount__c, ' +
         'Fee_Plan_Next_Charge_Date__c, Fee_First_Charge_Date__c, ' +
-        'DWP_Lump_Sum_Received__c, Stage__c';
+        'DWP_Lump_Sum_Received__c, Do_Not_Contact__c, Stage__c';
 
     // Fee model constants — changed 2026-08-18 from 25% → 20% (Fernando).
     // Fee_Amount__c formula field on the object mirrors this; keep in sync.
@@ -95,6 +95,27 @@ public with sharing class PC1_GoCardlessController {
     // year (2027 typo when meaning 2026) fails loudly rather than silently
     // sitting in the scheduler queue for months.
     private static final Integer FIRST_CHARGE_MAX_DAYS_AHEAD = 90;
+    // Earliest first-charge date chargeFee schedules, in days from today: the
+    // advance notice the client is promised (NOTICE_DAYS) plus one day,
+    // because the GoCardless payment is created by the next morning's sweep
+    // and should still have the full notice period as lead time. A stored
+    // date sooner than this (or in the past) is moved to it (audit
+    // 2026-11-11 PC-APEX-4 / PC-SFUI-4).
+    public static final Integer FIRST_CHARGE_MIN_DAYS = PC1_FeeInstallmentScheduler.NOTICE_DAYS + 1;
+
+    // The award / plan freeze is also enforced on direct field writes (see
+    // enforceFeeFreeze). chargeFee moves Fee_First_Charge_Date__c itself when
+    // the stored date is too soon; that one write is let through.
+    @TestVisible private static Boolean feeFreezeBypass = false;
+    // The old text told the user to cancel the payments and installment
+    // records and record the award again; that cannot work (Charge Fee then
+    // answers "already charged" and GoCardless hands back the old payment for
+    // the same installment), so it now sends them to an administrator
+    // (audit 2026-11-11 PC-APEX-9).
+    @TestVisible private static final String FEE_FROZEN_MSG =
+        'The fee for this award is already being collected by Direct Debit, so the award amount, '
+        + 'plan and first charge date can no longer be changed. If the award was recorded wrongly, '
+        + 'contact an administrator: the remaining collection has to be re-planned by hand.';
 
     // -----------------------------------------------------------------
     // Installments list + retry of a failed one (audit 2026-10-02: there
@@ -131,7 +152,10 @@ public with sharing class PC1_GoCardlessController {
             throw new AuraHandledException('Only a failed installment can be retried (this one is ' + row.Payment_Status__c + ').');
         }
         if (String.isBlank(row.Payment_Id__c)) {
-            throw new AuraHandledException('This installment has no GoCardless payment to retry.');
+            // Put on hold by the sweep before any GoCardless payment existed
+            // (creation refused, or never possible before its date): there is
+            // nothing to re-present, the installment is scheduled again.
+            return requeueHeldInstallment(row);
         }
         Map<String, Object> resp = doCallout(PATH_RETRY_PAYMENT, new Map<String, Object>{
             'sf_app_id'  => String.valueOf(row.Application__c),
@@ -150,6 +174,55 @@ public with sharing class PC1_GoCardlessController {
         return new Map<String, Object>{
             'ok' => true, 'payment_id' => row.Payment_Id__c,
             'status' => str(resp.get('status')), 'charge_date' => str(resp.get('charge_date'))
+        };
+    }
+
+    /**
+     * Retry of an installment the sweep put on hold with no GoCardless payment
+     * (port of AA retryInstallment, audit 2026-11-11 PC-APEX-3/4). The row
+     * goes back to 'pending', dated FIRST_CHARGE_MIN_DAYS out with its notice
+     * cleared; the client is emailed the new date now and the daily sweep
+     * creates the payment for that date. Refused where the sweep would never
+     * collect it, so no "we will collect" email goes out for nothing.
+     */
+    private static Map<String, Object> requeueHeldInstallment(PC1_Fee_Installment__c row) {
+        PC1_Application__c app = loadApp(row.Application__c);
+        if (app.DD_Mandate_Status__c != 'active' || String.isBlank(app.DD_Mandate_Id__c)) {
+            throw new AuraHandledException('The Direct Debit is not active. Set up a new Direct Debit with the client first, then retry.');
+        }
+        if (app.Do_Not_Contact__c == true) {
+            throw new AuraHandledException('This client is marked Do Not Contact, so the advance notice cannot be sent.');
+        }
+        if (!PC1_FeeInstallmentScheduler.isCollectableStage(app.Stage__c)) {
+            throw new AuraHandledException('No fee can be collected at stage "' + app.Stage__c + '". ' +
+                'Move the case back to Awarded or Fee Charged first, then retry.');
+        }
+        Date nd = Date.today().addDays(FIRST_CHARGE_MIN_DAYS);
+        update new PC1_Fee_Installment__c(
+            Id                     = row.Id,
+            Payment_Status__c      = 'pending',
+            Charged_At__c          = null,
+            Scheduled_Date__c      = nd,
+            Bacs_Notice_Sent__c    = false,
+            Bacs_Notice_Sent_At__c = null
+        );
+        if (app.Fee_Plan_Next_Charge_Date__c == null || app.Fee_Plan_Next_Charge_Date__c > nd) {
+            update new PC1_Application__c(Id = app.Id, Fee_Plan_Next_Charge_Date__c = nd);
+        }
+        Integer[] sent = PC1_FeeInstallmentScheduler.sendAdvanceNotices(Date.today(), new Set<Id>{ app.Id });
+        // The notice step keeps a month between installments, so it may have
+        // moved the row later than nd.
+        Date scheduled = [SELECT Scheduled_Date__c FROM PC1_Fee_Installment__c WHERE Id = :row.Id].Scheduled_Date__c;
+        insert new PC1_Stage_Log__c(
+            Application__c = app.Id, From_Stage__c = app.Stage__c, To_Stage__c = app.Stage__c,
+            Actor__c = 'human', Changed_At__c = Datetime.now(), Changed_By__c = UserInfo.getUserId(),
+            Note__c = ('Installment ' + row.Installment_Number__c + ' put back for collection on ' + String.valueOf(scheduled)
+                + ' (it was on hold with no GoCardless payment).').left(255));
+        return new Map<String, Object>{
+            'ok'          => true,
+            'requeued'    => true,
+            'notice_sent' => sent != null && sent[0] > 0,
+            'charge_date' => String.valueOf(scheduled)
         };
     }
 
@@ -259,6 +332,7 @@ public with sharing class PC1_GoCardlessController {
                     Application__c = app.Id, From_Stage__c = app.Stage__c, To_Stage__c = app.Stage__c,
                     Actor__c = 'system', Changed_At__c = Datetime.now(), Changed_By__c = UserInfo.getUserId(),
                     Note__c = ('Direct Debit replaced: ' + replaces + ' → ' + str(resp.get('mandate_id')) + '.' + oldNote).left(255));
+                resumeCancelledInstallments(app);
             }
             return new Map<String, Object>{
                 'ok'          => true,
@@ -274,6 +348,75 @@ public with sharing class PC1_GoCardlessController {
             : 'Unknown error';
         recordFailure(app.Id, 'Mandate create failed: ' + err);
         throw new AuraHandledException('Mandate create failed: ' + err);
+    }
+
+    /**
+     * Audit 2026-11-11 PC-APEX-10. When a mandate dies mid-plan the GoCardless
+     * webhook turns every installment not yet collected into 'cancelled', and
+     * nothing turned them back once a replacement Direct Debit existed: the
+     * sweep reads 'pending' only, Charge Fee answered "already charged" and
+     * Retry refused, so the rest of the fee could not be collected at all.
+     * Now, on a successful replacement:
+     *   - a cancelled row that never reached GoCardless goes back to
+     *     'pending' with its notice cleared; the sweep re-dates it, sends a
+     *     fresh notice and collects once the new mandate is active;
+     *   - a cancelled row that HAD a payment (cancelled at GoCardless, or the
+     *     case is not at a collectable stage) is left alone and listed on a
+     *     handoff, because the same payment cannot be collected again.
+     * Best-effort: a failure here must not fail the mandate that was created.
+     */
+    private static void resumeCancelledInstallments(PC1_Application__c app) {
+        try {
+            List<PC1_Fee_Installment__c> cancelled = [
+                SELECT Id, Installment_Number__c, Amount__c, Payment_Id__c
+                  FROM PC1_Fee_Installment__c
+                 WHERE Application__c = :app.Id AND Payment_Status__c = 'cancelled'
+                 ORDER BY Installment_Number__c
+            ];
+            if (cancelled.isEmpty()) return;
+            Boolean collectable = PC1_FeeInstallmentScheduler.isCollectableStage(app.Stage__c);
+            List<PC1_Fee_Installment__c> back = new List<PC1_Fee_Installment__c>();
+            List<String> manual = new List<String>();
+            for (PC1_Fee_Installment__c row : cancelled) {
+                if (collectable && String.isBlank(row.Payment_Id__c)) {
+                    back.add(new PC1_Fee_Installment__c(
+                        Id                     = row.Id,
+                        Payment_Status__c      = 'pending',
+                        Charged_At__c          = null,
+                        Bacs_Notice_Sent__c    = false,
+                        Bacs_Notice_Sent_At__c = null
+                    ));
+                } else {
+                    manual.add(' - installment ' + row.Installment_Number__c + ', £' + row.Amount__c +
+                        (String.isBlank(row.Payment_Id__c) ? '' : ' (GoCardless payment ' + row.Payment_Id__c + ', cancelled)'));
+                }
+            }
+            if (!back.isEmpty()) update back;
+            if (!manual.isEmpty()) {
+                insert new PC1_Handoff__c(
+                    CurrencyIsoCode    = 'GBP',
+                    Application__c     = app.Id,
+                    Escalation_Type__c = 'other',
+                    Reason__c          = 'New Direct Debit set up: cancelled fee installments need a decision',
+                    Next_Step_Suggestion__c = ('A replacement Direct Debit was created, but these installments stay cancelled and will '
+                        + 'NOT be collected automatically' + (collectable ? '' : ' (the case is at stage "' + app.Stage__c + '")') + ':\n'
+                        + String.join(manual, '\n') + '\n\n'
+                        + 'Decide with the client how this part of the fee is settled. Contact an administrator to schedule '
+                        + 'a new collection for it.').left(2000),
+                    Resolved__c        = false
+                );
+            }
+            if (!back.isEmpty()) {
+                insert new PC1_Stage_Log__c(
+                    Application__c = app.Id, From_Stage__c = app.Stage__c, To_Stage__c = app.Stage__c,
+                    Actor__c = 'system', Changed_At__c = Datetime.now(), Changed_By__c = UserInfo.getUserId(),
+                    Note__c = (back.size() + ' cancelled fee installment(s) put back to pending for the new Direct Debit; '
+                        + 'each gets a fresh advance notice once the mandate is active.').left(255));
+            }
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR,
+                'PC1_GoCardlessController: resumeCancelledInstallments failed for ' + app.Id + ' — ' + e.getMessage());
+        }
     }
 
     // -----------------------------------------------------------------
@@ -309,6 +452,18 @@ public with sharing class PC1_GoCardlessController {
             throw new AuraHandledException('DWP lump sum received cannot be negative');
         if (lumpSum != null && lumpSum >= AWARD_MAX)
             throw new AuraHandledException('DWP lump sum received unrealistically large (>' + AWARD_MAX + ')');
+        Integer plan = normalisePlan(installments);
+
+        PC1_Application__c app = loadApp(recordId);
+
+        // A date sent back unchanged is not a new choice (audit 2026-11-11
+        // PC-SFUI-10): the award card re-sends the stored date on every Edit,
+        // and from the day after it was recorded that date is "in the past",
+        // so no edit at all could be saved. chargeFee moves a stale date
+        // forward itself.
+        if (firstChargeDate != null && firstChargeDate == app.Fee_First_Charge_Date__c) {
+            firstChargeDate = null;
+        }
         if (firstChargeDate != null) {
             Date today = Date.today();
             if (firstChargeDate < today) {
@@ -318,10 +473,6 @@ public with sharing class PC1_GoCardlessController {
                 throw new AuraHandledException('First charge date must be within ' + FIRST_CHARGE_MAX_DAYS_AHEAD + ' days from today');
             }
         }
-
-        Integer plan = normalisePlan(installments);
-
-        PC1_Application__c app = loadApp(recordId);
 
         // Once collection has started, the award, plan and first date are
         // frozen. The installment rows carry their own amounts, so changing
@@ -337,10 +488,7 @@ public with sharing class PC1_GoCardlessController {
                 || currentPlan != plan
                 || (firstChargeDate != null && firstChargeDate != app.Fee_First_Charge_Date__c);
             if (changesMoney) {
-                throw new AuraHandledException(
-                    'The fee for this award is already being collected by Direct Debit, so the award amount, '
-                    + 'plan and first charge date can no longer be changed here. Cancel the remaining payments '
-                    + 'in GoCardless and their installment records first, then record the corrected award.');
+                throw new AuraHandledException(FEE_FROZEN_MSG);
             }
         }
 
@@ -402,35 +550,31 @@ public with sharing class PC1_GoCardlessController {
     // -----------------------------------------------------------------
     // 3. chargeFee
     //
-    // First-click behaviour (Fernando's 2026-08-25 plan model):
+    // First-click behaviour (plan model of 2026-08-25; notice rules ported
+    // from AA on 2026-11-11, audit PC-APEX-4 / PC-SFUI-4):
     //   1. Snapshot the plan (Fee_Plan_Installments__c, defaults to 1) and
-    //      the anchor date (Fee_First_Charge_Date__c, defaults to today).
+    //      the anchor date: Fee_First_Charge_Date__c, but never sooner than
+    //      today + FIRST_CHARGE_MIN_DAYS. A stored date that is too close or
+    //      already past is moved forward and the move is written back, so the
+    //      card shows it. Before, a past date was used as it stood: installment
+    //      #1 went out at once and #2 could be due days later, with no notice.
     //   2. Insert N PC1_Fee_Installment__c rows (row #1 on the anchor date,
     //      row #k on anchor.addMonths(k-1) — SF Date arithmetic snaps
     //      month-end automatically so Jan 31 → Feb 28, Mar 31 → Apr 30).
     //      Final row absorbs the sub-penny rounding remainder so the sum of
     //      amounts equals Fee_Amount__c exactly.
-    //   3. If the anchor date is TODAY (or earlier), fire installment #1
-    //      immediately via /internal/gocardless/charge-fee with
-    //      charge_stage='installment_1'. Otherwise leave #1 pending — the
-    //      daily PC1_FeeInstallmentScheduler will pick it up on its
-    //      Scheduled_Date__c.
-    //   4. Mirror the fired installment's GC payment id / status onto the
-    //      parent PC1_Application__c so the pre-existing single-charge fields
-    //      keep working (backward compat + admin reports). When #1 is
-    //      deferred, the mirror stays null until the scheduler fires.
-    //   5. Stamp Fee_Plan_Next_Charge_Date__c with installment #2's date
-    //      when #1 fires immediately; with installment #1's date when it
-    //      is deferred; null for plan=1 fired-immediately.
+    //   3. Run the advance-notice step for this Application at once, so the
+    //      client is emailed the date and amount of installment #1 today.
+    //      The daily PC1_FeeInstallmentScheduler creates the GoCardless
+    //      payment for that date on its next run.
+    //   There is NO "fire now" any more: the old path created installment #1
+    //   the moment the button was clicked, with no XtraPension notice and on
+    //   a date GoCardless chose.
+    //   4. The parent's Fee_Payment_Id__c / Stage 'Fee Charged' are written by
+    //      the Node endpoint when installment #1's payment is created.
     //
-    // Subsequent installments are fired by PC1_FeeInstallmentScheduler; that
-    // scheduler calls this same Node endpoint with charge_stage='installment_N'
-    // for its own per-installment idempotency.
-    //
-    // Re-clicking Charge Fee on an app that already has installments:
-    //   - Returns the current status without side effects (idempotent).
-    //   - Val team can use the installment table (surfaced via the LWC) to
-    //     see remaining charges + due dates.
+    // Re-clicking Charge Fee on an app that already has installments returns
+    // the current schedule without side effects (idempotent).
     // -----------------------------------------------------------------
     @AuraEnabled
     public static Map<String, Object> chargeFee(Id recordId) {
@@ -449,119 +593,86 @@ public with sharing class PC1_GoCardlessController {
         if (app.DD_Mandate_Status__c != 'active') {
             throw new AuraHandledException('Mandate not active yet');
         }
+        // The status can read 'active' while the mandate id is still blank
+        // (mandate document pending). Heroku refuses every charge for such a
+        // record, so scheduling here would only email the client a notice
+        // for a collection that cannot happen.
+        if (String.isBlank(app.DD_Mandate_Id__c)) {
+            throw new AuraHandledException('The Direct Debit document is still pending, so no fee can be scheduled yet. Try again in a few minutes.');
+        }
         if (app.Award_Amount__c == null || app.Award_Amount__c <= 0) {
             throw new AuraHandledException('Award not recorded');
         }
+        // A client marked Do Not Contact cannot be sent the advance notice,
+        // so no collection may be scheduled.
+        if (app.Do_Not_Contact__c == true) {
+            throw new AuraHandledException('This client is marked Do Not Contact, so the Direct Debit advance notice cannot be sent. ' +
+                'No collection can be scheduled until that flag is cleared.');
+        }
+        // The sweep notices and collects only at a collectable stage. A plan
+        // built elsewhere would sit un-noticed, so refuse it with the reason.
+        if (!PC1_FeeInstallmentScheduler.isCollectableStage(app.Stage__c)) {
+            throw new AuraHandledException('No fee can be scheduled at stage "' + app.Stage__c + '". ' +
+                'Fee collection only runs once the award is recorded (Awarded or Fee Charged).');
+        }
+
+        // Idempotent: a plan that already exists is never rebuilt. Rebuilding
+        // deleted and re-inserted the rows, which wiped their notice stamps
+        // (a second advance notice to the client).
+        List<PC1_Fee_Installment__c> existing = [
+            SELECT Installment_Number__c, Scheduled_Date__c, Amount__c
+              FROM PC1_Fee_Installment__c
+             WHERE Application__c = :app.Id
+             ORDER BY Installment_Number__c
+        ];
+        if (!existing.isEmpty()) {
+            return new Map<String, Object>{
+                'ok'                => true,
+                'existed'           => true,
+                'deferred'          => true,
+                'first_charge_date' => existing[0].Scheduled_Date__c,
+                'amount_pounds'     => existing[0].Amount__c,
+                'installments'      => existing.size(),
+                'installment_amount'=> existing[0].Amount__c,
+                'next_charge_date'  => app.Fee_Plan_Next_Charge_Date__c
+            };
+        }
 
         // 20% of the award, rounded to pence. Reproduce the Fee_Amount__c
-        // formula deliberately so we don't have to round-trip the record
-        // after recordAward for the callout. Rate changed 25% → 20% on
-        // 2026-08-18 (Fernando).
+        // formula deliberately so the rows never depend on a formula re-read.
+        // Rate changed 25% → 20% on 2026-08-18 (Fernando).
         Decimal feePounds = (app.Award_Amount__c * FEE_RATE).setScale(2, System.RoundingMode.HALF_UP);
-        Integer plan = normalisePlan((Integer) app.Fee_Plan_Installments__c);
-        Date anchor = app.Fee_First_Charge_Date__c != null ? app.Fee_First_Charge_Date__c : Date.today();
+        Integer plan = normalisePlan(app.Fee_Plan_Installments__c == null ? null : app.Fee_Plan_Installments__c.intValue());
+        Date earliest = Date.today().addDays(FIRST_CHARGE_MIN_DAYS);
+        Date anchor = app.Fee_First_Charge_Date__c;
+        if (anchor == null || anchor < earliest) anchor = earliest;
 
-        // Audit R9-CRIT#1 fix: DML-before-callout meant the fireNow path
-        // (anchor <= today, the default) threw 'uncommitted work pending'
-        // 100% of the time at Http.send — doCallout swallowed it into
-        // ok=false, chargeFee threw AuraHandledException, and the entire
-        // transaction (installments included) rolled back. Val team's
-        // "Charge Fee (today)" was broken permanently; only the deferred
-        // path (future anchor) actually shipped a GC payment.
-        //
-        // Refactored to: build in memory → in the fireNow branch, do
-        // callout FIRST, then delete-stale + insert + Fee_Payment_Id__c
-        // stamp in a single DML block on success. Deferred branch keeps
-        // the old ordering because it has no callout.
         List<PC1_Fee_Installment__c> installments = buildInstallmentRows(app.Id, feePounds, plan, anchor);
         PC1_Fee_Installment__c first = installments[0];
-        Boolean fireNow = anchor <= Date.today();
+        insert installments;
+        PC1_Application__c patch = new PC1_Application__c(
+            Id                           = app.Id,
+            Fee_Plan_Next_Charge_Date__c = first.Scheduled_Date__c
+            // Fee_Payment_Id__c / Stage 'Fee Charged' land when the Node
+            // endpoint creates installment #1's GoCardless payment.
+        );
+        if (app.Fee_First_Charge_Date__c != anchor) patch.Fee_First_Charge_Date__c = anchor;
+        feeFreezeBypass = true;
+        try { update patch; } finally { feeFreezeBypass = false; }
 
-        if (!fireNow) {
-            // Defer — scheduler will fire on Scheduled_Date__c. Safe to do
-            // DML-only here: no callout in this branch.
-            List<PC1_Fee_Installment__c> stale = [
-                SELECT Id FROM PC1_Fee_Installment__c
-                WHERE Application__c = :app.Id AND Payment_Id__c = null
-            ];
-            if (!stale.isEmpty()) delete stale;
-            insert installments;
-            PC1_Application__c patch = new PC1_Application__c(
-                Id                          = app.Id,
-                Fee_Plan_Next_Charge_Date__c = first.Scheduled_Date__c
-            );
-            update patch;
-            return new Map<String, Object>{
-                'ok'                => true,
-                'deferred'          => true,
-                'first_charge_date' => first.Scheduled_Date__c,
-                'amount_pounds'     => first.Amount__c,
-                'installments'      => plan,
-                'installment_amount'=> first.Amount__c,
-                'next_charge_date'  => first.Scheduled_Date__c
-            };
-        }
-
-        // Fire installment #1 immediately. CALLOUT BEFORE DML.
-        String firstStage = 'installment_1';
-        Long firstAmountPence = (first.Amount__c * 100).longValue();
-        Map<String, Object> body = new Map<String, Object>{
-            'sf_app_id'    => String.valueOf(app.Id),
-            'amount_pence' => firstAmountPence,
-            'currency'     => 'GBP',
-            'charge_stage' => firstStage,
-            'description'  => 'XtraPension PC1 success fee — installment 1 of ' + plan +
-                              ' (20% of £' + app.Award_Amount__c + ')'
+        // Notice now when installment #1 is within the notice horizon (always,
+        // unless the agent picked a later date; then the daily sweep sends it).
+        Integer[] sent = PC1_FeeInstallmentScheduler.sendAdvanceNotices(Date.today(), new Set<Id>{ app.Id });
+        return new Map<String, Object>{
+            'ok'                => true,
+            'deferred'          => true,
+            'notice_sent'       => sent != null && sent[0] > 0,
+            'first_charge_date' => first.Scheduled_Date__c,
+            'amount_pounds'     => first.Amount__c,
+            'installments'      => plan,
+            'installment_amount'=> first.Amount__c,
+            'next_charge_date'  => first.Scheduled_Date__c
         };
-        Map<String, Object> resp = doCallout(PATH_CHARGE_FEE, body);
-        if (isTruthy(resp.get('ok'))) {
-            Date chargeDate = parseDate(resp.get('charge_date'));
-            String gcPaymentId = str(resp.get('payment_id'));
-            String gcStatus    = str(resp.get('status'));
-
-            // DML block — only reached on callout success, so no uncommitted-
-            // work exception can be triggered upstream.
-            List<PC1_Fee_Installment__c> stale = [
-                SELECT Id FROM PC1_Fee_Installment__c
-                WHERE Application__c = :app.Id AND Payment_Id__c = null
-            ];
-            if (!stale.isEmpty()) delete stale;
-
-            first.Payment_Id__c     = gcPaymentId;
-            first.Payment_Status__c = 'submitted';
-            first.Charged_At__c     = Datetime.now();
-            insert installments;
-
-            // Mirror installment #1 GC details onto the parent for backward
-            // compat with the pre-plan single-charge flow.
-            Date nextChargeDate = plan > 1 ? installments[1].Scheduled_Date__c : null;
-            PC1_Application__c patch = new PC1_Application__c(
-                Id                          = app.Id,
-                Fee_Payment_Id__c           = gcPaymentId,
-                Fee_Payment_Status__c       = gcStatus,
-                Fee_Charged_At__c           = Datetime.now(),
-                Fee_Plan_Next_Charge_Date__c = nextChargeDate
-            );
-            if (app.Stage__c == 'Awarded' || app.Stage__c == null) {
-                patch.Stage__c = 'Fee Charged';
-            }
-            update patch;
-            return new Map<String, Object>{
-                'ok'                => true,
-                'payment_id'        => patch.Fee_Payment_Id__c,
-                'status'            => patch.Fee_Payment_Status__c,
-                'charge_date'       => chargeDate,
-                'first_charge_date' => first.Scheduled_Date__c,
-                'amount_pounds'     => first.Amount__c,
-                'installments'      => plan,
-                'installment_amount'=> first.Amount__c,
-                'next_charge_date'  => nextChargeDate
-            };
-        }
-        // Callout failed pre-DML — no orphans to clean up. Log + throw.
-        String err = String.isNotBlank(str(resp.get('error'))) ? str(resp.get('error')) : 'Unknown error';
-        recordFailure(app.Id, 'Fee charge failed: ' + err);
-        throw new AuraHandledException('Fee charge failed: ' + err);
     }
 
     /**
@@ -614,6 +725,10 @@ public with sharing class PC1_GoCardlessController {
             'fee_plan_installment_amount' => app.Fee_Plan_Installment_Amount__c,
             'fee_plan_next_charge_date' => app.Fee_Plan_Next_Charge_Date__c,
             'fee_first_charge_date'     => app.Fee_First_Charge_Date__c,
+            // Earliest date chargeFee will schedule installment 1 on, and the
+            // advance notice period, so the cards show what the server uses.
+            'fee_first_charge_min_date' => Date.today().addDays(FIRST_CHARGE_MIN_DAYS),
+            'fee_notice_days'           => PC1_FeeInstallmentScheduler.NOTICE_DAYS,
             'fee_payment_id'            => app.Fee_Payment_Id__c,
             'fee_payment_status'        => app.Fee_Payment_Status__c,
             'fee_charged_at'            => app.Fee_Charged_At__c,
@@ -694,14 +809,62 @@ public with sharing class PC1_GoCardlessController {
             update patch;
         } catch (Exception ignored) { /* best-effort */ }
         try {
+            // To_Stage__c is required: without it this insert failed every
+            // time and the catch hid it, so the failure trail was never
+            // written (audit 2026-11-11 PC-APEX-13). A note-only row carries
+            // the current stage on both sides, like the other note rows.
+            String stage = [SELECT Stage__c FROM PC1_Application__c WHERE Id = :appId LIMIT 1].Stage__c;
             insert new PC1_Stage_Log__c(
                 Application__c = appId,
+                From_Stage__c  = stage,
+                To_Stage__c    = stage,
                 Actor__c       = 'system',
                 Changed_At__c  = Datetime.now(),
                 Changed_By__c  = UserInfo.getUserId(),
                 Note__c        = safe(reason)
             );
         } catch (Exception ignored) { /* best-effort */ }
+    }
+
+    /**
+     * BEFORE UPDATE (PC1_ApplicationTrigger). The award / plan freeze used to
+     * live only in recordAward, so an inline edit or a data load of
+     * Award_Amount__c after installment 1 changed the fee on the card, the
+     * receipts and the notices while the installment rows kept the old
+     * amounts (audit 2026-11-11 PC-APEX-9, the C7 scenario again). Once the
+     * fee is being collected (a payment id on the record, or installment
+     * rows) the three plan fields can no longer be changed by any write.
+     */
+    public static void enforceFeeFreeze(List<PC1_Application__c> newList, Map<Id, PC1_Application__c> oldMap) {
+        if (feeFreezeBypass || newList == null || oldMap == null) return;
+        List<PC1_Application__c> changed = new List<PC1_Application__c>();
+        Set<Id> toCheck = new Set<Id>();
+        for (PC1_Application__c a : newList) {
+            PC1_Application__c o = oldMap.get(a.Id);
+            if (o == null) continue;
+            if (a.Award_Amount__c == o.Award_Amount__c
+                    && a.Fee_Plan_Installments__c == o.Fee_Plan_Installments__c
+                    && a.Fee_First_Charge_Date__c == o.Fee_First_Charge_Date__c) continue;
+            changed.add(a);
+            if (String.isBlank(o.Fee_Payment_Id__c)) toCheck.add(a.Id);
+        }
+        if (changed.isEmpty()) return;
+        Set<Id> withRows = new Set<Id>();
+        if (!toCheck.isEmpty()) {
+            for (AggregateResult r : [
+                SELECT Application__c app FROM PC1_Fee_Installment__c
+                 WHERE Application__c IN :toCheck
+                 GROUP BY Application__c
+            ]) {
+                withRows.add((Id) r.get('app'));
+            }
+        }
+        for (PC1_Application__c a : changed) {
+            PC1_Application__c o = oldMap.get(a.Id);
+            if (String.isNotBlank(o.Fee_Payment_Id__c) || withRows.contains(a.Id)) {
+                a.addError(FEE_FROZEN_MSG);
+            }
+        }
     }
 
     // -----------------------------------------------------------------

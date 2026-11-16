@@ -295,6 +295,28 @@ public with sharing class AA_RecordPageService {
         return lm.group(1);
     }
 
+    // audit 2026-11-11 AA-ENGINE-1: health-conditions (and its "__<n>"
+    // entries) is the DWP autocomplete: the fill halts on a name that is not
+    // a list entry word for word. The Application Data editor checks this in
+    // the browser; saveField is callable directly, so it is checked here too.
+    // health-conditions-manual is the free-text page and is not held to the
+    // list. Twin of src/flow.js resolveCondition.
+    private static final String CONDITION_LIST_ID = 'health-conditions';
+
+    private static String dwpConditionName(String raw) {
+        Map<String, String> byNorm = AA_FlowEngine.conditionsByNorm();
+        if (byNorm.isEmpty()) {
+            throwInvalid('The list of health conditions DWP accepts is not loaded (aaFlowConfig has no CONDITIONS), '
+                + 'so a condition name cannot be saved. Tell the tech team.');
+        }
+        String listed = byNorm.get(AA_FlowEngine.normCondition(raw));
+        if (listed == null) {
+            throwInvalid('"' + raw + '" is not on the DWP list of health conditions. Pick the name from the list, '
+                + 'or save it as a condition typed by hand (health-conditions-manual).');
+        }
+        return listed;
+    }
+
     /** normaliseAnswer for a non-blank value, by the field the answer belongs to. */
     private static String normaliseValue(Id applicationId, String base, String value) {
         String raw = value.trim();
@@ -325,6 +347,7 @@ public with sharing class AA_RecordPageService {
             }
             return em;
         }
+        if (CONDITION_LIST_ID.equals(base)) return dwpConditionName(raw);
         Map<String, FieldRule> rules = fieldRules();
         FieldRule rule = rules.get(base);
         if (rule == null) {
@@ -899,10 +922,18 @@ public with sharing class AA_RecordPageService {
         AA_StageTransitionHelper.noteByApp.put(
             applicationId, String.isBlank(note) ? 'Changed via record page' : note
         );
-        update new AA_Application__c(
-            Id = applicationId,
-            Stage__c = newStage,
-            Stage_Changed_At__c = Datetime.now()
-        );
+        try {
+            update new AA_Application__c(
+                Id = applicationId,
+                Stage__c = newStage,
+                Stage_Changed_At__c = Datetime.now()
+            );
+        } catch (DmlException e) {
+            // A refused move (a validation rule, or the DWP decision guard in
+            // AA_StageTransitionHelper, audit 2026-11-11 AA-SFUI-4) reaches the
+            // Stage card as its own message, not as a raw DmlException.
+            AA_StageTransitionHelper.noteByApp.remove(applicationId);
+            throwInvalid(e.getDmlMessage(0));
+        }
     }
 }

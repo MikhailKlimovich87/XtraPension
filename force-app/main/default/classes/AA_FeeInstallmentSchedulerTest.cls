@@ -872,4 +872,135 @@ private class AA_FeeInstallmentSchedulerTest {
         System.assertEquals(2, [SELECT COUNT() FROM AA_Fee_Installment__c
                                  WHERE Application__c = :a.Id AND Payment_Status__c = 'paused']);
     }
+
+    // -----------------------------------------------------------------
+    // audit 2026-11-11 AA-APEX-1: the charge depends on a SENT notice.
+    // testRequireNoticeProof switches on the send-log check that is always
+    // on outside tests (the tests above stamp rows by hand).
+    // -----------------------------------------------------------------
+    private static AA_Message_Send_Log__c bacsLog(Id appId, String status, Datetime at) {
+        Id tplId = [SELECT Id FROM AA_Message_Template__c WHERE Trigger_Event__c = 'Bacs_Advance_Notice' LIMIT 1].Id;
+        return new AA_Message_Send_Log__c(Template__c = tplId, Application__c = appId, Channel__c = 'Email',
+            Status__c = status, Sent_At__c = at);
+    }
+
+    @isTest static void chargeDue_waitsForASentNotice_thenSendsTheRightPence() {
+        upsertConfig();
+        seedBacsTemplate();
+        AA_Application__c a = makeApp(1);
+        Date today = Date.today();
+        AA_Fee_Installment__c r = row(a.Id, 1, today.addDays(5), 'pending', true);
+        r.Bacs_Notice_Sent_At__c = Datetime.now().addMinutes(-5);
+        insert r;
+        ChargeMock mock = new ChargeMock();
+        Test.setMock(HttpCalloutMock.class, mock);
+        AA_FeeInstallmentScheduler.testRequireNoticeProof = true;
+
+        AA_FeeInstallmentScheduler.ChargeResult first = AA_FeeInstallmentScheduler.chargeDue(today);
+        System.assertEquals(1, first.due);
+        System.assertEquals(1, first.unproven, 'stamped, but nothing on the send log yet');
+
+        // A notice that FAILED proves nothing, and neither does an older Sent
+        // row (the notice of an earlier instalment).
+        insert new List<AA_Message_Send_Log__c>{
+            bacsLog(a.Id, 'Failed', Datetime.now()),
+            bacsLog(a.Id, 'Sent', Datetime.now().addDays(-30))
+        };
+        System.assertEquals(1, AA_FeeInstallmentScheduler.chargeDue(today).unproven);
+        System.assertEquals(0, mock.requests.size(), 'no payment is created without a sent notice');
+        System.assertEquals(null, [SELECT Charged_At__c FROM AA_Fee_Installment__c WHERE Id = :r.Id].Charged_At__c);
+
+        insert bacsLog(a.Id, 'Sent', Datetime.now());
+        Test.startTest();
+        AA_FeeInstallmentScheduler.ChargeResult cr = AA_FeeInstallmentScheduler.chargeDue(today);
+        Test.stopTest();
+
+        System.assertEquals(1, cr.fired, 'created once the notice is on the send log');
+        System.assertEquals(0, cr.unproven);
+        Map<String, Object> sent = (Map<String, Object>) JSON.deserializeUntyped(mock.requests[0]);
+        // AA-APEX-11: the pence sent to GoCardless (the row is 53.33 pounds).
+        System.assertEquals('5333', String.valueOf(sent.get('amount_pence')));
+        System.assertEquals('GBP', sent.get('currency'));
+    }
+
+    // The sweep re-checks old stamps itself: a notice that never reached the
+    // send log is un-stamped, a Task is raised once, and the row is moved and
+    // noticed again in the same run.
+    @isTest static void sweep_reNoticesARowWhoseNoticeNeverReachedTheSendLog() {
+        upsertConfig();
+        seedBacsTemplate();
+        AA_Application__c a = makeApp(1);
+        Date today = Date.today();
+        AA_Fee_Installment__c r = row(a.Id, 1, today.addDays(4), 'pending', true);
+        r.Bacs_Notice_Sent_At__c = Datetime.now().addDays(-1);
+        insert r;
+        AA_FeeInstallmentScheduler.testBypass = true;
+        AA_FeeInstallmentScheduler.testDispatched.clear();
+        AA_FeeInstallmentScheduler.testRequireNoticeProof = true;
+
+        Test.startTest();
+        Integer[] res = AA_FeeInstallmentScheduler.sendAdvanceNotices(today);
+        Test.stopTest();
+
+        AA_Fee_Installment__c after = [SELECT Scheduled_Date__c, Bacs_Notice_Sent__c, Bacs_Notice_Sent_At__c
+                                         FROM AA_Fee_Installment__c WHERE Id = :r.Id];
+        System.assertEquals(1, res[0], 'a fresh notice is requested in the same run');
+        System.assertEquals(1, AA_FeeInstallmentScheduler.testDispatched.size());
+        System.assertEquals(today.addDays(AA_FeeInstallmentScheduler.NOTICE_DAYS), after.Scheduled_Date__c,
+            'moved so the fresh notice gives the full 5 days');
+        System.assertEquals(true, after.Bacs_Notice_Sent__c);
+        System.assert(after.Bacs_Notice_Sent_At__c > Datetime.now().addHours(-1), 'a new stamp');
+        List<Task> tasks = [SELECT Subject, Priority FROM Task WHERE WhatId = :a.Id];
+        System.assertEquals(1, tasks.size(), 'ops are told the notice did not go');
+        System.assert(tasks[0].Subject.startsWith(AA_FeeInstallmentScheduler.NOTICE_NOT_SENT_SUBJECT), tasks[0].Subject);
+
+        // It fails again: the stamp is cleared again, but no second Task while the first is open.
+        update new AA_Fee_Installment__c(Id = r.Id, Bacs_Notice_Sent_At__c = Datetime.now().addDays(-1));
+        System.assertEquals(1, AA_FeeInstallmentScheduler.reconcileUnsentNotices(null));
+        System.assertEquals(false, [SELECT Bacs_Notice_Sent__c FROM AA_Fee_Installment__c WHERE Id = :r.Id].Bacs_Notice_Sent__c);
+        System.assertEquals(1, [SELECT COUNT() FROM Task WHERE WhatId = :a.Id]);
+    }
+
+    // A stamp with its Sent row is left alone, however old, and so is a stamp
+    // too young for the dispatcher to have processed.
+    @isTest static void sweep_leavesProvenAndFreshStampsAlone() {
+        upsertConfig();
+        seedBacsTemplate();
+        AA_Application__c proven = makeApp(1);
+        AA_Application__c fresh = makeApp(1);
+        Date today = Date.today();
+        Datetime stamp = Datetime.now().addDays(-1);
+        AA_Fee_Installment__c r1 = row(proven.Id, 1, today.addDays(4), 'pending', true);
+        r1.Bacs_Notice_Sent_At__c = stamp;
+        AA_Fee_Installment__c r2 = row(fresh.Id, 1, today.addDays(5), 'pending', true);
+        r2.Bacs_Notice_Sent_At__c = Datetime.now().addMinutes(-1);
+        insert new List<AA_Fee_Installment__c>{ r1, r2 };
+        insert bacsLog(proven.Id, 'Sent', stamp.addMinutes(1));
+        AA_FeeInstallmentScheduler.testRequireNoticeProof = true;
+
+        System.assertEquals(0, AA_FeeInstallmentScheduler.reconcileUnsentNotices(null));
+        System.assertEquals(2, [SELECT COUNT() FROM AA_Fee_Installment__c WHERE Bacs_Notice_Sent__c = true]);
+        System.assertEquals(0, [SELECT COUNT() FROM Task WHERE WhatId IN (:proven.Id, :fresh.Id)]);
+    }
+
+    // audit 2026-11-11 AA-APEX-13: a failing charge step tells ops.
+    @isTest static void chargeDue_failures_emailOps() {
+        upsertConfig();
+        update new AA_Config__c(Id = [SELECT Id FROM AA_Config__c LIMIT 1].Id, Admin_Alert_Email__c = 'ops@example.test');
+        AA_Application__c a = makeApp(1);
+        Date today = Date.today();
+        insert row(a.Id, 1, today.addDays(5), 'pending', true);
+        ChargeMock fail = new ChargeMock();
+        fail.status = 401;
+        fail.body = '{"ok":false,"error":"unauthorized"}';
+        Test.setMock(HttpCalloutMock.class, fail);
+
+        Test.startTest();
+        AA_FeeInstallmentScheduler.ChargeResult cr = AA_FeeInstallmentScheduler.chargeDue(today);
+        Test.stopTest();
+
+        System.assertEquals(1, cr.errored);
+        System.assertNotEquals(null, AA_HandoffService.lastOpsEmail, 'ops must be emailed');
+        System.assert(AA_HandoffService.lastOpsEmail.getSubject().contains('fee sweep'), AA_HandoffService.lastOpsEmail.getSubject());
+    }
 }

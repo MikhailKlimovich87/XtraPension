@@ -48,8 +48,22 @@ const FIELDS = [
     'AA_Application__c.Fee_Plan_Installment_Amount__c',
     'AA_Application__c.Fee_First_Charge_Date__c',
     'AA_Application__c.DWP_Lump_Sum_Received__c',
+    'AA_Application__c.Stage__c',
     'AA_Application__c.LastModifiedDate',
 ];
+
+// audit 2026-11-11 AA-SFUI-5: stages in which the award is no longer recorded
+// or edited from this card. The fee plan exists (Fee Charged, Closed - Paid),
+// or the case is in dispute or under review (Closed - Fee Failed, DD
+// Chargeback, Change of Circumstances Review). A re-save there could only be
+// a no-op (the server refuses a changed amount or plan once charging has
+// started), yet it rewrote the first-charge date on the record and, on the
+// last three stages, moved the record back to Awarded, a stage the fee is
+// collected in. The card shows the summary only.
+const LOCKED_STAGES = new Set([
+    'Fee Charged', 'Closed - Paid', 'Closed - Fee Failed', 'DD Chargeback',
+    'Change of Circumstances Review',
+]);
 
 // Annual-award band; mirrors AA_GoCardlessController.AWARD_BAND_MIN/MAX.
 const LOW_THRESHOLD  = 3500;
@@ -124,6 +138,7 @@ export default class AaAwardRecorder extends LightningElement {
     installmentAmount = null;
     firstChargeDate   = null;        // ISO YYYY-MM-DD from SF (Fee_First_Charge_Date__c)
     lumpSumReceived   = null;
+    stage             = null;
     lastModifiedIso   = null;
 
     // Draft (only meaningful when editing or first-entry)
@@ -148,6 +163,7 @@ export default class AaAwardRecorder extends LightningElement {
             this.installmentAmount = f.Fee_Plan_Installment_Amount__c?.value ?? null;
             this.firstChargeDate   = f.Fee_First_Charge_Date__c?.value || null;
             this.lumpSumReceived   = f.DWP_Lump_Sum_Received__c?.value ?? null;
+            this.stage             = f.Stage__c?.value || null;
             this.lastModifiedIso   = f.LastModifiedDate?.value || null;
         }
     }
@@ -187,8 +203,16 @@ export default class AaAwardRecorder extends LightningElement {
 
     // ── computed ─────────────────────────────────────────────────────
     get hasAward()    { return this.awardAmount !== null && this.awardAmount !== undefined && this.awardAmount !== ''; }
-    get showInput()   { return !this.hasAward || this.editing; }
-    get showSummary() { return this.hasAward && !this.editing; }
+    get stageLocked() { return LOCKED_STAGES.has(this.stage); }
+    get showInput()   { return !this.stageLocked && (!this.hasAward || this.editing); }
+    get showSummary() { return this.hasAward && (!this.editing || this.stageLocked); }
+    get showEdit()    { return !this.stageLocked; }
+    get showLockedEmpty() { return this.stageLocked && !this.hasAward; }
+    get lockedNote() {
+        return this.hasAward
+            ? `The award cannot be edited at stage "${this.stage}": the fee plan is set or the case is past the award step.`
+            : `No award is recorded, and one cannot be recorded at stage "${this.stage}".`;
+    }
 
     // Override picker exposes all 3 options; auto-recommend chooses 1 or 3.
     get planOptionsOverride() { return PLAN_OPTIONS_OVERRIDE; }
@@ -401,14 +425,22 @@ export default class AaAwardRecorder extends LightningElement {
         this.draftConfirmUnusual = e.target.checked;
     }
     handleEdit() {
+        if (this.stageLocked) return;
         this.editing = true;
         this.draftAmount     = this.awardAmount;
         this.draftLumpSum    = this.lumpSumReceived;
         this.draftIncludesVat = false;
-        this.draftOverride   = false;
         // Preserve the existing plan when re-editing (val team is usually just
         // fixing the amount, not the plan).
         this.draftPlan = String(this.installments || 1);
+        // audit 2026-11-11 AA-SFUI-1: a stored plan that is not the
+        // recommendation for the stored amount and lump sum was picked by
+        // hand. Open with the override on and that plan selected, so Record
+        // sends it back unless the agent changes it. With the override off,
+        // effectivePlan ignores draftPlan and a 1x or 2x plan agreed with the
+        // client went back to 3 on a typo fix. A stored plan that IS the
+        // recommendation keeps following it (override off), as before.
+        this.draftOverride = Number(this.draftPlan) !== this.recommendedPlan;
         // Preserve the existing first-charge date on edit unless it is now
         // inside the notice window; then default to the earliest legal date.
         const earliest = ymdPlusDays(NOTICE_DAYS);
@@ -428,7 +460,7 @@ export default class AaAwardRecorder extends LightningElement {
     }
 
     async handleRecord() {
-        if (!this.draftValid) return;
+        if (!this.draftValid || this.stageLocked) return;
         this.saving = true;
         try {
             const chosenPlan = this.effectivePlan;

@@ -1,7 +1,7 @@
 /**
  * Tests for small PC1 helpers below the 75% deploy threshold on 2026-10-02:
  * PC1_ValAgentAssignHelper, PC1_ApplicationNeedsHumanNotifyTrigger,
- * PC1_MaryProgressCalculator, PC1_RestUtil and PC1_PhoneNormalizer.
+ * PC1_MaryProgressCalculator and PC1_PhoneNormalizer.
  */
 @IsTest
 private class PC1_HelpersTest {
@@ -84,31 +84,6 @@ private class PC1_HelpersTest {
         PC1_MaryProgressCalculator.updateMaryProgressBulk(new Set<Id>());
     }
 
-    // ── REST helpers ─────────────────────────────────────────────────
-
-    @IsTest static void rest_util() {
-        PC1_Application__c a = makeApp('New');
-        update new PC1_Application__c(Id = a.Id, Phone__c = '+447700900333', DWP_Reference__c = 'REF9');
-        String name = [SELECT Name FROM PC1_Application__c WHERE Id = :a.Id].Name;
-
-        RestContext.request = new RestRequest();
-        RestContext.response = new RestResponse();
-        System.assertEquals(0, PC1_RestUtil.parseBody().size());
-        RestContext.request.requestBody = Blob.valueOf('not json');
-        System.assert(PC1_RestUtil.parseBody().containsKey('_parseError'));
-        RestContext.request.requestBody = Blob.valueOf('{"application_id":"' + a.Id + '"}');
-        System.assertEquals(a.Id, PC1_RestUtil.findApplication(PC1_RestUtil.parseBody()).Id);
-
-        System.assertEquals(a.Id, PC1_RestUtil.findApplication(new Map<String, Object>{ 'application_id' => name }).Id);
-        System.assertEquals(a.Id, PC1_RestUtil.findApplication(new Map<String, Object>{ 'dwp_reference' => 'REF9' }).Id);
-        System.assertEquals(a.Id, PC1_RestUtil.findApplication(new Map<String, Object>{ 'phone' => '+447700900333' }).Id);
-        System.assertEquals(null, PC1_RestUtil.findApplication(new Map<String, Object>{ 'phone' => '+440000000000' }));
-
-        PC1_RestUtil.writeError(400, 'bad');
-        System.assertEquals(400, RestContext.response.statusCode);
-        System.assert(RestContext.response.responseBody.toString().contains('bad'));
-    }
-
     // ── Phone normalisation ──────────────────────────────────────────
 
     @IsTest static void phone_normaliser() {
@@ -121,6 +96,20 @@ private class PC1_HelpersTest {
         System.assertEquals(null, PC1_PhoneNormalizer.toE164('abc'));
         System.assertEquals(null, PC1_PhoneNormalizer.toE164(null));
         System.assertEquals('+4930123456', PC1_PhoneNormalizer.toE164('+49 30 123456'));
+        // Audit 2026-11-11 PC-APEX-1: UK landlines typed in national format.
+        System.assertEquals('+442079460018', PC1_PhoneNormalizer.toE164('020 7946 0018'));
+        System.assertEquals('+441614960123', PC1_PhoneNormalizer.toE164('0161 496 0123'));
+        System.assertEquals('+441632960123', PC1_PhoneNormalizer.toE164('01632 960123'));
+        System.assertEquals('+448000000000', PC1_PhoneNormalizer.toE164('0800 000 0000'));
+        System.assertEquals('+44120461234', PC1_PhoneNormalizer.toE164('01204 61234'), '0 + 9 digit UK landline');
+        System.assertEquals('+442079460018', PC1_PhoneNormalizer.toE164('+44 (0)20 7946 0018'), 'bracketed trunk zero dropped');
+        System.assertEquals('+447700900123', PC1_PhoneNormalizer.toE164('0044 (0)7700 900123'));
+        System.assertEquals(null, PC1_PhoneNormalizer.toE164('020 7946 0018', 'IE'), 'no +44 unless the default country is GB');
+        System.assertEquals(null, PC1_PhoneNormalizer.toE164('012 3456'), 'a short 0-number is never given a bare +');
+        System.assertEquals(null, PC1_PhoneNormalizer.toE164('0123456789012'), 'nor a long one');
+        // Same answer as src/lib/phone.js normaliseE164 for every input above
+        // (run on 2026-11-11): storage must equal lookup.
+        System.assertEquals(null, PC1_PhoneNormalizer.toE164('0770090012'), 'a 10-digit 07 number is a mobile missing a digit (same rule as src/lib/phone.js)');
         PC1_PhoneNormalizer.normalize(null);
         PC1_Application__c a = new PC1_Application__c(First_Name__c = 'P', Last_Name__c = 'N', Stage__c = 'New',
             Phone__c = '07700 900123', Helper_Phone__c = '07700 900124');

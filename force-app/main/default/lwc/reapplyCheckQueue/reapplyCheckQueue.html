@@ -1,0 +1,61 @@
+<template>
+    <lightning-card class="slds-p-around_medium">
+        <div slot="title">
+            CHECK QUEUE <br />
+            <span class="comment-data">Reapplies posted to HMRC that are still open, longest without news first (never checked counts from the posted date).</span>
+        </div>
+        <div class="card-body">
+            <div class="filters">
+                <template for:each={filterButtons} for:item="f">
+                    <button key={f.key} class={f.css} data-key={f.key} onclick={handleFilter} title={f.hint}>{f.label} · {f.count}</button>
+                </template>
+                <lightning-input class="search" type="search" variant="label-hidden" placeholder="R number or name"
+                    onchange={handleSearch}></lightning-input>
+            </div>
+            <template lwc:if={rows.length}>
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped queue-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Reapply</th>
+                            <th>Client</th>
+                            <th>Status</th>
+                            <th>Posted</th>
+                            <th>Last check</th>
+                            <th>Last result</th>
+                            <th>Letter asked</th>
+                            <th class="num">Days waiting</th>
+                            <th class="num">Checks</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={rows} for:item="r">
+                            <tr key={r.id}>
+                                <td>{r.position}</td>
+                                <td><a href={r.url} target="_blank">{r.name}</a></td>
+                                <td>{r.client}</td>
+                                <td>{r.status}</td>
+                                <td>{r.posted}</td>
+                                <td>{r.lastCheck}</td>
+                                <td><span class={r.resultCss} title={r.notes}>{r.result}</span></td>
+                                <td title={r.letterHint}>{r.letter}</td>
+                                <td class="num">{r.days}</td>
+                                <td class="num">{r.checks}</td>
+                                <td><lightning-button label="Check" data-name={r.name} onclick={handleCheck}></lightning-button></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+                <template lwc:if={moreCount}>
+                    <div class="more">
+                        <lightning-button variant="base" label={moreLabel} onclick={handleMore}></lightning-button>
+                    </div>
+                </template>
+            </template>
+            <template lwc:else>
+                <p class="empty">Nothing in this view.</p>
+            </template>
+        </div>
+    </lightning-card>
+</template>

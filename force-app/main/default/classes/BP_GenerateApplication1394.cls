@@ -56,6 +56,8 @@ public with sharing class BP_GenerateApplication1394 {
             } else {
                 BP_GeneratePdfFileController.generateDocument(response.body,recordId, fileNameIPC);
             }
+            // Same as the BR1: once signed, the Stage 2 ZIP must carry the corrected IPC1394 (04/11/2026)
+            BP_GenerateApplication_BR1.buildFullFormZipIfSigned(recordId);
         }
     }
 

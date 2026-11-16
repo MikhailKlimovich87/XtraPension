@@ -55,6 +55,16 @@ private class PC1_BridgesTest {
         System.assert(threw, 'post-award records must not be dialled (and pushed back to Data Complete)');
     }
 
+    // Audit 2026-11-11 PC-SFUI-2: no second call while Mary is on the phone.
+    @IsTest static void call_now_refused_during_a_live_call() {
+        config(true);
+        PC1_Application__c a = makeApp('Call In Progress');
+        Boolean threw = false;
+        // No mock: a callout here would fail the test.
+        try { PC1_MaryBridge.callNow(a.Id); } catch (AuraHandledException e) { threw = true; }
+        System.assert(threw, 'a second click during a live call must not dial again');
+    }
+
     @IsTest static void call_now_errors() {
         PC1_Application__c a = makeApp('New');
         Boolean t1 = false, t2 = false, t3 = false, t4 = false;
@@ -77,6 +87,46 @@ private class PC1_BridgesTest {
         System.assert(PC1_SchedulerTickJob.fireOnce()[0].startsWith('HTTP 200'));
         new PC1_SchedulerTickJob().execute(null);
         Test.stopTest();
+        System.assertEquals(null, PC1_SchedulerTickJob.lastFailure, 'a 200 is not a failure');
+        System.assertEquals(null, PC1_SchedulerTickJob.lastAlertReason, 'a 200 must not alert');
+    }
+
+    // Audit 2026-11-11 PC-APEX-12: a failing tick used to tell nobody.
+    @IsTest static void scheduler_tick_non_2xx_raises_alert() {
+        config(true);
+        Test.setMock(HttpCalloutMock.class, new HerokuMock(401));
+        PC1_SchedulerTickJob.forceAlertSlot = true;
+        Test.startTest();
+        new PC1_SchedulerTickJob().execute(null);
+        Test.stopTest();
+        System.assertNotEquals(null, PC1_SchedulerTickJob.lastAlertReason, 'a 401 must raise the alert');
+        System.assert(PC1_SchedulerTickJob.lastAlertReason.contains('HTTP 401'), PC1_SchedulerTickJob.lastAlertReason);
+    }
+
+    @IsTest static void scheduler_tick_missing_config_raises_alert() {
+        config(false);
+        PC1_SchedulerTickJob.forceAlertSlot = true;
+        Test.startTest();
+        new PC1_SchedulerTickJob().execute(null);
+        Test.stopTest();
+        System.assertNotEquals(null, PC1_SchedulerTickJob.lastAlertReason, 'missing config must alert');
+        System.assert(PC1_SchedulerTickJob.lastAlertReason.contains('PC1_Config__c'), PC1_SchedulerTickJob.lastAlertReason);
+    }
+
+    @IsTest static void scheduler_tick_failure_outside_slot_is_recorded_not_alerted() {
+        config(true);
+        Test.setMock(HttpCalloutMock.class, new HerokuMock(503));
+        PC1_SchedulerTickJob.forceAlertSlot = false;
+        Test.startTest();
+        new PC1_SchedulerTickJob().execute(null);
+        Test.stopTest();
+        System.assertNotEquals(null, PC1_SchedulerTickJob.lastFailure, 'the failure is recorded');
+        System.assertEquals(null, PC1_SchedulerTickJob.lastAlertReason, 'one email an hour, not twelve');
+        System.assert(PC1_SchedulerTickJob.isAlertSlot(Datetime.newInstanceGmt(2026, 11, 11, 9, 4, 59)) == false,
+            'forceAlertSlot overrides the clock in tests');
+        PC1_SchedulerTickJob.forceAlertSlot = null;
+        System.assert(PC1_SchedulerTickJob.isAlertSlot(Datetime.newInstanceGmt(2026, 11, 11, 9, 4, 59)));
+        System.assert(!PC1_SchedulerTickJob.isAlertSlot(Datetime.newInstanceGmt(2026, 11, 11, 9, 5, 0)));
     }
 
     @IsTest static void form_monitor_scheduler() {

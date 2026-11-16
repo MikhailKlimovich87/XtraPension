@@ -1,0 +1,102 @@
+.card {
+    overflow: hidden;
+    font-size: 0.8125rem;
+}
+.head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #f3f3f3;
+    border-bottom: 1px solid #c9c9c9;
+}
+.title {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* date | number | who | result: the date first, it is what the team looks for (Fernando, 03/11/2026) */
+.row {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    gap: 0.625rem;
+    align-items: center;
+    padding: 0.3125rem 0.75rem;
+}
+.d {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+.who {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.latest {
+    padding: 0.5rem 0.75rem 0.625rem;
+    background: #fafafa;
+}
+.latest .row {
+    padding: 0 0 0.25rem;
+}
+/* HMRC's answer: up to four lines, the full text is on the check */
+.note {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+.label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #5c5c5c;
+    padding: 0.375rem 0.75rem 0;
+}
+.older + .older {
+    border-top: 1px solid #e5e5e5;
+}
+.chip {
+    justify-self: end;
+    font-size: 0.71875rem;
+    font-weight: 700;
+    line-height: 1.125rem;
+    padding: 0 0.5rem;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.chip.ok {
+    color: #2e844a;
+    background: #e9f6ec;
+}
+.chip.bad {
+    color: #ba0517;
+    background: #fdecef;
+}
+.chip.warn {
+    color: #8c4b02;
+    background: #fef1e1;
+}
+.chip.info {
+    color: #0b5cab;
+    background: #eaf2fb;
+}
+.msg {
+    padding: 0.5rem 0.75rem;
+    color: #5c5c5c;
+}
+.msg.err {
+    color: #ba0517;
+}
+/* "View all" next to the title instead of a footer, as on Payments, History and Work (Fernando, 03/11/2026) */
+.view-all {
+    font-size: 0.75rem;
+    white-space: nowrap;
+}

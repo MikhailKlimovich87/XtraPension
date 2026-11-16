@@ -634,6 +634,8 @@ public class BP_BR1_WrapperTest {
         b.Claimant_Ever_Lived_UK_Notes__c = 'Lived in Manchester.';
         b.Partner_Ever_Lived_UK_Notes__c  = 'Partner lived in Leeds.';
         b.Claimant_is_Waiting_Uk_Benefits_text__c = 'Waiting for pension.';
+        // A spouse's notes print only when there is a spouse (12/11/2026: a Single claim leaves them out)
+        b.Claimant_marital_Status__c = 'Married';
         update b;
         b = getBasic();
 
@@ -728,6 +730,9 @@ public class BP_BR1_WrapperTest {
     @IsTest
     static void testPartnerCompaniesFillQ50() {
         Basic__c b = getBasic();
+        // The spouse's employers print only when there is a spouse (12/11/2026: a Single claim leaves them out)
+        b.Claimant_marital_Status__c = 'Married';
+        update b;
 
         insert new Claimant_Company__c(
             Basic__c = b.Id, Name = 'Partner Co',

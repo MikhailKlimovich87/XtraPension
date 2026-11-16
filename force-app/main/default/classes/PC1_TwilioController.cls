@@ -129,13 +129,19 @@ public with sharing class PC1_TwilioController {
         PC1_Application__c app;
         try {
             app = [
-                SELECT Id, Phone__c, Full_Name__c, SMS_OptOut__c
+                SELECT Id, Phone__c, Full_Name__c, SMS_OptOut__c, Do_Not_Contact__c
                 FROM PC1_Application__c
                 WHERE Id = :recordId
                 LIMIT 1
             ];
         } catch (Exception e) {
             throw new AuraHandledException('Application not found.');
+        }
+        // Audit 2026-11-11 PC-APEX-6 / PC-SFUI-3: the flag (set when a caller
+        // reports the client deceased) only stopped Mary's calls.
+        if (app.Do_Not_Contact__c == true) {
+            throw new AuraHandledException(
+                'This client is marked Do Not Contact. SMS is blocked; speak to a supervisor before contacting them.');
         }
         if (String.isBlank(app.Phone__c)) {
             throw new AuraHandledException('No phone number on this application.');

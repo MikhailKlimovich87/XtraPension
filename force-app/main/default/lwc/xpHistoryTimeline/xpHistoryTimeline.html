@@ -1,0 +1,58 @@
+<template>
+    <article class="slds-card card">
+        <header class="head">
+            <lightning-icon icon-name="custom:custom5" size="small" alternative-text={heading}></lightning-icon>
+            <h2 class="title">{title}</h2>
+            <a class="view-all" href={viewAllUrl}>View all</a>
+        </header>
+        <template lwc:if={hasRows}>
+            <div class="tl">
+                <template for:each={days} for:item="d">
+                    <div key={d.key}>
+                        <div class="day">{d.label}</div>
+                        <template for:each={d.items} for:item="r">
+                            <div key={r.id} class="item">
+                                <span class="time">{r.time}</span>
+                                <div class="body">
+                                    <div class="chg">
+                                        <template lwc:if={r.plain}>
+                                            <span>{r.field}</span>
+                                        </template>
+                                        <template lwc:else>
+                                            <span class="fld">{r.field}:</span>
+                                            <template lwc:if={r.hasOld}>
+                                                <span>{r.old}</span>
+                                            </template>
+                                            <template lwc:else>
+                                                <span class="blank">blank</span>
+                                            </template>
+                                            <span class="arrow">→</span>
+                                            <template lwc:if={r.hasNew}>
+                                                <b>{r.neu}</b>
+                                            </template>
+                                            <template lwc:else>
+                                                <span class="blank">blank</span>
+                                            </template>
+                                        </template>
+                                    </div>
+                                    <template lwc:if={r.userUrl}>
+                                        <a class="who" href={r.userUrl}>{r.user}</a>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </template>
+        <template lwc:if={isEmpty}>
+            <div class="note">No changes yet.</div>
+        </template>
+        <template lwc:if={isLoading}>
+            <div class="note">Loading history…</div>
+        </template>
+        <template lwc:if={error}>
+            <div class="note err">Couldn't load the history: {error}</div>
+        </template>
+    </article>
+</template>

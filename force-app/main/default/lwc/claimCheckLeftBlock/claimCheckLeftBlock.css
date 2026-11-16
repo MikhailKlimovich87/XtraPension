@@ -1,0 +1,23 @@
+.card-body{
+    margin: 1rem;
+}
+
+.button-area{
+    margin-top: 1rem;
+}
+
+p {
+    margin: 0.5rem;
+}
+
+.request-sign{
+    color: red !important;
+}
+
+.custom-combobox-label {
+  font-weight: bold;
+}
+
+.add-request-button {
+    text-align: right;
+}

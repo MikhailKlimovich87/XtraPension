@@ -50,14 +50,27 @@
                         Last updated {lastModifiedDisplay}
                     </div>
                 </template>
-                <div class="aa-award__actions">
-                    <lightning-button
-                        label="Edit"
-                        icon-name="utility:edit"
-                        variant="brand-outline"
-                        onclick={handleEdit}>
-                    </lightning-button>
-                </div>
+                <!-- No Edit once the fee plan is set or the case is in dispute
+                     (AA-SFUI-5, LOCKED_STAGES in the .js). -->
+                <template if:true={showEdit}>
+                    <div class="aa-award__actions">
+                        <lightning-button
+                            label="Edit"
+                            icon-name="utility:edit"
+                            variant="brand-outline"
+                            onclick={handleEdit}>
+                        </lightning-button>
+                    </div>
+                </template>
+                <template if:false={showEdit}>
+                    <div class="aa-award__meta">{lockedNote}</div>
+                </template>
+            </div>
+        </template>
+
+        <template if:true={showLockedEmpty}>
+            <div class="aa-award__summary">
+                <div class="aa-award__meta">{lockedNote}</div>
             </div>
         </template>
 

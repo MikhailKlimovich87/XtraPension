@@ -4,7 +4,7 @@
             <lightning-icon icon-name="standard:payment_method" size="small" class="pc1-feecharge__icon"></lightning-icon>
             <div>
                 <h2 class="pc1-feecharge__title">Fee Charge</h2>
-                <p class="pc1-feecharge__sub">Charge the 20% success fee via the client's Direct Debit. Multi-installment plans fire installment&nbsp;1 immediately; the daily scheduler handles the rest.</p>
+                <p class="pc1-feecharge__sub">Schedule the 20% success fee on the client's Direct Debit. Nothing is collected on the day: the client is emailed an advance notice at least 5&nbsp;days before each payment, and each payment is collected on the date that notice gives.</p>
             </div>
         </header>
 
@@ -20,7 +20,7 @@
             </div>
             <div class={notChargedClass}>
                 <lightning-icon icon-name={notChargedIcon} size="xx-small" class="pc1-feecharge__gate-icon"></lightning-icon>
-                <span>Not Already Charged</span>
+                <span>Not Already Scheduled</span>
             </div>
         </div>
 
@@ -44,12 +44,12 @@
                             currency-code="GBP">
                         </lightning-formatted-number>
                         <template if:true={multiInstallment}>
-                            <span class="pc1-feecharge__amount-sub">&nbsp;now (installment&nbsp;1 of {installmentsCount})</span>
+                            <span class="pc1-feecharge__amount-sub">&nbsp;first payment (1 of {installmentsCount})</span>
                         </template>
                     </div>
                 </template>
                 <template if:true={multiInstallment}>
-                    <p class="pc1-feecharge__plan-hint">Remaining installments ({remainingLabels}) will be charged automatically by the daily scheduler.</p>
+                    <p class="pc1-feecharge__plan-hint">Later payments ({remainingLabels}) are collected automatically, each after its own advance notice.</p>
                 </template>
                 <template if:true={chargeTooltip}>
                     <p class="pc1-feecharge__disabled-reason">{chargeTooltip}</p>
@@ -61,7 +61,7 @@
         <template if:true={alreadyCharged}>
             <div class="pc1-feecharge__charged">
                 <div class="pc1-feecharge__charged-banner">
-                    <strong>Charged</strong>
+                    <strong>{bannerLabel}</strong>
                     <template if:true={chargedAtDisplay}>
                         &nbsp;on {chargedAtDisplay}
                     </template>
@@ -90,10 +90,12 @@
                             <span class="pc1-feecharge__v">{nextChargeDisplay}</span>
                         </div>
                     </template>
-                    <div class="pc1-feecharge__row">
-                        <span class="pc1-feecharge__k">Payment ID (installment&nbsp;1)</span>
-                        <span class="pc1-feecharge__v pc1-feecharge__mono">{maskedPaymentId}</span>
-                    </div>
+                    <template if:true={maskedPaymentId}>
+                        <div class="pc1-feecharge__row">
+                            <span class="pc1-feecharge__k">Payment ID (installment&nbsp;1)</span>
+                            <span class="pc1-feecharge__v pc1-feecharge__mono">{maskedPaymentId}</span>
+                        </div>
+                    </template>
                 </div>
             </div>
         </template>

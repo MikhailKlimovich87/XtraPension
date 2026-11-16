@@ -22,15 +22,6 @@ private class PC1_AllTests {
         return a;
     }
 
-    private static RestRequest reqWith(String body) {
-        RestRequest r = new RestRequest();
-        r.requestBody = Blob.valueOf(body);
-        r.httpMethod = 'POST';
-        RestContext.request = r;
-        RestContext.response = new RestResponse();
-        return r;
-    }
-
     // ----------------------------- Helpers
 
     @isTest static void businessDayHelper_skipsWeekend() {
@@ -78,103 +69,10 @@ private class PC1_AllTests {
     }
 
     // ----------------------------- REST endpoints
-
-    @isTest static void saveField_creates_then_updates() {
-        PC1_Application__c a = makeApp();
-        reqWith('{"application_id":"' + a.Id + '","field_id":"q_first_name","value":"Aoife"}');
-        PC1_SaveField.doPost();
-        System.assertEquals(200, RestContext.response.statusCode == null ? 200 : RestContext.response.statusCode);
-        // Filter out the 4 default-seeded rows (Source__c='default') so this
-        // test asserts what SaveField itself wrote.
-        System.assertEquals(1, [SELECT COUNT() FROM PC1_Answer__c WHERE Application__c = :a.Id AND Source__c != 'default']);
-        // Second call same field → update in place
-        reqWith('{"application_id":"' + a.Id + '","field_id":"q_first_name","value":"Aoife-updated"}');
-        PC1_SaveField.doPost();
-        System.assertEquals(1, [SELECT COUNT() FROM PC1_Answer__c WHERE Application__c = :a.Id AND Source__c != 'default']);
-    }
-
-    @isTest static void saveMulti_batches() {
-        PC1_Application__c a = makeApp();
-        reqWith('{"application_id":"' + a.Id + '","answers":[{"field_id":"q_ni","value":"AB123456C"},{"field_id":"q_bank","value":"AIB"}]}');
-        PC1_SaveMultiField.doPost();
-        // Ignore default-seeded rows (4 always present on new app).
-        System.assertEquals(2, [SELECT COUNT() FROM PC1_Answer__c WHERE Application__c = :a.Id AND Source__c != 'default']);
-    }
-
-    @isTest static void checkAnswers_returnsSummary() {
-        PC1_Application__c a = makeApp();
-        insert new PC1_Answer__c(Application__c=a.Id, Field_Id__c='q_first_name', Value__c='X', Source__c='mary');
-        reqWith('{"application_id":"' + a.Id + '"}');
-        PC1_CheckCurrentAnswers.doPost();
-        String body = RestContext.response.responseBody.toString();
-        System.assert(body.contains('missing_fields'), 'missing_fields must be in response');
-    }
-
-    // rescheduleCall_setsNextCall — removed. PC1_RescheduleCall Apex REST
-    // was deprecated 2026-07-29; Mary now hits /webhooks/mary/reschedule-call
-    // on Heroku (src/webhooks/mary.js#rescheduleCall) which creates a
-    // PC1_Call_Schedule__c row instead of writing Next_Call_At__c directly.
-
-    @isTest static void flagForHuman_createsHandoff() {
-        PC1_Application__c a = makeApp();
-        reqWith('{"application_id":"' + a.Id + '","escalation_type":"confused","reason":"can\'t hear"}');
-        PC1_FlagForHuman.doPost();
-        System.assertEquals(1, [SELECT COUNT() FROM PC1_Handoff__c WHERE Application__c=:a.Id]);
-        PC1_Application__c after = [SELECT Stage__c FROM PC1_Application__c WHERE Id=:a.Id];
-        System.assertEquals('Needs Human', after.Stage__c);
-    }
-
-    @isTest static void markComplete_movesStage() {
-        PC1_Application__c a = makeApp();
-        update new PC1_Application__c(Id=a.Id, Stage__c='Awaiting First Call');
-        update new PC1_Application__c(Id=a.Id, Stage__c='Call In Progress');
-        update new PC1_Application__c(Id=a.Id, Stage__c='Partial Data');
-        reqWith('{"application_id":"' + a.Id + '","note":"done"}');
-        PC1_MarkComplete.doPost();
-        PC1_Application__c after = [SELECT Stage__c FROM PC1_Application__c WHERE Id=:a.Id];
-        System.assertEquals('Data Complete', after.Stage__c);
-    }
-
-    @isTest static void identifyByPhone_hits() {
-        PC1_Application__c a = makeApp();
-        reqWith('{"phone":"' + a.Phone__c + '"}');
-        PC1_IdentifyByCallerPhone.doPost();
-        System.assert(RestContext.response.responseBody.toString().contains('matches'));
-    }
-
-    @isTest static void identifyByPhone_notFound() {
-        reqWith('{"phone":"+9999"}');
-        PC1_IdentifyByCallerPhone.doPost();
-        System.assert(RestContext.response.responseBody.toString().contains('not_found'));
-    }
-
-    @isTest static void identifyByName_hits() {
-        PC1_Application__c a = makeApp();
-        reqWith('{"first_name":"' + a.First_Name__c + '","last_name":"' + a.Last_Name__c + '"}');
-        PC1_IdentifyByName.doPost();
-        System.assert(RestContext.response.responseBody.toString().contains('matches'));
-    }
-
-    @isTest static void verifyClient_verified() {
-        PC1_Application__c a = makeApp();
-        reqWith('{"application_id":"' + a.Id + '","dob":"1955-03-20","postcode":"SW1A 1AA"}');
-        PC1_VerifyClient.doPost();
-        System.assert(RestContext.response.responseBody.toString().contains('verified'));
-    }
-
-    @isTest static void verifyClient_mismatch() {
-        PC1_Application__c a = makeApp();
-        reqWith('{"application_id":"' + a.Id + '","dob":"2000-01-01","postcode":"XX1"}');
-        PC1_VerifyClient.doPost();
-        System.assert(RestContext.response.responseBody.toString().contains('mismatch'));
-    }
-
-    @isTest static void verifyClient_insufficient() {
-        PC1_Application__c a = makeApp();
-        reqWith('{"application_id":"' + a.Id + '","dob":"1955-03-20"}');
-        PC1_VerifyClient.doPost();
-        System.assert(RestContext.response.responseBody.toString().contains('insufficient'));
-    }
+    //
+    // Removed 2026-11-11 (audit PC-APEX-18): the tests of the eight mock
+    // /services/apexrest/pc1/* classes went with the classes themselves
+    // (see sf-src/destructiveChanges.xml). Mary's tools live on Heroku.
 
     // ----------------------------- Val Agent auto-assignment
     //

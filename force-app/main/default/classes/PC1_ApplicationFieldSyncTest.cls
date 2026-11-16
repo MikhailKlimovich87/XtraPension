@@ -108,4 +108,85 @@ private class PC1_ApplicationFieldSyncTest {
         System.assertEquals(Date.newInstance(1950, 4, 3), after.DOB__c);
         System.assertNotEquals(null, after.Phone__c);
     }
+
+    // ── Audit 2026-11-11 PC-APEX-2: phone and date of birth ──────────
+
+    @IsTest static void record_page_dob_and_phone_edit_reach_answers_and_stick() {
+        PC1_Application__c a = makeApp();
+        insert new List<PC1_Answer__c>{
+            new PC1_Answer__c(Application__c = a.Id, Field_Id__c = 'q5_day', Value__c = '3', Source__c = 'human'),
+            new PC1_Answer__c(Application__c = a.Id, Field_Id__c = 'q5_month', Value__c = '4', Source__c = 'human'),
+            new PC1_Answer__c(Application__c = a.Id, Field_Id__c = 'q5_year', Value__c = '1950', Source__c = 'human'),
+            new PC1_Answer__c(Application__c = a.Id, Field_Id__c = 'q9_mobile', Value__c = '07700 900123', Source__c = 'human')
+        };
+        PC1_Application__c seeded = [SELECT DOB__c, Phone__c FROM PC1_Application__c WHERE Id = :a.Id];
+        System.assertEquals(Date.newInstance(1950, 4, 3), seeded.DOB__c);
+        System.assertEquals('+447700900123', seeded.Phone__c);
+
+        Test.startTest();
+        // The agent corrects both on the Details panel.
+        update new PC1_Application__c(Id = a.Id, DOB__c = Date.newInstance(1951, 12, 9), Phone__c = '07700 900555');
+        // Any later answer save used to write the old values back.
+        insert new PC1_Answer__c(Application__c = a.Id, Field_Id__c = 'q7_town', Value__c = 'York', Source__c = 'mary');
+        Test.stopTest();
+
+        Map<String, String> ans = answers(a.Id);
+        System.assertEquals('9', ans.get('q5_day'), 'DWP fill must see the corrected date of birth');
+        System.assertEquals('12', ans.get('q5_month'));
+        System.assertEquals('1951', ans.get('q5_year'));
+        System.assertEquals('+447700900555', ans.get('q9_mobile'), 'a mobile goes to the mobile answer');
+        PC1_Application__c after = [SELECT DOB__c, Phone__c FROM PC1_Application__c WHERE Id = :a.Id];
+        System.assertEquals(Date.newInstance(1951, 12, 9), after.DOB__c, 'not reverted by the next answer save');
+        System.assertEquals('+447700900555', after.Phone__c, 'not reverted by the next answer save');
+    }
+
+    @IsTest static void landline_typed_on_record_goes_to_q9_and_is_not_reverted() {
+        PC1_Application__c a = makeApp();
+        insert new PC1_Answer__c(Application__c = a.Id, Field_Id__c = 'q9_mobile', Value__c = '07700 900123', Source__c = 'human');
+
+        Test.startTest();
+        update new PC1_Application__c(Id = a.Id, Phone__c = '020 7946 0018');
+        insert new PC1_Answer__c(Application__c = a.Id, Field_Id__c = 'q7_town', Value__c = 'York', Source__c = 'mary');
+        Test.stopTest();
+
+        System.assertEquals('+442079460018', answers(a.Id).get('q9'), 'a landline goes to the home-telephone answer');
+        System.assertEquals('+442079460018', [SELECT Phone__c FROM PC1_Application__c WHERE Id = :a.Id].Phone__c,
+            'an unrelated answer save must not put the old mobile back');
+    }
+
+    @IsTest static void cleared_dob_and_phone_remove_their_answers() {
+        PC1_Application__c a = makeApp();
+        insert new List<PC1_Answer__c>{
+            new PC1_Answer__c(Application__c = a.Id, Field_Id__c = 'q5_day', Value__c = '3', Source__c = 'human'),
+            new PC1_Answer__c(Application__c = a.Id, Field_Id__c = 'q5_month', Value__c = '4', Source__c = 'human'),
+            new PC1_Answer__c(Application__c = a.Id, Field_Id__c = 'q5_year', Value__c = '1950', Source__c = 'human'),
+            new PC1_Answer__c(Application__c = a.Id, Field_Id__c = 'q9', Value__c = '020 7946 0018', Source__c = 'human')
+        };
+        update new PC1_Application__c(Id = a.Id, DOB__c = null, Phone__c = null);
+        Map<String, String> ans = answers(a.Id);
+        System.assert(!ans.containsKey('q5_day') && !ans.containsKey('q5_month') && !ans.containsKey('q5_year'));
+        System.assert(!ans.containsKey('q9'));
+    }
+
+    @IsTest static void impossible_dob_answers_do_not_write_a_wrong_date() {
+        System.assertEquals(null, PC1_ApplicationFieldSync.parseDob('31', '2', '1950'), '31 February is not rolled to March');
+        System.assertEquals(null, PC1_ApplicationFieldSync.parseDob('3', '13', '1950'));
+        System.assertEquals(null, PC1_ApplicationFieldSync.parseDob('3', '4', '1850'), 'before 1900 would fail DOB_Reasonable');
+        System.assertEquals(null, PC1_ApplicationFieldSync.parseDob('3', '4', String.valueOf(Date.today().year() + 1)));
+        System.assertEquals(null, PC1_ApplicationFieldSync.parseDob('x', '4', '1950'));
+        System.assertEquals(Date.newInstance(1950, 4, 3), PC1_ApplicationFieldSync.parseDob(' 3', '04', '1950'));
+        System.assert(PC1_ApplicationFieldSync.isMobileShape('+447700900123'));
+        System.assert(PC1_ApplicationFieldSync.isMobileShape('07700 900123'));
+        System.assert(!PC1_ApplicationFieldSync.isMobileShape('+442079460018'));
+        System.assert(!PC1_ApplicationFieldSync.isMobileShape(null));
+
+        PC1_Application__c a = makeApp();
+        insert new List<PC1_Answer__c>{
+            new PC1_Answer__c(Application__c = a.Id, Field_Id__c = 'q5_day', Value__c = '31', Source__c = 'human'),
+            new PC1_Answer__c(Application__c = a.Id, Field_Id__c = 'q5_month', Value__c = '2', Source__c = 'human'),
+            new PC1_Answer__c(Application__c = a.Id, Field_Id__c = 'q5_year', Value__c = '1950', Source__c = 'human')
+        };
+        System.assertEquals(null, [SELECT DOB__c FROM PC1_Application__c WHERE Id = :a.Id].DOB__c,
+            'an impossible date leaves DOB__c alone instead of storing 3 March');
+    }
 }

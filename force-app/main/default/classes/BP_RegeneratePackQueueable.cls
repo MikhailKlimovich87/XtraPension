@@ -24,6 +24,11 @@ public class BP_RegeneratePackQueueable implements Queueable, Database.AllowsCal
     }
 
     public void execute(QueueableContext context) {
+        // Pending Client is also "sent to validation with something missing" (10/11/2026): no documents are built for
+        // such a claim until it is sent complete. One whose documents exist (e.g. a voided DocuSign) still regenerates.
+        if (step == 1 && waitsForSend()) {
+            return;
+        }
         try {
             if (step == 1) {
                 BP_GeneratePdfFileController.getApplication(claimId);
@@ -52,6 +57,14 @@ public class BP_RegeneratePackQueueable implements Queueable, Database.AllowsCal
             WHERE LinkedEntityId = :claimId AND ContentDocument.Title LIKE :titlePattern
             LIMIT 1
         ].isEmpty();
+    }
+
+    @TestVisible
+    // The full BR1 is '<name>_<C number>_IPCBR1' (BP_GeneratePdfFileController); '%_D5_IPCBR1' never matched it, so a
+    // Pending Client claim with documents never regenerated (audit 11/11/2026). The wet-signature one ends in _Wet_Signature.
+    private Boolean waitsForSend() {
+        List<Basic__c> claims = [SELECT Status__c FROM Basic__c WHERE Id = :claimId];
+        return !claims.isEmpty() && claims[0].Status__c == 'Pending Client' && !hasDocument('%IPCBR1');
     }
 
     private Boolean isStage1NotSent() {

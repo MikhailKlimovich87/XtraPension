@@ -1,0 +1,123 @@
+<template>
+    <div class="page">
+        <div class="header">
+            <div>
+                <div class="title">Claims Priority</div>
+                <div class="subtitle">What to do next on each claim, most urgent first. Do the work on the claim, then press Refresh: the row moves on or leaves the list.</div>
+            </div>
+            <div class="header-actions">
+                <span class="updated" lwc:if={updatedAt}>Updated {updatedAt}</span>
+                <lightning-button label="How it works" variant="neutral" onclick={toggleHelp}></lightning-button>
+                <lightning-button label="DWP checks" title="Open the Claim Check tab" variant="neutral" onclick={openClaimCheck}></lightning-button>
+                <lightning-button label="Refresh" icon-name="utility:refresh" onclick={load} disabled={loading}></lightning-button>
+            </div>
+        </div>
+
+        <template lwc:if={showHelp}>
+            <div class="help">
+                <p><b>Who is in the list</b>: every claim that needs something from us today, or in the next {d.upcoming} (Upcoming). Test claims never show. One row per claim: the first thing to do, and the rest under "Also".</p>
+                <p><b>Who does it</b>: the claim's validation agent does everything, except the QC of an Agent Check claim and the DocuSign (send it at QC Approved, then chase it until it is signed), which are for QC. QC can also ask the validation agent to chase the DocuSign. Pick "QC" in the agent list to see those claims, whoever the validation agent is (it opens on QC for the QC user). Anyone can pick it.</p>
+                <p>Closed, Closed Won and Deposit Refund claims only show when the client wrote or rang. Claims with the DWP (Posted to DWP, 45D Check, Awaiting Lump Sum Letter, Decision Posted to DWP, Awaiting DWP Payment) only show when the last Claim Check needs the validation agent. The DWP checks themselves are in the Claim Check tab (DWP checks button).</p>
+                <p><b>Order</b>: the groups below, top to bottom. Inside a group, the longest overdue first.</p>
+                <ol>
+                    <li><b>Fix a problem</b>: the big envelope has a ZIP or upload error, is not with the printer {d.stage1Send} after the sale, or the printer has not posted it {d.printerPost} after we sent it. The Stage 2 pack has an error, or the printer has not posted the claim to the DWP {d.stage2Post} after the Stage 2 pack.</li>
+                    <li><b>Reply to the client</b>: an email from the client on the claim that nobody answered (no email, call or WhatsApp from us after it, and not marked Done), or a missed call from the client not returned. Due the day it came. Emails from the last {d.emailWindow}, calls from the last {d.callWindow}.</li>
+                    <li><b>Move it on</b>: our own next step, due {d.nextStep} after the claim got there. Form completed: check the forms and move it to Agent Check. Agent Check: QC it and move it to QC Approved (QC). QC Approved: send the DocuSign (QC). Pending Client with nothing missing: press Send to Validation. Signed pages back at the printer: press Resend Big Envelope (Stage 2).</li>
+                    <li><b>Validation call</b> (Form In Progress, Validation Call): no call booked, book it {d.bookCall} after the sale. Call booked: due on the day of the call. Call done: finish the form and press Send to Validation, {d.afterCall} after the call.</li>
+                    <li><b>Chase the client</b> (Pending Client, or QC Approved with something missing, because the DocuSign is blocked): ask for what is missing (worked out again each time the list loads, the same check as Send to Validation and the DocuSign). First chase the day it goes Pending Client, then {d.chaseEvery} after each contact (any call, email or WhatsApp, answered or not).</li>
+                    <li><b>DocuSign</b> (Sent for eSignature, QC, or the validation agent when QC asks): follow up with the client {d.esignFirst} after it went out, then {d.esignEvery} after each contact that reached the client (a call they answered, an email or a WhatsApp from us). A call nobody answered does not count. After {days.esignFollowUps} answered calls since it went out and still not signed, decide what to do (call again or On Hold), {d.esignDecide} after the last contact. Only calls are counted there: emails and WhatsApp are not logged one by one.</li>
+                    <li><b>Signed pack</b>: the printer posted the big envelope and the signed pages are not back. Call the client {d.signedPack} after posting ({d.signedPackFar} for Australia and New Zealand), then {d.signedPackEvery} after the last contact.</li>
+                    <li><b>DWP and fee</b>: the last Claim Check says the DWP asked for more information or rejected the claim: get it from the client, or call the client, the day of the check and then {d.chaseEvery} after each contact. Agent Call: call the client about the decision, {d.agentCall} after. Charge DD: charge our fee by direct debit, {d.chargeDd} after.</li>
+                    <li><b>On hold</b>: look at it again {d.onHoldReview} after it went On Hold or after the last contact.</li>
+                </ol>
+                <p>Days are calendar days. Waiting is the days since the step started. Last contact is the claim's Last Contact (calls, emails and WhatsApp, filled in automatically). The missing items are worked out live for up to {liveMissingMax} claims per load (the ones longest in their stage). Beyond that the row says it uses the list saved on the claim: open the claim to bring it up to date.</p>
+            </div>
+        </template>
+
+        <template lwc:if={truncated}>
+            <p class="warning">Only the 2,000 newest claims were read. Tell Fernando.</p>
+        </template>
+
+        <div class="stats">
+            <span class="stat stat-due"><b>{counts.due}</b> due now</span>
+            <span class="stat"><b>{counts.upcoming}</b> upcoming</span>
+            <span class="by-agent">{dueByAgentText}</span>
+        </div>
+
+        <div class="filters">
+            <div class="chips">
+                <template for:each={chips} for:item="c">
+                    <button key={c.key} class={c.css} data-key={c.key} onclick={handleView} title={c.hint}>{c.label} · {c.count}</button>
+                </template>
+            </div>
+            <div class="selects">
+                <lightning-combobox class="select" label="Agent" variant="label-hidden" options={agentOptions} value={agent} onchange={handleAgent}></lightning-combobox>
+                <lightning-combobox class="select" label="Stage" variant="label-hidden" options={stageOptions} value={stage} onchange={handleStage}></lightning-combobox>
+                <lightning-input class="search" type="search" variant="label-hidden" label="Search" placeholder="C number or name" value={query} onchange={handleSearch}></lightning-input>
+            </div>
+        </div>
+
+        <template lwc:if={loading}>
+            <div class="loading"><lightning-spinner alternative-text="Loading" size="small"></lightning-spinner></div>
+        </template>
+        <template lwc:elseif={error}>
+            <p class="error">{error}</p>
+        </template>
+        <template lwc:elseif={hasRows}>
+            <div class="table-wrap">
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped queue-table">
+                    <thead>
+                        <tr>
+                            <template for:each={columns} for:item="c">
+                                <th key={c.key} scope="col">
+                                    <template lwc:if={c.noSort}>{c.label}</template>
+                                    <template lwc:else>
+                                        <button class={c.css} data-key={c.key} onclick={handleSort} title="Sort">{c.label}{c.arrow}</button>
+                                    </template>
+                                </th>
+                            </template>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={rows} for:item="r">
+                            <tr key={r.key}>
+                                <td>{r.position}</td>
+                                <td><a href={r.url} target="_blank">{r.name}</a><div class={r.laneCss}>{r.laneLabel}</div></td>
+                                <td>{r.client}<div class="muted">{r.phone}</div></td>
+                                <td>{r.stage}<div class="muted">{r.inStage}</div></td>
+                                <td>{r.agent}<div class="muted">{r.agentNote}</div></td>
+                                <td class="action">
+                                    <div class="action-text">{r.text}</div>
+                                    <div class="muted">{r.why}</div>
+                                    <template lwc:if={r.hasOthers}>
+                                        <div class="also">
+                                            <span class="also-label">Also:</span>
+                                            <template for:each={r.others} for:item="o">
+                                                <div key={o.key}>{o.text} <span class={o.css}>({o.due})</span></div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </td>
+                                <td class="nowrap">{r.waiting}<div class="muted">{r.since}</div></td>
+                                <td class={r.dueCss}>{r.dueText}<div class="muted">{r.dueDate}</div></td>
+                                <td class="nowrap">{r.contact}<div class="muted">{r.contactHow}</div></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            <div class="footer">
+                <span class="muted">Showing {rows.length} of {visibleCount}</span>
+                <template lwc:if={moreCount}>
+                    <lightning-button variant="base" label={moreLabel} onclick={handleMore}></lightning-button>
+                </template>
+            </div>
+        </template>
+        <template lwc:else>
+            <div class="empty">
+                <p class="empty-title">{emptyText}</p>
+                <p class="muted">Pick another agent or group above, or press Refresh after you work on a claim.</p>
+            </div>
+        </template>
+    </div>
+</template>

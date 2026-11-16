@@ -137,4 +137,34 @@ private class AA_FormMonitorDeadmanSchedulerTest {
         Test.stopTest();
         System.assert(jobId != null, 'schedulable registers');
     }
+
+    // audit 2026-11-11 AA-APEX-13: an AA cron that is no longer scheduled is reported.
+    @isTest static void missingScheduledJobs_areReported() {
+        insert snap(Datetime.now());
+        Test.startTest();
+        System.schedule('AA Deadman Probe Job', '0 0 3 * * ?', new AA_FormMonitorDeadmanScheduler());
+        List<String> missing = AA_FormMonitorDeadmanScheduler.missingJobs(
+            new List<String>{ 'AA Deadman Probe', 'AA No Such Job For This Test' });
+        AA_FormMonitorDeadmanScheduler.checkScheduledJobs();
+        Test.stopTest();
+
+        System.assertEquals(1, missing.size(), 'only the job that is not scheduled: ' + missing);
+        System.assertEquals('AA No Such Job For This Test', missing[0]);
+        System.assertNotEquals(null, AA_FormMonitorDeadmanScheduler.lastMissingJobs, 'the real list was checked');
+        System.assert(new Set<String>(AA_FormMonitorDeadmanScheduler.EXPECTED_JOB_PREFIXES).contains('AA Fee Installment Sweep'),
+            'the fee sweep is one of the jobs watched');
+    }
+
+    // audit 2026-11-11 AA-ENGINE-9: a walk cut short by a dyno restart is not
+    // "a walk that ran". With only that row in the window the dead-man speaks.
+    @isTest static void interruptedWalk_doesNotCountAsARun() {
+        AA_Form_Snapshot__c cut = snap('error', Datetime.now().addHours(-1));
+        cut.Error_Message__c = '[walk-1] ' + AA_FormMonitorDeadmanScheduler.INTERRUPTED_MARK + ': SIGTERM';
+        insert new List<AA_Form_Snapshot__c>{ cut, snap(Datetime.now().addHours(-40)) };
+        Test.startTest();
+        Boolean stale = AA_FormMonitorDeadmanScheduler.check();
+        Test.stopTest();
+        System.assertEquals(true, stale, 'the last walk that really ran is 40 h old');
+        System.assertEquals('NO_RUN', AA_FormMonitorDeadmanScheduler.lastReason);
+    }
 }

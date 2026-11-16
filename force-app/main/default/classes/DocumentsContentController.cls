@@ -208,7 +208,7 @@ public without sharing class DocumentsContentController {
                     (SELECT
                         Status__c
                     FROM Payments__r
-                    WHERE (Product_Name__c = 'Application' OR Product_Name__c = 'Appeal') AND Status__c = 'Paid')
+                    WHERE Product_Name__c IN ('Application', 'Appeal', 'Appeal Application') AND Status__c = 'Paid')
             FROM Application__c
             WHERE Id = :recordId
         ];

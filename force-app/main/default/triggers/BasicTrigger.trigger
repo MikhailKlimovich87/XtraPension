@@ -11,6 +11,7 @@ trigger BasicTrigger on Basic__c (before insert, before update, after update) {
         }
         when BEFORE_UPDATE {
             handler.blockEditsWhileOutForSignature();
+            handler.markWorkedInUkAnswered();
         }
         when AFTER_UPDATE {
             handler.generatePdfFiles();

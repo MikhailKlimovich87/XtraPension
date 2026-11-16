@@ -69,8 +69,9 @@ public with sharing class PC1_ApplicationFieldSync {
     @TestVisible private static Boolean syncingFromParent = false;
 
     /** parentApiName → answer id for the reverse direction. Phone__c is
-     *  left out: two answers feed it (landline / mobile) and the record
-     *  page cannot say which one the operator meant. */
+     *  left out of this map: two answers feed it (landline / mobile), so
+     *  mirrorParentToAnswers picks the answer by the shape of the number.
+     *  DOB__c is handled there too (three q5_* answers). */
     private static Map<String, String> parentToAnswer() {
         Map<String, String> m = new Map<String, String>();
         for (String aId : ANSWER_TO_PARENT.keySet()) {
@@ -137,6 +138,36 @@ public with sharing class PC1_ApplicationFieldSync {
                 if (!changes.containsKey(a.Id)) changes.put(a.Id, new Map<String, String>());
                 changes.get(a.Id).put(aId, nv == null ? null : String.valueOf(nv));
                 touchedIds.add(aId);
+            }
+            // Audit 2026-11-11 PC-APEX-2: Phone__c and DOB__c were the two
+            // editable scalars the C10 mirror left out, so a correction made
+            // on the Details panel never reached the answers (DWP was filled
+            // with the old date of birth) and the next answer save wrote the
+            // old value back.
+            if (a.Phone__c != o.Phone__c) {
+                if (!changes.containsKey(a.Id)) changes.put(a.Id, new Map<String, String>());
+                if (String.isBlank(a.Phone__c)) {
+                    changes.get(a.Id).put('q9', null);
+                    changes.get(a.Id).put('q9_mobile', null);
+                    touchedIds.add('q9');
+                    touchedIds.add('q9_mobile');
+                } else {
+                    // Same routing as the intake seeder (isMobileShape).
+                    String phoneId = isMobileShape(a.Phone__c) ? 'q9_mobile' : 'q9';
+                    changes.get(a.Id).put(phoneId, a.Phone__c);
+                    touchedIds.add(phoneId);
+                }
+            }
+            if (a.DOB__c != o.DOB__c) {
+                if (!changes.containsKey(a.Id)) changes.put(a.Id, new Map<String, String>());
+                Date dob = a.DOB__c;
+                // Parts without leading zeros, as the form and the seeder save them.
+                changes.get(a.Id).put(DOB_ID + '_day',   dob == null ? null : String.valueOf(dob.day()));
+                changes.get(a.Id).put(DOB_ID + '_month', dob == null ? null : String.valueOf(dob.month()));
+                changes.get(a.Id).put(DOB_ID + '_year',  dob == null ? null : String.valueOf(dob.year()));
+                touchedIds.add(DOB_ID + '_day');
+                touchedIds.add(DOB_ID + '_month');
+                touchedIds.add(DOB_ID + '_year');
             }
         }
         if (changes.isEmpty()) return;
@@ -261,7 +292,13 @@ public with sharing class PC1_ApplicationFieldSync {
                 String newPhone = !String.isBlank(mob) ? mob : (!String.isBlank(land) ? land : null);
                 String oldPhone = existing.Phone__c;
                 Boolean phoneAffected = affectedFieldIds.contains('q9') || affectedFieldIds.contains('q9_mobile');
-                if (newPhone != null && newPhone != oldPhone) {
+                // Only when a phone answer was part of this save (audit
+                // 2026-11-11 PC-APEX-2). The answer holds the number as typed
+                // and the parent its E.164 form, so they always differ: before
+                // this check every unrelated answer save rewrote Phone__c from
+                // the answers and undid a number corrected on the record (a
+                // landline typed over a client who also has a mobile answer).
+                if (newPhone != null && newPhone != oldPhone && phoneAffected) {
                     patch.Phone__c = newPhone;
                     dirty = true;
                 } else if (newPhone == null && phoneAffected && oldPhone != null) {
@@ -368,18 +405,12 @@ public with sharing class PC1_ApplicationFieldSync {
                 || affectedFieldIds.contains(DOB_ID + '_month')
                 || affectedFieldIds.contains(DOB_ID + '_year');
             if (!String.isBlank(d) && !String.isBlank(m) && !String.isBlank(y)) {
-                try {
-                    Date parsed = Date.newInstance(
-                        Integer.valueOf(y),
-                        Integer.valueOf(m),
-                        Integer.valueOf(d)
-                    );
-                    if (parsed != existing.DOB__c) {
-                        patch.DOB__c = parsed;
-                        dirty = true;
-                    }
-                } catch (Exception e) {
-                    // silent — partial/bad date; leave the parent field alone.
+                Date parsed = parseDob(d, m, y);
+                // null = not a real, plausible date of birth: leave DOB__c
+                // alone (the answer rows keep the bad part for the operator).
+                if (parsed != null && parsed != existing.DOB__c) {
+                    patch.DOB__c = parsed;
+                    dirty = true;
                 }
             } else if (dobTouched && existing.DOB__c != null) {
                 // At least one part was just deleted → DOB is incomplete
@@ -400,5 +431,41 @@ public with sharing class PC1_ApplicationFieldSync {
 
     private static String onlyDigits(String s) {
         return s == null ? '' : s.replaceAll('\\D', '');
+    }
+
+    /** Twin of isMobileShape in src/lib/pc1-intake-answer-seeder.js:
+     *  07… / +447… is a mobile (q9_mobile), anything else the home
+     *  telephone (q9). */
+    @TestVisible
+    private static Boolean isMobileShape(String raw) {
+        String digits = onlyDigits(raw);
+        if (digits.length() == 0) return false;
+        if (digits.startsWith('07')) return true;
+        return digits.startsWith('447') && digits.length() >= 11;
+    }
+
+    /**
+     * Build DOB__c from the three answer parts, or null when they do not make
+     * a real, plausible date of birth (port of AA_ApplicationFieldSync.parseDob,
+     * audit 2026-11-11 PC-APEX-8). Date.newInstance silently rolls impossible
+     * parts over (31/02/1948 became 02/03/1948), which wrote a WRONG DOB__c,
+     * and a year such as 1850 or 2030 failed the DOB_Reasonable validation
+     * rule in the parent update, which rolled back the answer save.
+     */
+    @TestVisible
+    private static Date parseDob(String d, String m, String y) {
+        Integer di, mi, yi;
+        try {
+            di = Integer.valueOf(d.trim());
+            mi = Integer.valueOf(m.trim());
+            yi = Integer.valueOf(y.trim());
+        } catch (Exception e) {
+            return null;
+        }
+        if (di < 1 || di > 31 || mi < 1 || mi > 12 || yi < 1900) return null;
+        Date parsed = Date.newInstance(yi, mi, di);
+        if (parsed.day() != di || parsed.month() != mi || parsed.year() != yi) return null;
+        if (parsed >= Date.today()) return null;
+        return parsed;
     }
 }

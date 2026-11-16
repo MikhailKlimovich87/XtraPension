@@ -89,8 +89,20 @@ public with sharing class AA_WelcomePackWatchdog implements Schedulable {
             if (held != null) held.remove(s.Application__c);
         }
 
+        // An application that has since moved to a stage where the event may
+        // not be sent (audit 2026-11-11 AA-APEX-12) is left alone: the
+        // dispatcher would only suppress it again, every hour for 7 days,
+        // writing one more log row each time.
+        Map<Id, String> stageByApp = new Map<Id, String>();
+        for (AA_Application__c a : [SELECT Id, Stage__c FROM AA_Application__c WHERE Id IN :allApps]) {
+            stageByApp.put(a.Id, a.Stage__c);
+        }
+
         for (String ev : heldByEvent.keySet()) {
-            Set<Id> held = heldByEvent.get(ev);
+            Set<Id> held = new Set<Id>();
+            for (Id appId : heldByEvent.get(ev)) {
+                if (AA_MessageDispatcher.stageAllows(ev, stageByApp.get(appId))) held.add(appId);
+            }
             if (held.isEmpty()) continue;
             Set<Id> ready = AA_MessageDispatcher.appsWithAttachmentsReady(held, ev);
             if (ready.isEmpty()) continue;

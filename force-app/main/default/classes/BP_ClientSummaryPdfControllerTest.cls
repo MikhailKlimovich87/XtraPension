@@ -90,7 +90,8 @@ private class BP_ClientSummaryPdfControllerTest {
 
         Test.stopTest();
 
-        System.assertEquals('Never Had', controller.ninoString);
+        // DWP letter: words, not the picklist value (12/11/2026, salesforce/claims-summary)
+        System.assertEquals('None', controller.ninoString);
     }
 
     @IsTest

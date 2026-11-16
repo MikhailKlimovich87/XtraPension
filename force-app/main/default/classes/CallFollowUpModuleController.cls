@@ -14,7 +14,7 @@ public class CallFollowUpModuleController {
         ];
         if (currUsers.size() == 0) throw new AuraHandledException('Didn\'t find any users!');
         Task newCall = new Task();
-        newCall.Subject = subject + ' - Creator: ' + currUsers[0].FirstName;
+        newCall.Subject = subject + '- Creator: ' + currUsers[0].FirstName;
         newCall.Status = 'Completed';
         newCall.ActivityDate = System.today();
         newCall.IsReminderSet = false;

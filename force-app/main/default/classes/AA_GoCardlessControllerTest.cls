@@ -1041,4 +1041,164 @@ private class AA_GoCardlessControllerTest {
         a.DD_Mandate_Id__c = 'MD-X';
         System.assertEquals(false, AA_MandateEligibility.isEligible(a));
     }
+
+    // -----------------------------------------------------------------
+    // audit 2026-11-11
+    // -----------------------------------------------------------------
+
+    // AA-SFUI-5: re-saving the award on a disputed or failed case used to
+    // put it back to Awarded, a stage the fee sweep collects in.
+    @isTest static void recordAward_neverMovesAPostAwardCaseBackToAwarded() {
+        upsertConfig();
+        for (String stage : new List<String>{ 'DD Chargeback', 'Closed - Fee Failed', 'Change of Circumstances Review' }) {
+            AA_Application__c a = makeApp();
+            a.Award_Amount__c = 3988.40;
+            a.Fee_Plan_Installments__c = 1;
+            a.Stage__c = stage;
+            update a;
+            AA_GoCardlessController.recordAward(a.Id, 3988.40, 1, null, null, null);
+            System.assertEquals(stage, [SELECT Stage__c FROM AA_Application__c WHERE Id = :a.Id].Stage__c,
+                'recordAward must leave a case at "' + stage + '" where it is');
+        }
+        System.assert(AA_GoCardlessController.POST_AWARD_STAGES.contains('Awarded'));
+    }
+
+    // AA-APEX-11 / AA-APEX-14: once a plan exists a different amount is
+    // refused, and a same-value save writes nothing (it used to rewrite the
+    // first charge date and could move the stage).
+    @isTest static void recordAward_onceAPlanExists_refusesAChange_andASameValueSaveWritesNothing() {
+        upsertConfig();
+        AA_Application__c a = makeApp();
+        a.Award_Amount__c = 3988.40;
+        a.Fee_Plan_Installments__c = 1;
+        a.Fee_First_Charge_Date__c = Date.today().addDays(10);
+        a.Stage__c = 'DD Chargeback';
+        update a;
+        insert new AA_Fee_Installment__c(Application__c = a.Id, Installment_Number__c = 1, Amount__c = 797.68,
+            Scheduled_Date__c = Date.today().addDays(10), Payment_Status__c = 'cancelled');
+
+        Boolean threw = false;
+        try { AA_GoCardlessController.recordAward(a.Id, 5959.20, 1, null, null, null); }
+        catch (AuraHandledException e) { threw = true; }
+        System.assert(threw, 'a different amount must be refused once a plan exists');
+
+        Map<String,Object> res = AA_GoCardlessController.recordAward(a.Id, 3988.40, 1, null, Date.today().addDays(30), null);
+        AA_Application__c after = [SELECT Stage__c, Fee_First_Charge_Date__c, Award_Amount__c FROM AA_Application__c WHERE Id = :a.Id];
+        System.assertEquals(true, res.get('ok'));
+        System.assertEquals(797.68, (Decimal) res.get('fee_amount'), '2026/27 lower rate: 20% of 3,988.40');
+        System.assertEquals(3988.40, after.Award_Amount__c);
+        System.assertEquals('DD Chargeback', after.Stage__c, 'a same-value save must not take the case out of the dispute stage');
+        System.assertEquals(Date.today().addDays(10), after.Fee_First_Charge_Date__c, 'and must not rewrite the first charge date');
+    }
+
+    // AA-APEX-14: the freeze also holds for a direct edit of the record.
+    @isTest static void award_cannotBeEditedOnTheRecordOnceAPlanExists() {
+        upsertConfig();
+        AA_Application__c a = makeApp();
+        a.Award_Amount__c = 3988.40;
+        a.Fee_Plan_Next_Charge_Date__c = Date.today().addDays(10);
+        update a;   // one save that sets both is allowed
+
+        Boolean blocked = false;
+        try { update new AA_Application__c(Id = a.Id, Award_Amount__c = 5959.20); }
+        catch (DmlException e) { blocked = true; }
+        System.assert(blocked, 'Award_Frozen_Once_Fee_Plan_Exists must refuse the edit');
+
+        update new AA_Application__c(Id = a.Id, Fee_Plan_Next_Charge_Date__c = null);
+        update new AA_Application__c(Id = a.Id, Award_Amount__c = 5959.20);
+        System.assertEquals(5959.20, [SELECT Award_Amount__c FROM AA_Application__c WHERE Id = :a.Id].Award_Amount__c,
+            'with the plan gone the award can be corrected');
+    }
+
+    // AA-SFUI-1: a save that does not choose a plan keeps the recorded one
+    // (it used to reset it to a single charge).
+    @isTest static void recordAward_withoutAPlan_keepsTheRecordedPlan() {
+        upsertConfig();
+        AA_Application__c a = makeApp();
+        AA_GoCardlessController.recordAward(a.Id, 3988.40, 3, null, null, null);
+        Map<String,Object> res = AA_GoCardlessController.recordAward(a.Id, 3988.50, null, null, null, null);
+        System.assertEquals(3, ((Decimal) res.get('installments')).intValue(), 'the plan agreed with the client is kept');
+        System.assertEquals(3988.50, (Decimal) res.get('award_amount'), 'the amount correction is saved');
+    }
+
+    // AA-APEX-3: a wrong award could not be corrected once Charge Fee had
+    // built the plan. An administrator can cancel a plan nothing has been set
+    // up for; the award is then recorded again and the plan rebuilt.
+    @isTest static void cancelFeePlan_deletesAnUncollectedPlan_soTheAwardCanBeCorrected() {
+        upsertConfig();
+        AA_Application__c a = makeApp();
+        a.DD_Mandate_Id__c         = 'MD-ACTIVE';
+        a.DD_Mandate_Status__c     = 'active';
+        a.Award_Amount__c          = 3988.40;   // lower rate typed for a higher-rate letter
+        a.Fee_Plan_Installments__c = 3;
+        a.Fee_First_Charge_Date__c = Date.today().addDays(20);
+        a.Stage__c                 = 'Awarded';
+        update a;
+        AA_GoCardlessController.chargeFee(a.Id);
+        System.assertEquals(3, [SELECT COUNT() FROM AA_Fee_Installment__c WHERE Application__c = :a.Id]);
+
+        Boolean frozen = false;
+        try { AA_GoCardlessController.recordAward(a.Id, 5959.20, 3, null, null, null); }
+        catch (AuraHandledException e) { frozen = true; }
+        System.assert(frozen, 'precondition: the award is frozen while the plan exists');
+
+        Test.startTest();
+        Map<String,Object> cancelled = AA_GoCardlessController.cancelFeePlan(a.Id);
+        Map<String,Object> again = AA_GoCardlessController.recordAward(a.Id, 5959.20, 3, null, null, null);
+        Map<String,Object> plan = AA_GoCardlessController.chargeFee(a.Id);
+        Test.stopTest();
+
+        System.assertEquals(3, (Integer) cancelled.get('deleted'));
+        System.assertEquals(false, cancelled.get('notice_sent'));
+        System.assertEquals(1191.84, (Decimal) again.get('fee_amount'), '2026/27 higher rate: 20% of 5,959.20, saved without a confirmation');
+        List<AA_Fee_Installment__c> rows = [SELECT Amount__c FROM AA_Fee_Installment__c
+                                             WHERE Application__c = :a.Id ORDER BY Installment_Number__c];
+        System.assertEquals(3, rows.size(), 'the plan is rebuilt from the corrected award');
+        System.assertEquals(397.28, rows[0].Amount__c);
+        System.assertEquals(1191.84, rows[0].Amount__c + rows[1].Amount__c + rows[2].Amount__c);
+        System.assertEquals(1, [SELECT COUNT() FROM AA_Stage_Log__c WHERE Application__c = :a.Id AND Note__c LIKE 'Fee plan cancelled%'],
+            'the cancel is on the stage log');
+    }
+
+    @isTest static void cancelFeePlan_refusedOnceAPaymentExists() {
+        upsertConfig();
+        AA_Application__c a = makeApp();
+        a.Award_Amount__c = 3988.40;
+        a.Stage__c = 'Awarded';
+        update a;
+        insert new AA_Fee_Installment__c(Application__c = a.Id, Installment_Number__c = 1, Amount__c = 797.68,
+            Scheduled_Date__c = Date.today().addDays(3), Payment_Status__c = 'pending',
+            Payment_Id__c = 'PM-CREATED', Charged_At__c = Datetime.now());
+
+        Boolean threw = false;
+        try { AA_GoCardlessController.cancelFeePlan(a.Id); } catch (AuraHandledException e) { threw = true; }
+        System.assert(threw, 'a plan with a payment at GoCardless cannot be cancelled here');
+        System.assertEquals(1, [SELECT COUNT() FROM AA_Fee_Installment__c WHERE Application__c = :a.Id], 'the row is kept');
+    }
+
+    // Only a System Administrator may cancel a plan. No application is needed:
+    // the check runs before anything is read (and a User insert next to other
+    // DML would be a mixed-DML error).
+    @isTest static void cancelFeePlan_isForAdministratorsOnly() {
+        Profile p = [SELECT Id FROM Profile WHERE Name = 'Standard Platform User' LIMIT 1];
+        String uniq = String.valueOf(Math.abs(Crypto.getRandomInteger()));
+        User u = new User(
+            ProfileId         = p.Id,
+            LastName          = 'FeeNonAdmin',
+            Email             = 'aa.fee.nonadmin@example.com',
+            Username          = 'aa.fee.nonadmin.' + uniq + '@test.aa.invalid',
+            Alias             = 'aafeena',
+            TimeZoneSidKey    = 'Europe/London',
+            LocaleSidKey      = 'en_GB',
+            EmailEncodingKey  = 'UTF-8',
+            LanguageLocaleKey = 'en_US'
+        );
+        insert u;
+        Id someApp = Id.valueOf(AA_Application__c.SObjectType.getDescribe().getKeyPrefix() + '000000000001');
+        Boolean threw = false;
+        System.runAs(u) {
+            try { AA_GoCardlessController.cancelFeePlan(someApp); } catch (AuraHandledException e) { threw = true; }
+        }
+        System.assert(threw, 'a non-admin must be refused');
+    }
 }

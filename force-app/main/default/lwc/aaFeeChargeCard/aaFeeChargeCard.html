@@ -126,6 +126,20 @@
                         </template>
                     </div>
                 </template>
+                <!-- audit 2026-11-11 AA-APEX-3: the way to correct a wrong award
+                     once the plan is built. Only while nothing is set up at
+                     GoCardless; the server allows it to administrators only. -->
+                <template if:true={canCancelPlan}>
+                    <div class="slds-var-m-top_small">
+                        <lightning-button
+                            label="Cancel fee plan"
+                            variant="destructive-text"
+                            onclick={handleCancelPlan}
+                            disabled={cancelDisabled}>
+                        </lightning-button>
+                        <p class="aa-feecharge__plan-hint">Administrators only. To correct a wrong award while nothing has been set up at GoCardless.</p>
+                    </div>
+                </template>
             </div>
         </template>
     </div>

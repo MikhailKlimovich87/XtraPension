@@ -837,4 +837,17 @@ static void testExecute_secondBr1IsIgnoredWhenFirstFound() {
         [SELECT COUNT() FROM Application_Form_Error__c]
     );
 }
+
+    // Helper em cópia no e-mail de "Posted to DWP" (04/11/2026).
+    @IsTest
+    static void testHelperIsCopied() {
+        Basic__c claim = [SELECT Id FROM Basic__c LIMIT 1];
+        claim.Friend_Email__c = 'helper@example.com';
+        update claim;
+        System.assertEquals('helper@example.com', BP_Process_ClaimEmailJob.helperCc(claim.Id, 'client@example.com'));
+        System.assertEquals(null, BP_Process_ClaimEmailJob.helperCc(claim.Id, 'Helper@example.com'), 'same address: no copy');
+        claim.Friend_Email__c = null;
+        update claim;
+        System.assertEquals(null, BP_Process_ClaimEmailJob.helperCc(claim.Id, 'client@example.com'), 'no helper: no copy');
+    }
 }

@@ -1,0 +1,88 @@
+<template>
+    <hr>
+    <div class="main-block">
+        <div class="fields-data">
+            <div>
+                <label class="custom-combobox-label" style="margin-left:0.5rem">Claim No<span class="request-sign">
+                        *</span></label>
+                <p class="slds-grid slds-grid_align-end slds-align_absolute-center">
+                    <lightning-input type="search" placeholder="e.g. C00123 or 123" name="appNo" variant="label-hidden"
+                        style="width:100%" onchange={handleSearchChange} value={appName} data-id="app_number"
+                        disabled={isEmptyAppList}>
+                    </lightning-input>
+
+                    <lightning-button label="INITIAL" disabled={isDisabledInitialButton} data-id="initial_button"
+                        onclick={handleCopy}></lightning-button>
+                    <lightning-button label="CLIENT" disabled={isDisabledClientButton} data-id="client_button"
+                        onclick={handleCopy}></lightning-button>
+                    <lightning-button label="AGENT" data-id="agent_button" onclick={handleCopy}></lightning-button>
+                </p>
+            </div>
+            <template lwc:if={isExistSearchValue}>
+                <div class="slds-p-horizontal_x-small">
+                    <c-claim-check-search-result curr-app={searchValue}></c-claim-check-search-result>
+                </div>
+            </template>
+            <div class="input-data">
+                <div class="checkbox-block">
+                    <div><b>DWP result</b> <span> (select at least one)</span></div>
+                    <div class="checkbox-info" data-id="checkboxInfo">
+                        <div>
+                            <p>
+                                <lightning-input type="checkbox" label="Not Received" onchange={handleChange}
+                                    data-id="not_received"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="Received by DWP" onchange={handleChange}
+                                    data-id="received"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="Processing" onchange={handleChange}
+                                    data-id="processing"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="DWP asked for more info" onchange={handleChange}
+                                    data-id="more_info"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="Called DWP" onchange={handleChange}
+                                    data-id="called_dwp"></lightning-input>
+                            </p>
+                        </div>
+                        <div>
+                            <p>
+                                <lightning-input type="checkbox" label="Approved" onchange={handleChange}
+                                    data-id="approved"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="Rejected" onchange={handleChange}
+                                    data-id="rejected"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="Lump Sum Letter" onchange={handleChange}
+                                    data-id="lump_sum"></lightning-input>
+                            </p>
+                            <p>
+                                <lightning-input type="checkbox" label="Payment Started" onchange={handleChange}
+                                    data-id="payment_started"></lightning-input>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p>
+                <label class="custom-combobox-label">Notes<span class="request-sign"> *</span></label>
+                <lightning-textarea variant="label-hidden" maxlength="255"
+                    placeholder="What the DWP said..." onchange={handleChange}
+                    data-id="notes"></lightning-textarea>
+            </p>
+            <p>
+                <label class="custom-combobox-label">PDF GDrive Link</label>
+                <lightning-input type="url" placeholder="https://drive.google.com/... (optional)" variant="label-hidden"
+                    onchange={handleChange} data-id="pdf_link"></lightning-input>
+            </p>
+        </div>
+        <lightning-icon icon-name="action:delete" alternative-text="Remove" size="small"
+            onclick={handleRemoveRequest}></lightning-icon>
+    </div>
+</template>

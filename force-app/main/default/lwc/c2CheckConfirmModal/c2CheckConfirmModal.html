@@ -6,21 +6,11 @@
                     <h2 class="slds-modal__title slds-hyphenate">{title}</h2>
                 </div>
                 <div class="slds-modal__content slds-p-around_medium">
-                    <lightning-combobox label="Have you requested a copy?" options={options}
-                        onchange={handleChangeCopyRequest} value={checkData.requestedCopy}></lightning-combobox>
-                    <template lwc:if={isOpenPaymentMadeClientQuestion}>
-                        <lightning-combobox label="Was the payment made by the client?" options={options}
-                            onchange={handleChangePaymentMadeClient}
-                            value={checkData.paymentMadeByClient}></lightning-combobox>
-                        <template lwc:if={isOpenWhenQuestion}>
-                            <lightning-input type="date" label="When?" value={checkData.when}
-                                onchange={handleChangeWhenDate}></lightning-input>
-                        </template>
-                    </template>
+                    <p>{message}</p>
                 </div>
                 <div class="slds-modal__footer">
-                    <button class="slds-button slds-button_neutral" onclick={handleCancel}>Cancel</button>
-                    <button class="slds-button slds-button_brand" onclick={handleConfirm}>Confirm</button>
+                    <button class="slds-button slds-button_neutral" onclick={handleCancel}>No</button>
+                    <button class="slds-button slds-button_brand" onclick={handleConfirm}>Yes</button>
                 </div>
             </div>
         </section>

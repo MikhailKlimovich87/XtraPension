@@ -1,0 +1,35 @@
+<template>
+    <template lwc:if={error}>
+        <lightning-card title="Report">
+            <p class="slds-p-horizontal_small slds-text-color_error">Could not load the report: {errorMessage}</p>
+        </lightning-card>
+    </template>
+    <template for:each={tables} for:item="table">
+        <lightning-card key={table.key} title={table.title} class="slds-m-bottom_medium">
+            <div class="slds-p-horizontal_small slds-p-bottom_medium">
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th scope="col"><div class="slds-truncate"></div></th>
+                            <th scope="col"><div class="slds-truncate">Total</div></th>
+                            <template for:each={agents} for:item="agent">
+                                <th scope="col" key={agent}><div class="slds-truncate" title={agent}>{agent}</div></th>
+                            </template>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={table.rows} for:item="row">
+                            <tr key={row.key} class="slds-hint-parent">
+                                <td data-label="Period"><div class="slds-truncate">{row.name}</div></td>
+                                <td data-label="Total"><div class="slds-truncate">{row.total}</div></td>
+                                <template for:each={row.cells} for:item="cell">
+                                    <td key={cell.agent} data-label={cell.agent}><div class="slds-truncate">{cell.count}</div></td>
+                                </template>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </lightning-card>
+    </template>
+</template>

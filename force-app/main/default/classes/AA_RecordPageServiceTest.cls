@@ -167,7 +167,7 @@ private class AA_RecordPageServiceTest {
         System.assertEquals('M1 2AB', AA_RecordPageService.normaliseAnswer('representative-address-postcode', 'm1 2ab'));
         System.assertEquals('margaret@example.com', AA_RecordPageService.normaliseAnswer('supporting-documents-email-confirm', ' margaret @example.com '),
             'a confirm box is an email too');
-        System.assertEquals('free text', AA_RecordPageService.normaliseAnswer('health-conditions__1', 'free text'), 'other fields pass through');
+        System.assertEquals('free text', AA_RecordPageService.normaliseAnswer('health-conditions-manual__1', 'free text'), 'other fields pass through');
         System.assertEquals('', AA_RecordPageService.normaliseAnswer('national-insurance', ''), 'a blank value clears the answer');
     }
 
@@ -426,7 +426,8 @@ private class AA_RecordPageServiceTest {
 
     @isTest static void care_needs_cause_takes_the_clients_own_conditions() {
         AA_Application__c a = makeApp('New');
-        AA_RecordPageService.saveField(a.Id, 'health-conditions__1', 'Arthritis', 'human');
+        // On file from before the DWP list check (2026-11-11): saveField now refuses a name that is not a list entry.
+        insert new AA_Answer__c(Application__c = a.Id, Field_Id__c = 'health-conditions__1', Value__c = 'Arthritis', Source__c = 'human');
         AA_RecordPageService.saveField(a.Id, 'health-conditions-manual__2', 'Heart failure', 'human');
         AA_RecordPageService.saveField(a.Id, 'health-conditions-rows', '["Arthritis","Heart failure","Stroke"]', 'human');
 
@@ -468,7 +469,8 @@ private class AA_RecordPageServiceTest {
     // never passes as a care-needs-cause condition.
     @isTest static void option_edge_cases_match_validate_save() {
         AA_Application__c a = makeApp('New');
-        AA_RecordPageService.saveField(a.Id, 'health-conditions__1', 'Arthritis', 'human');
+        // On file from before the DWP list check (2026-11-11): saveField now refuses a name that is not a list entry.
+        insert new AA_Answer__c(Application__c = a.Id, Field_Id__c = 'health-conditions__1', Value__c = 'Arthritis', Source__c = 'human');
 
         Test.startTest();
         Id days = AA_RecordPageService.saveField(a.Id, 'day-difficulties', '[ ]', 'human');
@@ -790,12 +792,13 @@ private class AA_RecordPageServiceTest {
 
     @isTest static void bare_loop_edit_is_refused_once_numbered_entries_exist() {
         AA_Application__c a = makeApp('New');
-        AA_RecordPageService.saveField(a.Id, 'health-conditions__1', 'Arthritis', 'human');
+        AA_RecordPageService.saveField(a.Id, 'health-conditions__1', 'Asthma', 'human');
         AA_RecordPageService.saveField(a.Id, 'health-conditions__1', 'Rheumatoid arthritis', 'human');
 
         for (String bareId : new List<String>{ 'health-conditions', 'health-conditions-start-date-year' }) {
             String msg = null;
-            try { AA_RecordPageService.saveField(a.Id, bareId, 'x', 'human'); }
+            // A listed name for the condition itself, so what refuses it is the bare id, not the DWP list check.
+            try { AA_RecordPageService.saveField(a.Id, bareId, bareId == 'health-conditions' ? 'Angina' : 'x', 'human'); }
             catch (AuraHandledException e) { msg = e.getMessage(); }
             System.assertNotEquals(null, msg, bareId + ' would be ignored by the fill, so it must be refused');
             System.assert(msg.contains('numbered entry'), msg);
@@ -1035,5 +1038,28 @@ private class AA_RecordPageServiceTest {
         }
         System.assert(false, 'application missing from the clients list');
         return null;
+    }
+
+    // audit 2026-11-11 AA-ENGINE-1: a health condition is one of the DWP list
+    // entries, stored in the list wording; anything else is refused here too
+    // (the editor checks it in the browser, but saveField can be called directly).
+    @isTest static void a_health_condition_is_held_to_the_dwp_list() {
+        AA_Application__c a = makeApp('New');
+        System.assert(AA_FlowEngine.conditionsByNorm().size() > 100, 'aaFlowConfig ships the DWP list (CONDITIONS)');
+
+        Test.startTest();
+        Id listed = AA_RecordPageService.saveField(a.Id, 'health-conditions__1', '  heart   FAILURE ', 'human');
+        String offList = rejection(a.Id, 'health-conditions__2', 'Arthritis');
+        Id byHand = AA_RecordPageService.saveField(a.Id, 'health-conditions-manual__2', 'Arthritis', 'human');
+        Test.stopTest();
+
+        System.assertEquals('Heart failure', [SELECT Value__c FROM AA_Answer__c WHERE Id = :listed].Value__c,
+            'matched ignoring case and spacing, stored in the wording of the list');
+        System.assert(offList != null && offList.contains('"Arthritis"') && offList.contains('not on the DWP list'), offList);
+        System.assertEquals(0, [SELECT COUNT() FROM AA_Answer__c WHERE Application__c = :a.Id AND Field_Id__c = 'health-conditions__2'],
+            'nothing refused is stored');
+        System.assertEquals('Arthritis', [SELECT Value__c FROM AA_Answer__c WHERE Id = :byHand].Value__c,
+            'the free-text page is not held to the list');
+        System.assertEquals('motor neurone disease', AA_FlowEngine.normCondition('  Motor  NEURONE disease '));
     }
 }

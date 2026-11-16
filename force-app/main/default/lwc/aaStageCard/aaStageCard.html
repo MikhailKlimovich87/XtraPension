@@ -8,6 +8,19 @@
                 options={options}
                 onchange={handleSelect}>
             </lightning-combobox>
+            <!-- Closed - Refused only: the refusal has to be written down
+                 (AA_StageTransitionHelper.decisionGuard refuses the move
+                 without it). Kept on the stage log. -->
+            <template lwc:if={noteRequired}>
+                <lightning-textarea
+                    class="slds-var-m-top_x-small"
+                    label="DWP refusal: date of the decision letter and the reason"
+                    value={note}
+                    max-length={noteMax}
+                    onchange={handleNote}
+                    required>
+                </lightning-textarea>
+            </template>
             <div class="slds-var-m-top_small">
                 <lightning-button
                     label="Change Stage"

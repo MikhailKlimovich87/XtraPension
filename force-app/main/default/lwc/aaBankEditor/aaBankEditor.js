@@ -185,6 +185,18 @@ export default class AaBankEditor extends LightningElement {
             this.draft.status = 'Unverified';
             this.draft.bankName = '';
         }
+        // audit 2026-11-11 AA-SFUI-7: the holder name is part of the check
+        // (Name Verified / Name Close Match / Name Mismatch), so a changed
+        // holder is not verified either. Before this, a holder edit was saved
+        // under the old green status for a name the bank never confirmed.
+        // Typing the stored name back, with the stored digits, restores the
+        // stored status: nothing that was checked has changed.
+        if (key === 'holder') {
+            this.verifyMsg = '';
+            const unchanged = String(val || '').trim() === String(this.original.holder || '').trim()
+                && !this.draftDigitsChanged;
+            this.draft.status = unchanged ? this.original.status : 'Unverified';
+        }
     }
 
     // ── Bank Verify (auto) ──────────────────────────────────────────

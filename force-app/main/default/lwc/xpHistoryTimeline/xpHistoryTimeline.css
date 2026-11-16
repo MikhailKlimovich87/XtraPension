@@ -1,0 +1,88 @@
+.card {
+    overflow: hidden;
+    font-size: 0.8125rem;
+}
+.head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #f3f3f3;
+    border-bottom: 1px solid #c9c9c9;
+}
+.title {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tl {
+    padding: 0.375rem 0.75rem 0.5rem;
+}
+.day {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #5c5c5c;
+    padding: 0.25rem 0 0.125rem;
+}
+/* time | rail with a dot | what changed + who */
+.item {
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+    gap: 0.625rem;
+}
+.time {
+    font-size: 0.75rem;
+    color: #5c5c5c;
+    text-align: right;
+    padding-top: 1px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.body {
+    position: relative;
+    border-left: 2px solid #e5e5e5;
+    padding: 0 0 0.5rem 0.75rem;
+    overflow-wrap: anywhere;
+}
+.body::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #7fbf4d;
+}
+.fld {
+    color: #5c5c5c;
+    margin-right: 0.25rem;
+}
+.arrow {
+    color: #5c5c5c;
+    margin: 0 0.25rem;
+}
+.blank {
+    color: #5c5c5c;
+    font-style: italic;
+}
+.who {
+    font-size: 0.75rem;
+}
+.note {
+    padding: 0.5rem 0.75rem;
+    color: #5c5c5c;
+}
+.note.err {
+    color: #ba0517;
+}
+/* "View all" next to the title instead of a footer, as on Payments and Work (Fernando, 03/11/2026) */
+.view-all {
+    font-size: 0.75rem;
+    white-space: nowrap;
+}

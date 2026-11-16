@@ -13,8 +13,11 @@
  */
 public with sharing class PC1_MaryBridge {
 
+    // 'Call In Progress' is NOT callable (audit 2026-11-11 PC-SFUI-2): a
+    // second click, or a second agent, during a live call placed a second
+    // real call. Only the stage can tell that Mary is already on the phone.
     @TestVisible private static final Set<String> CALLABLE_STAGES = new Set<String>{
-        'New', 'Awaiting First Call', 'Call In Progress', 'Partial Data', 'Data Complete',
+        'New', 'Awaiting First Call', 'Partial Data', 'Data Complete',
         'Awaiting Bank Details', 'Needs Human', 'Ready for Review', 'Reviewed'
     };
 

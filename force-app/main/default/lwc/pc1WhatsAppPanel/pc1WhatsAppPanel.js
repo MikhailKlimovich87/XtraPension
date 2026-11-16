@@ -1,4 +1,5 @@
-import { LightningElement, api, track } from 'lwc';
+import { LightningElement, api, track, wire } from 'lwc';
+import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getThread      from '@salesforce/apex/PC1_WhatsAppController.getThread';
 import sendMessage    from '@salesforce/apex/PC1_WhatsAppController.sendMessage';
@@ -6,6 +7,7 @@ import setOptIn       from '@salesforce/apex/PC1_WhatsAppController.setOptIn';
 import sendFileMessage from '@salesforce/apex/PC1_WhatsAppController.sendFileMessage';
 import sendFileFromBrowser from '@salesforce/apex/PC1_WhatsAppController.sendFileFromBrowser';
 import listApplicationFiles from '@salesforce/apex/PC1_WhatsAppController.listApplicationFiles';
+import DNC_FIELD from '@salesforce/schema/PC1_Application__c.Do_Not_Contact__c';
 
 const ACCEPTED_TYPES = ['.jpg','.jpeg','.png','.webp','.gif','.pdf','.doc','.docx','.xls','.xlsx','.txt','.csv','.mp3','.m4a','.ogg','.mp4'];
 
@@ -43,11 +45,13 @@ function htmlToWhatsApp(input) {
  * (<a href>, <br>), so they go through htmlToWhatsApp first (same function as the Sales
  * panel, xpWhatsAppPanel). Then links become clickable and *bold* / _italic_ / ~strike~
  * get their style. Returns pieces for the template (LWC has no innerHTML).
+ * plain = true skips the HTML step: a client's own message is plain text, and the
+ * converter dropped anything they typed between angle brackets.
  */
 const URL_RE = /\b(?:https?:\/\/|www\.)[^\s<>"]+/gi;
 const STYLE_RE = /(^|[\s([{"'])([*_~])(?!\s)([^\n]*?\S)\2(?=$|[\s.,;:!?)\]}"'])/g;
 const STYLE_CLASS = { '*': 'pc1-wa__b', '_': 'pc1-wa__i', '~': 'pc1-wa__s' };
-function waParts(input) {
+function waParts(input, plain) {
     const parts = [];
     const push = (text, cls = '', href = '') => {
         if (text) parts.push({ key: String(parts.length), text, cls, href });
@@ -62,7 +66,7 @@ function waParts(input) {
         });
         push(seg.slice(last));
     };
-    const s = htmlToWhatsApp(input);
+    const s = plain ? String(input || '') : htmlToWhatsApp(input);
     let last = 0;
     for (const m of s.matchAll(URL_RE)) {
         if (m.index < last) continue;
@@ -115,6 +119,14 @@ export default class Pc1WhatsAppPanel extends LightningElement {
     _inView = true;
     _lastMsgCount = 0;
     _userScrolledUp = false;
+
+    // Do Not Contact (set when a caller reports the client deceased). The
+    // panel shows a banner and stops sending; the Apex send methods refuse
+    // too (audit 2026-11-11 PC-SFUI-3). optionalFields: a user without
+    // access to the field still gets the panel.
+    @wire(getRecord, { recordId: '$recordId', optionalFields: [DNC_FIELD] })
+    wiredApp;
+    get doNotContact() { return getFieldValue(this.wiredApp?.data, DNC_FIELD) === true; }
 
     // ─── lifecycle ─────────────────────────────────────────────────────
     connectedCallback() {
@@ -211,7 +223,7 @@ export default class Pc1WhatsAppPanel extends LightningElement {
             return {
                 key:       m.uid || `${m.chat_id}-${m.timestamp}`,
                 text:      m.text || '',
-                parts:     waParts(m.text),
+                parts:     waParts(m.text, !isOut),
                 timestamp: m.timestamp,
                 bubbleClass,
                 isOut,
@@ -280,6 +292,10 @@ export default class Pc1WhatsAppPanel extends LightningElement {
         const file = this.pendingFile;
         if (this.sending) return;
         if (!body && !file) return;
+        if (this.doNotContact) {
+            this.dispatchEvent(new ShowToastEvent({ title: 'Cannot send', message: 'This application is flagged Do Not Contact.', variant: 'warning' }));
+            return;
+        }
         if (!this.optIn) {
             this.dispatchEvent(new ShowToastEvent({ title: 'Cannot send', message: 'Client has not opted in to WhatsApp.', variant: 'warning' }));
             return;
@@ -296,6 +312,9 @@ export default class Pc1WhatsAppPanel extends LightningElement {
             bubbleClass: 'pc1-wa__bubble is-out is-sending', isOut: true,
             timeLabel: this._timeOf(new Date().toISOString()),
             statusLabel: '…', senderLabel: '', showSender: false, showDay: false,
+            // What Retry sends again: the caption as typed (may be empty) and
+            // the file, not the "📎 name" placeholder shown in the bubble.
+            retryBody: body, retryFile: file || null,
         };
         this.messages = [...this.messages, optimistic];
         // Clear composer — both @track state AND DOM value directly (textareas
@@ -340,7 +359,8 @@ export default class Pc1WhatsAppPanel extends LightningElement {
         const key = e.currentTarget.dataset.key;
         const msg = this.messages.find(m => m.key === key);
         if (!msg) return;
-        this.composerText = msg.text;
+        this.composerText = msg.retryBody !== undefined ? msg.retryBody : msg.text;
+        if (msg.retryFile) this.pendingFile = msg.retryFile;
         this.messages = this.messages.filter(m => m.key !== key);
         this.handleSend();
     }
@@ -383,6 +403,11 @@ export default class Pc1WhatsAppPanel extends LightningElement {
     async handleNativeFileChange(evt) {
         const file = evt.target.files && evt.target.files[0];
         if (!file) return;
+        if (this.doNotContact) {
+            this.dispatchEvent(new ShowToastEvent({ title: 'Cannot send', message: 'This application is flagged Do Not Contact.', variant: 'warning' }));
+            evt.target.value = '';
+            return;
+        }
         // Enforce a 10MB cap on this path — matches WhatsApp doc-attach ceiling
         // for practical UX. Larger files should go via SF Files (chunked upload).
         if (file.size > 10 * 1024 * 1024) {
@@ -513,11 +538,11 @@ export default class Pc1WhatsAppPanel extends LightningElement {
     get hasMessages() { return !this.loading && !this.loadError && this.messages.length > 0; }
     get sendDisabled() {
         // Enabled if either text OR a pending file exists AND opt-in granted.
-        return this.sending || (!(this.composerText || '').trim() && !this.pendingFile) || !this.optIn;
+        return this.sending || (!(this.composerText || '').trim() && !this.pendingFile) || !this.optIn || this.doNotContact;
     }
     get showOptInBanner() { return !this.loading && !this.optIn; }
     get showComposer()    { return true; }
-    get disableAll()      { return this.sending || !this.optIn; }
+    get disableAll()      { return this.sending || !this.optIn || this.doNotContact; }
     get collapseIcon() { return this.collapsed ? 'utility:chevronright' : 'utility:chevrondown'; }
     get bodyStyle() { return this.collapsed ? 'display:none;' : ''; }
     get acceptedTypes() { return ACCEPTED_TYPES; }
@@ -539,6 +564,7 @@ export default class Pc1WhatsAppPanel extends LightningElement {
         return this.sfSearchQuery ? `${shown} of ${total}` : `${total} file${total === 1 ? '' : 's'}`;
     }
     get composerPlaceholder() {
+        if (this.doNotContact) return 'Do Not Contact is set on this application.';
         if (!this.optIn) return 'Client has not opted in to WhatsApp.';
         if (this.chat && this.chat.isAllowedToMessage === false) return 'Chat exists but WhatsApp session blocked. First message may fail.';
         return 'Type a message… (Enter to send, Shift+Enter for newline)';

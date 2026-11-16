@@ -11,6 +11,8 @@ public class BP_GenerateDirectDebitQueueable
 
         if(!Test.isRunningTest()){BP_DirectDebitManadatePdfService.generatePdf(basicId);}
 
-        if(!Test.isRunningTest()){System.enqueueJob( new BP_GenerateZipArchiveQueueable(basicId) );}
+        // The Stage 1 pack normally went out right after the Short Form: only build it here if it has not been sent,
+        // otherwise the printing house would get (and post) it a second time.
+        if(!Test.isRunningTest()){System.enqueueJob( new BP_GenerateZipArchiveQueueable(basicId, true) );}
     }
 }

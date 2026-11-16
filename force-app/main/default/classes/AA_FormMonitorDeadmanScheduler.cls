@@ -25,7 +25,86 @@ public with sharing class AA_FormMonitorDeadmanScheduler implements Schedulable 
     /** Which alert the last check() raised: NO_RUN, NO_SUCCESS, or null. */
     @TestVisible private static String lastReason;
 
-    public void execute(SchedulableContext ctx) { check(); }
+    public void execute(SchedulableContext ctx) {
+        check();
+        // A second, independent check: guarded so it can never stop the first.
+        try {
+            checkScheduledJobs();
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'AA_FormMonitorDeadmanScheduler: scheduled-job check failed: ' + e.getMessage());
+        }
+    }
+
+    // ── are the other AA crons still scheduled? (audit 2026-11-11 AA-APEX-13) ──
+    // Every AA job is a plain CronTrigger. One that is aborted (the usual step
+    // before redeploying a scheduled class) and not re-created simply stops:
+    // no instalment is noticed or collected, no reminder goes, and nothing
+    // reported it (this class covered only the form monitor, the tick's own
+    // email only a failing tick). Each entry is the START of the job name the
+    // schedule-*.cjs scripts create ("AA Scheduler Tick m0", "... m5", ...).
+    // This job's own name is not listed: if it is gone, nothing runs this.
+    @TestVisible private static final List<String> EXPECTED_JOB_PREFIXES = new List<String>{
+        'AA Fee Installment Sweep', 'AA Form Monitor Daily', 'AA Welcome Pack Watchdog',
+        'AA Morning Reminder', 'AA Scheduler Tick'
+    };
+
+    /** What the last checkScheduledJobs() found missing (tests assert on it). */
+    @TestVisible private static List<String> lastMissingJobs;
+
+    /** The prefixes with no live CronTrigger whose job name starts with them. */
+    @TestVisible
+    private static List<String> missingJobs(List<String> prefixes) {
+        Set<String> live = new Set<String>();
+        for (CronTrigger ct : [
+            SELECT CronJobDetail.Name FROM CronTrigger
+             WHERE CronJobDetail.Name LIKE 'AA %' AND State NOT IN ('DELETED', 'COMPLETE', 'ERROR')
+        ]) {
+            live.add(ct.CronJobDetail.Name);
+        }
+        List<String> missing = new List<String>();
+        for (String p : prefixes) {
+            Boolean found = false;
+            for (String n : live) {
+                if (n.startsWith(p)) { found = true; break; }
+            }
+            if (!found) missing.add(p);
+        }
+        return missing;
+    }
+
+    /** Emails the alert recipient when an expected AA job is not scheduled. True = alerted. */
+    @TestVisible
+    public static Boolean checkScheduledJobs() {
+        lastMissingJobs = missingJobs(EXPECTED_JOB_PREFIXES);
+        if (lastMissingJobs.isEmpty()) return false;
+        String to = resolveRecipient();
+        if (String.isBlank(to)) {
+            System.debug(LoggingLevel.ERROR, 'AA_FormMonitorDeadmanScheduler: no recipient, missing jobs NOT alerted: ' + lastMissingJobs);
+            return true;
+        }
+        Messaging.SingleEmailMessage msg = new Messaging.SingleEmailMessage();
+        msg.setToAddresses(new List<String>{ to });
+        msg.setSubject('AA scheduled job missing: ' + String.join(lastMissingJobs, ', '));
+        msg.setPlainTextBody(
+            'These Attendance Allowance scheduled jobs are not in Setup > Scheduled Jobs (no job whose name starts with):\n\n - '
+            + String.join(lastMissingJobs, '\n - ')
+            + '\n\nUntil they are scheduled again their work does not happen: "AA Fee Installment Sweep" sends the Direct Debit '
+            + 'advance notices and collects the fee instalments, "AA Morning Reminder" sends the call reminders, '
+            + '"AA Scheduler Tick" drives Mary\'s calls, "AA Welcome Pack Watchdog" re-sends held welcome emails and '
+            + '"AA Form Monitor Daily" watches the DWP form. Re-create them with the scripts/schedule-*.cjs scripts '
+            + '(the watchdog: see the header of AA_WelcomePackWatchdog). This check runs once a day.');
+        msg.setSaveAsActivity(false);
+        try {
+            Messaging.SendEmailResult[] rs = Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{ msg }, false);
+            if (rs != null && !rs.isEmpty() && !rs[0].isSuccess()) {
+                System.debug(LoggingLevel.ERROR, 'AA_FormMonitorDeadmanScheduler: missing-job email NOT delivered to ' + to
+                    + ': ' + rs[0].getErrors()[0].getMessage());
+            }
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'AA_FormMonitorDeadmanScheduler: missing-job email threw: ' + e.getMessage());
+        }
+        return true;
+    }
 
     /**
      * Two DIFFERENT failures, told apart on purpose:
@@ -67,15 +146,31 @@ public with sharing class AA_FormMonitorDeadmanScheduler implements Schedulable 
         return false;
     }
 
+    // The mark the walk worker writes into Error_Message__c when Heroku stops
+    // the dyno mid-walk (src/lib/form-monitor-resume.js INTERRUPTED_MARK). Such
+    // a row is not "a walk that ran": it sent no alert, and when the walk is
+    // not resumed it used to keep this dead-man quiet for a day with no
+    // monitoring at all (audit 2026-11-11 AA-ENGINE-9).
+    @TestVisible private static final String INTERRUPTED_MARK = 'INTERRUPTED (Heroku dyno restart)';
+
     /** Newest Captured_At__c, optionally for one status. Every row the worker
-     *  writes carries Captured_At__c, error rows included. */
+     *  writes carries Captured_At__c, error rows included. For "any status"
+     *  the rows of interrupted walks are skipped (Error_Message__c is a long
+     *  text area, so the newest few rows are filtered here, not in SOQL). */
     private static Datetime newest(String status) {
-        List<AA_Form_Snapshot__c> rows = (status == null)
-            ? [SELECT Captured_At__c FROM AA_Form_Snapshot__c
-                ORDER BY Captured_At__c DESC NULLS LAST LIMIT 1]
-            : [SELECT Captured_At__c FROM AA_Form_Snapshot__c
-                WHERE Status__c = :status
-                ORDER BY Captured_At__c DESC NULLS LAST LIMIT 1];
+        if (status == null) {
+            for (AA_Form_Snapshot__c r : [
+                    SELECT Captured_At__c, Error_Message__c FROM AA_Form_Snapshot__c
+                     ORDER BY Captured_At__c DESC NULLS LAST LIMIT 20]) {
+                if (r.Error_Message__c != null && r.Error_Message__c.contains(INTERRUPTED_MARK)) continue;
+                return r.Captured_At__c;
+            }
+            return null;
+        }
+        List<AA_Form_Snapshot__c> rows = [
+            SELECT Captured_At__c FROM AA_Form_Snapshot__c
+             WHERE Status__c = :status
+             ORDER BY Captured_At__c DESC NULLS LAST LIMIT 1];
         return rows.isEmpty() ? null : rows[0].Captured_At__c;
     }
 

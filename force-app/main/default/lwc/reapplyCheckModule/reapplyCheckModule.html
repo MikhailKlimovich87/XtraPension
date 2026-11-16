@@ -1,0 +1,26 @@
+<template>
+    <div class="main-block">
+        <div class="title">
+            <b>
+                Reapply Checks
+            </b>
+        </div>
+        <div class="title-description">HMRC checks for Reapply (CF83 re-application). Queue: what to check next. Record: save a check or ask for one.</div>
+
+        <lightning-tabset active-tab-value={activeTab}>
+            <lightning-tab label="Check Queue" value="queue" onactive={handleTabActive}>
+                <c-reapply-check-queue reapplies={reapplies} oncheckreapply={handleCheckFromQueue}></c-reapply-check-queue>
+            </lightning-tab>
+            <lightning-tab label="Record / Request check" value="record" onactive={handleTabActive}>
+                <div class="tab-section">
+                    <c-reapply-check-left-block class="item-block" search-apps={reapplies} prefill={prefill}
+                        onsavecheckreply={handleInsertReply}>
+                    </c-reapply-check-left-block>
+                    <c-reapply-check-right-block class="item-block" search-apps={reapplies}
+                        onhandlerequestcheck={handleRequestCheck}>
+                    </c-reapply-check-right-block>
+                </div>
+            </lightning-tab>
+        </lightning-tabset>
+    </div>
+</template>

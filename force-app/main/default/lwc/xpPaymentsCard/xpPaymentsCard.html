@@ -1,0 +1,38 @@
+<template>
+    <article class="slds-card card">
+        <header class="head">
+            <lightning-icon icon-name="standard:orders" size="small" alternative-text="Payments"></lightning-icon>
+            <h2 class="title">{title}</h2>
+            <a class="view-all" href={viewAllUrl}>View all</a>
+            <lightning-button-menu alternative-text="Payment actions" icon-size="x-small" menu-alignment="right" onselect={handleMenu}>
+                <lightning-menu-item value="new" label="New"></lightning-menu-item>
+            </lightning-button-menu>
+        </header>
+        <template lwc:if={hasPayments}>
+            <ul class="rows">
+                <template for:each={payments} for:item="p">
+                    <li key={p.id} class={p.rowClass} title={p.title}>
+                        <a class="product" href={p.url}>{p.product}</a>
+                        <span class="pf">{p.name}</span>
+                        <span class="amount">{p.amount}</span>
+                        <span class={p.pillClass}>{p.status}</span>
+                    </li>
+                </template>
+            </ul>
+            <div class="foot">
+                <template for:each={totals} for:item="t">
+                    <span key={t.key} class={t.cls}>{t.status} <b>{t.value}</b></span>
+                </template>
+            </div>
+        </template>
+        <template lwc:if={isEmpty}>
+            <div class="note">No payments yet.</div>
+        </template>
+        <template lwc:if={isLoading}>
+            <div class="note">Loading payments…</div>
+        </template>
+        <template lwc:if={error}>
+            <div class="note err">Couldn't load the payments: {error}</div>
+        </template>
+    </article>
+</template>

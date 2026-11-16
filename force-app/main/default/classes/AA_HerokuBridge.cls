@@ -89,9 +89,11 @@ public with sharing class AA_HerokuBridge {
 
     /**
      * startFillFromUi — @AuraEnabled wrapper around the invocable startFill
-     * for the record-page header button. `testMode` is advisory and ignored:
-     * the Heroku worker never submits (AUTO_SUBMIT off + canary lock). Every
-     * fill stops at the Declaration in a hosted live view where a human
+     * for the record-page header button. `testMode` is advisory and ignored.
+     * The Heroku worker does not submit while the Heroku AUTO_SUBMIT variable
+     * is off (it is, and stays off) or Auto_Submit_DWP__c is unticked on the
+     * record: both must be on for it to press the final button. Every fill
+     * therefore stops at the Declaration in a hosted live view where a human
      * reviews and submits. The flag stays in the signature for the UI contract.
      * Returns the Heroku run_id (may be null if the body wasn't JSON).
      */
@@ -148,7 +150,7 @@ public with sharing class AA_HerokuBridge {
         } catch (Exception ignore) { /* not JSON */ }
         if (code == 'dd_mandate_not_active') {
             return 'The Direct Debit mandate is not active yet (status: ' + mandateStatus + '). '
-                + 'The application is now in Awaiting Bank Details, and the fill starts automatically once GoCardless confirms the mandate.';
+                + 'The application is now in Awaiting Bank Details. When GoCardless confirms the mandate a Task is raised on the application: run Fill on DWP again then.';
         }
         if (code == 'already_submitted') {
             return 'This application already has a DWP reference, so it was submitted before. '

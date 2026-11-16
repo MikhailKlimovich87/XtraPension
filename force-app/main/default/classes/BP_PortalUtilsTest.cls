@@ -690,19 +690,17 @@ private class BP_PortalUtilsTest {
         BP_PortalUtils.createNewClaimantRelationTrackB(wrapper);
         Test.stopTest();
 
+        // 11/11/2026: the spouse's employer is kept with just its name (the dates may come later); the UK
+        // address without a date is still left out. Before, a name-only employer was dropped without a word.
         List<Claimant_Company__c> companies = [
-            SELECT Is_Partner__c, Is_Addresses__c
+            SELECT Name, Is_Partner__c, Is_Addresses__c
             FROM Claimant_Company__c
-            WHERE Basic__c = :b.Id
-            ORDER BY CreatedDate DESC
-            LIMIT 2
+            WHERE Basic__c = :b.Id AND Is_Partner__c = true
         ];
 
         System.assertEquals(1, companies.size());
-
-        for(Claimant_Company__c c : companies){
-            System.assertEquals(false, c.Is_Partner__c);
-        }
+        System.assertEquals('Employer B', companies[0].Name);
+        System.assertEquals(false, companies[0].Is_Addresses__c);
     }
     @isTest
     static void testCreateNewClaimantRelationTrackC() {
@@ -734,19 +732,17 @@ private class BP_PortalUtilsTest {
         BP_PortalUtils.createNewClaimantRelationTrackC(wrapper);
         Test.stopTest();
 
+        // 11/11/2026: the spouse's employer is kept with just its name (the dates may come later); the UK
+        // address without a date is still left out. Before, a name-only employer was dropped without a word.
         List<Claimant_Company__c> companies = [
-            SELECT Is_Partner__c, Is_Addresses__c
+            SELECT Name, Is_Partner__c, Is_Addresses__c
             FROM Claimant_Company__c
-            WHERE Basic__c = :b.Id
-            ORDER BY CreatedDate DESC
-            LIMIT 2
+            WHERE Basic__c = :b.Id AND Is_Partner__c = true
         ];
 
         System.assertEquals(1, companies.size());
-
-        for(Claimant_Company__c c : companies){
-            System.assertEquals(false, c.Is_Partner__c);
-        }
+        System.assertEquals('Employer C', companies[0].Name);
+        System.assertEquals(false, companies[0].Is_Addresses__c);
     }
 
     @isTest

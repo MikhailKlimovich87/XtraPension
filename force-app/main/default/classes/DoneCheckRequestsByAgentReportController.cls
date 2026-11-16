@@ -105,6 +105,7 @@ public without sharing class DoneCheckRequestsByAgentReportController {
         thisQtrWrapper.name = 'This Qtr';
         DateDifferenceWrapper lastQtrWrapper = new DateDifferenceWrapper();
         lastQtrWrapper.name = 'Last Qtr';
+        System.debug('agentsInfo.size ==== ' + agentsInfo.size());
         for (Integer i = 0; i< agentsInfo.size(); i++) {
             todayWrapper.fullCount += agentsInfo[i].todayCount;
             yesterdayWrapper.fullCount += agentsInfo[i].yesterdayCount;

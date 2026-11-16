@@ -1,0 +1,40 @@
+<template>
+    <lightning-card title="Done Claim Checks By Agents">
+        <div class="slds-p-horizontal_small" style="padding-bottom:50px">
+            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                <thead>
+                    <tr class="slds-line-height_reset">
+                        <th class="" scope="col">
+                            <div class="slds-truncate"></div>
+                        </th>
+                        <th class="" scope="col">
+                            <div class="slds-truncate">Total</div>
+                        </th>
+                        <template for:each={agents} for:item="agent">
+                            <th class="" scope="col" key={agent}>
+                                <div class="slds-truncate" title={agent}>{agent}</div>
+                            </th>
+                        </template>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template for:each={rows} for:item="row">
+                        <tr key={row.name} class="slds-hint-parent">
+                            <td data-label="Period">
+                                <div class="slds-truncate">{row.name}</div>
+                            </td>
+                            <td data-label="Total">
+                                <div class="slds-truncate">{row.fullCount}</div>
+                            </td>
+                            <template for:each={row.cells} for:item="cell">
+                                <td data-label={cell.agent} key={cell.key}>
+                                    <div class="slds-truncate">{cell.count}</div>
+                                </td>
+                            </template>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </lightning-card>
+</template>

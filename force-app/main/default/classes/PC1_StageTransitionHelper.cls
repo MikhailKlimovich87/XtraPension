@@ -16,11 +16,26 @@ public with sharing class PC1_StageTransitionHelper {
      *  second, duplicate row. Cleared after use. */
     public static String pendingNote;
 
+    /**
+     * Who made the transition, for PC1_Stage_Log__c.Actor__c. Every row used
+     * to say 'human', the fee sweep and the Queueables included (audit
+     * 2026-11-11 PC-APEX-13). Apex running with nobody at the keyboard
+     * (@future, Queueable, scheduled, batch) is 'system'. A change the Node
+     * integration user makes through the API cannot be told apart from a
+     * person here and still reads 'human'.
+     */
+    @TestVisible
+    private static String resolveActor() {
+        if (System.isFuture() || System.isQueueable() || System.isScheduled() || System.isBatch()) return 'system';
+        return 'human';
+    }
+
     public static void handleTransitions(List<PC1_Application__c> newList, Map<Id, PC1_Application__c> oldMap) {
         List<PC1_Stage_Log__c> logs = new List<PC1_Stage_Log__c>();
         Set<Id> submittedIds = new Set<Id>();
         Datetime now = Datetime.now();
         Id userId = UserInfo.getUserId();
+        String actor = resolveActor();
 
         for (PC1_Application__c app : newList) {
             PC1_Application__c prev = oldMap.get(app.Id);
@@ -31,7 +46,7 @@ public with sharing class PC1_StageTransitionHelper {
                 Application__c = app.Id,
                 From_Stage__c  = prev.Stage__c,
                 To_Stage__c    = app.Stage__c,
-                Actor__c       = 'human',
+                Actor__c       = actor,
                 Note__c        = String.isBlank(pendingNote) ? null : pendingNote.left(255),
                 Changed_At__c  = now,
                 Changed_By__c  = userId

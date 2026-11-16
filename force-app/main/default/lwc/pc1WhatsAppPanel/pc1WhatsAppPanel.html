@@ -12,6 +12,15 @@
         {headerSubtitle}
       </div>
 
+      <!-- Do Not Contact banner -->
+      <template lwc:if={doNotContact}>
+        <div class="pc1-wa__banner slds-notify slds-notify_alert slds-theme_error slds-m-horizontal_medium slds-m-bottom_small" role="alert">
+          <span class="slds-assistive-text">error</span>
+          <lightning-icon icon-name="utility:ban" size="x-small" variant="inverse" class="slds-m-right_x-small"></lightning-icon>
+          <span class="pc1-wa__banner-text">Do Not Contact is set on this application (for example, the client was reported deceased). No WhatsApp message can be sent. Clear the flag on the record only if it was set in error.</span>
+        </div>
+      </template>
+
       <!-- Opt-in banner -->
       <template lwc:if={showOptInBanner}>
         <div class="pc1-wa__banner slds-notify slds-notify_alert slds-theme_warning slds-m-horizontal_medium slds-m-bottom_small" role="alert">

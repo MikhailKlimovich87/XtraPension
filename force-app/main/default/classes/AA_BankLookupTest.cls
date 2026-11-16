@@ -93,6 +93,10 @@ private class AA_BankLookupTest {
     @isTest static void verifyAndPersist_persists_outcome() {
         upsertConfig();
         AA_Application__c a = makeApp();
+        // The account on the RECORD is what gets verified (audit 2026-11-11 AA-APEX-5).
+        a.Bank_Sort_Code__c = '20-00-00';
+        a.Bank_Account_Number__c = '55779911';
+        a.Bank_Account_Holder__c = 'MR TEST';
         insert a;
         Test.setMock(HttpCalloutMock.class, new BankVerifyMock(
             '{"ok":true,"status":"Modulus Passed","bankName":"BARCLAYS BANK PLC",' +
@@ -146,13 +150,23 @@ private class AA_BankLookupTest {
         System.assertEquals('BARCLAYS BANK PLC', after1.Bank_Name__c);
         System.assertEquals('Modulus Passed', after1.Bank_Verification_Status__c);
 
-        // Retry with blank bank name — MUST preserve the prior value.
+        // Retry that does not send a bank name (null): the prior value is kept.
+        AA_BankLookup.saveVerification(
+            a.Id, '20-00-00', '55779911', 'MR TEST', 'ROLL-9', null, 'Invalid', null
+        );
+        AA_Application__c after2 = [SELECT Bank_Name__c, Bank_Roll_Number__c, Bank_Verification_Status__c FROM AA_Application__c WHERE Id = :a.Id];
+        System.assertEquals('BARCLAYS BANK PLC', after2.Bank_Name__c, 'Bank name preserved when it is not sent');
+        System.assertEquals('ROLL-9', after2.Bank_Roll_Number__c);
+        System.assertEquals('Invalid', after2.Bank_Verification_Status__c);
+
+        // audit 2026-11-11 AA-SFUI-11: a roll number and a bank name sent
+        // blank are cleared. They used to be kept, with a "saved" toast.
         AA_BankLookup.saveVerification(
             a.Id, '20-00-00', '55779911', 'MR TEST', '', '', 'Invalid', null
         );
-        AA_Application__c after2 = [SELECT Bank_Name__c, Bank_Verification_Status__c FROM AA_Application__c WHERE Id = :a.Id];
-        System.assertEquals('BARCLAYS BANK PLC', after2.Bank_Name__c, 'Bank name preserved on blank retry');
-        System.assertEquals('Invalid', after2.Bank_Verification_Status__c);
+        AA_Application__c after3 = [SELECT Bank_Name__c, Bank_Roll_Number__c FROM AA_Application__c WHERE Id = :a.Id];
+        System.assertEquals(null, after3.Bank_Roll_Number__c, 'an emptied roll number is removed');
+        System.assertEquals(null, after3.Bank_Name__c, 'an emptied bank name is removed');
         Test.stopTest();
     }
 
@@ -206,21 +220,82 @@ private class AA_BankLookupTest {
         System.assertEquals(1, [SELECT COUNT() FROM Task WHERE WhatId = :a.Id AND Subject LIKE 'Bank details changed%']);
     }
 
-    // Holder-name-only edits keep the verification (it checks digits only).
-    @isTest static void save_holderOnly_keepsStatus_noCallout() {
+    // audit 2026-11-11 AA-SFUI-7: the holder name is part of the check, so a
+    // new name is re-checked by the server. The green status the browser
+    // still holds for the OLD name is not kept.
+    @isTest static void save_holderOnly_isRecheckedByTheServer() {
         upsertConfig();
         AA_Application__c a = makeApp();
         a.Bank_Sort_Code__c = '20-00-00';
         a.Bank_Account_Number__c = '55779911';
+        a.Bank_Account_Holder__c = 'MR TEST';
+        a.Bank_Verification_Status__c = 'Name Verified';
+        insert a;
+        Test.setMock(HttpCalloutMock.class, new BankVerifyMock(
+            '{"ok":false,"status":"Name Mismatch","bankName":"BARCLAYS BANK PLC","acceptsDD":true}'
+        ));
+        Test.startTest();
+        AA_BankLookup.saveVerification(a.Id, '20-00-00', '55779911', 'MRS NEW NAME', '', '', 'Name Verified', null);
+        Test.stopTest();
+        AA_Application__c after = [SELECT Bank_Verification_Status__c, Bank_Account_Holder__c FROM AA_Application__c WHERE Id = :a.Id];
+        System.assertEquals('Name Mismatch', after.Bank_Verification_Status__c, 'the server decides, not the browser');
+        System.assertEquals('MRS NEW NAME', after.Bank_Account_Holder__c);
+    }
+
+    // audit 2026-11-11 AA-APEX-5: the same digits with a green status the
+    // record does not hold used to be stored as sent, with no check at all.
+    @isTest static void save_sameDetails_greenStatusFromBrowser_isRechecked() {
+        upsertConfig();
+        AA_Application__c a = makeApp();
+        a.Bank_Sort_Code__c = '20-00-00';
+        a.Bank_Account_Number__c = '11111111';
+        a.Bank_Account_Holder__c = 'MR TEST';
+        a.Bank_Verification_Status__c = 'Invalid Account Number';
+        insert a;
+        Test.setMock(HttpCalloutMock.class, new BankVerifyMock(
+            '{"ok":false,"status":"Invalid Account Number","bankName":"","acceptsDD":false}'
+        ));
+        Test.startTest();
+        AA_BankLookup.saveVerification(a.Id, '20-00-00', '11111111', 'MR TEST', '', '', 'Bank Confirmed', null);
+        Test.stopTest();
+        System.assertEquals('Invalid Account Number',
+            [SELECT Bank_Verification_Status__c FROM AA_Application__c WHERE Id = :a.Id].Bank_Verification_Status__c,
+            'a record that failed the check cannot be turned green by the caller');
+    }
+
+    // Nothing verifiable changed and the status is the one on the record:
+    // kept as it is, with no callout (a roll number edit must not cost a check).
+    @isTest static void save_nothingVerifiableChanged_keepsStatus_noCallout() {
+        upsertConfig();
+        AA_Application__c a = makeApp();
+        a.Bank_Sort_Code__c = '20-00-00';
+        a.Bank_Account_Number__c = '55779911';
+        a.Bank_Account_Holder__c = 'MR TEST';
         a.Bank_Verification_Status__c = 'Modulus Passed';
-        a.DD_Mandate_Id__c = 'MD-LIVE';
-        a.DD_Mandate_Status__c = 'active';
         insert a;
         // No mock: a callout here would fail the test.
-        AA_BankLookup.saveVerification(a.Id, '20-00-00', '55779911', 'MRS NEW NAME', '', '', 'Modulus Passed', null);
-        AA_Application__c after = [SELECT Bank_Verification_Status__c, Bank_Account_Holder__c FROM AA_Application__c WHERE Id = :a.Id];
+        AA_BankLookup.saveVerification(a.Id, '20-00-00', '55779911', 'MR TEST', 'ROLL-1', '', 'Modulus Passed', null);
+        AA_Application__c after = [SELECT Bank_Verification_Status__c, Bank_Roll_Number__c FROM AA_Application__c WHERE Id = :a.Id];
         System.assertEquals('Modulus Passed', after.Bank_Verification_Status__c);
-        System.assertEquals('MRS NEW NAME', after.Bank_Account_Holder__c);
+        System.assertEquals('ROLL-1', after.Bank_Roll_Number__c);
+    }
+
+    // audit 2026-11-11 AA-APEX-5: verifyAndPersistAccount used to verify the
+    // digits the CALLER passed and write the result to the record.
+    @isTest static void verifyAndPersist_digitsThatAreNotOnTheRecord_areRefused() {
+        upsertConfig();
+        AA_Application__c a = makeApp();
+        a.Bank_Sort_Code__c = '20-00-00';
+        a.Bank_Account_Number__c = '11111111';
+        a.Bank_Verification_Status__c = 'Invalid Account Number';
+        insert a;
+        Boolean threw = false;
+        // No mock: the call must be refused before any callout.
+        try { AA_BankLookup.verifyAndPersistAccount(a.Id, '20-00-00', '55779911', null); }
+        catch (AuraHandledException e) { threw = true; }
+        System.assert(threw, 'a good account that is not the one on the record must not be verified against it');
+        System.assertEquals('Invalid Account Number',
+            [SELECT Bank_Verification_Status__c FROM AA_Application__c WHERE Id = :a.Id].Bank_Verification_Status__c);
     }
 
     /** Ensure an AA_Config__c org-default row exists. The verify callout is

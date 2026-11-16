@@ -227,6 +227,44 @@ public with sharing class AA_ProgressCalculator {
         return notCleared;
     }
 
+    /**
+     * The same void for a change made on the APPLICATION record instead of an
+     * answer row (audit 2026-11-11 AA-SFUI-2). The DWP fill types the home
+     * address from the record (Postcode__c, Address_Line1__c,
+     * Address_Line2__c), and the Address card and the Details tab write those
+     * fields directly, so no AA_Answer__c row changes and the answer trigger
+     * never ran: Fill on DWP went ahead with an address the client had not
+     * declared. Called by AA_ApplicationFieldSync.afterRecordEdit (after
+     * update of AA_Application__c). Same scope as voidDeclarationOnChange:
+     * only a signed declaration, never from a FILED_STAGES stage.
+     *
+     * @param changedFieldByApp application id -> what changed, for the note
+     * @return appId -> reason for apps whose declaration could NOT be cleared
+     */
+    public static Map<Id, String> voidDeclarationOnRecordChange(Map<Id, String> changedFieldByApp) {
+        Map<Id, String> notCleared = new Map<Id, String>();
+        if (voiding || changedFieldByApp == null || changedFieldByApp.isEmpty()) return notCleared;
+        Set<Id> signed = new Set<Id>();
+        for (AA_Application__c app : [
+            SELECT Id, Stage__c FROM AA_Application__c
+             WHERE Id IN :changedFieldByApp.keySet() AND Declaration_Complete__c = true
+        ]) {
+            if (FILED_STAGES.contains(app.Stage__c)) continue;
+            signed.add(app.Id);
+        }
+        if (signed.isEmpty()) return notCleared;
+        Map<Id, String> sourceByApp = new Map<Id, String>();
+        for (Id appId : signed) sourceByApp.put(appId, 'an edit on the application record');
+
+        voiding = true;
+        try {
+            notCleared = new DeclarationVoider().clear(signed, changedFieldByApp, sourceByApp);
+        } finally {
+            voiding = false;
+        }
+        return notCleared;
+    }
+
     private static Boolean countsAsEdit(String fieldId, String source) {
         if (String.isBlank(fieldId)) return false;
         if (DECLARATION_FIELD_IDS.contains(fieldId)) return false;

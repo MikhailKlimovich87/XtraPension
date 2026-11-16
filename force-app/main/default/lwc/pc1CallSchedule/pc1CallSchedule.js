@@ -18,7 +18,7 @@ const INPUT_DISABLED_TOOLTIP = 'Cancel the pending call first to reschedule.';
  * pc1CallSchedule — "Call Scheduling" card on the Application record page.
  *
  * State A (no pending schedule) — DD/MM/YYYY HH:MM input + [Schedule] +
- *   [Call Now] + explainer.
+ *   [Call Now] + explainer. Call Now asks for confirmation first.
  * State B (pending schedule exists) — inputs disabled with tooltip; a
  *   "Next call scheduled" block appears with absolute time + live relative
  *   time + requester + cancel button. Cancel opens a LightningConfirm, then
@@ -272,11 +272,40 @@ export default class Pc1CallSchedule extends LightningElement {
         }
     }
 
+    /** Mon-Fri 07:00-17:30 UK, the scheduler's dial window (bank holidays not checked here). */
+    get _offHoursWarning() {
+        try {
+            const parts = new Intl.DateTimeFormat('en-GB', {
+                timeZone: 'Europe/London', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false,
+            }).formatToParts(new Date());
+            const g = (t) => parts.find((p) => p.type === t)?.value || '';
+            const mins = Number(g('hour')) * 60 + Number(g('minute'));
+            if (['Sat', 'Sun'].includes(g('weekday')) || mins < 7 * 60 || mins >= 17 * 60 + 30) {
+                return ' It is outside Mary\'s usual calling hours (Monday to Friday, 07:00 to 17:30 UK time).';
+            }
+        } catch (_) { /* Intl unavailable: no warning */ }
+        return '';
+    }
+
     async handleCallNow() {
+        if (this.calling) return;
+        // Audit 2026-11-11 PC-SFUI-2 (ported from aaCallSchedule): Call Now
+        // rang the client on a single click, unlike Cancel beside it. Confirm
+        // first, and say that it replaces any scheduled call (the Heroku
+        // handler cancels the Pending slot).
+        const confirmed = await LightningConfirm.open({
+            message: 'Mary will phone this client now. Any scheduled call for this application is replaced by this one.'
+                + this._offHoursWarning,
+            variant: 'header',
+            theme: 'warning',
+            label: 'Call this client now?'
+        });
+        if (!confirmed) return;
         this.calling = true;
         try {
             await callNow({ applicationId: this.recordId });
             this.toast('Call Now', 'success', 'Mary is dialling — the call will appear in Call History shortly.');
+            try { await refreshApex(this.wiredPending); } catch (_) { /* noop */ }
         } catch (e) {
             this.toast(this.errMsg(e), 'error');
         } finally {
@@ -333,5 +362,15 @@ export default class Pc1CallSchedule extends LightningElement {
     toast(title, variant, message) {
         this.dispatchEvent(new ShowToastEvent({ title, message: message || '', variant }));
     }
-    errMsg(e) { return e?.body?.message || e?.message || 'Unknown error'; }
+    errMsg(e) {
+        const raw = e?.body?.message || e?.message || 'Unknown error';
+        // PC1_MaryBridge wraps a Heroku refusal as 'Heroku returned HTTP 409:
+        // {json}'; show the handler's plain-English message, not raw JSON.
+        const m = String(raw).match(/HTTP \d+: (\{[\s\S]*\})\s*$/);
+        if (m) {
+            try { const j = JSON.parse(m[1]); return j.message || j.detail || j.error || raw; }
+            catch (_) { /* not JSON */ }
+        }
+        return raw;
+    }
 }

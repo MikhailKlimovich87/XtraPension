@@ -64,11 +64,35 @@ public with sharing class AA_BankLookup {
      * the agent clicks Verify Account from the LWC read view (no draft
      * to edit; result should show up in the badge immediately). Draft/
      * edit mode still uses the pair verifyAccount() + saveVerification().
+     *
+     * audit 2026-11-11 AA-APEX-5: what is verified is the account STORED on
+     * the record, never the digits the caller passes. The old code checked
+     * the caller's digits and wrote the result to the record without
+     * comparing them, so any good account could stamp 'Bank Confirmed' on a
+     * record whose own account had failed (and the mandate trigger then
+     * created a Direct Debit on it). The parameters are kept for the LWC
+     * contract: when they are sent and differ from the record, the call is
+     * refused, because the screen is showing something that was not saved.
      */
     @AuraEnabled
     public static Result verifyAndPersistAccount(Id applicationId, String sortCode, String accountNumber, String accountHolder) {
         if (applicationId == null) throw new AuraHandledException('Missing application id.');
-        Result r = verifyAccount(sortCode, accountNumber, accountHolder, 'PERSONAL');
+        List<AA_Application__c> stored = [
+            SELECT Bank_Sort_Code__c, Bank_Account_Number__c, Bank_Account_Holder__c
+              FROM AA_Application__c WHERE Id = :applicationId LIMIT 1
+        ];
+        if (stored.isEmpty()) throw new AuraHandledException('Application not found.');
+        if (String.isBlank(stored[0].Bank_Sort_Code__c) || String.isBlank(stored[0].Bank_Account_Number__c)) {
+            throw new AuraHandledException('There are no bank details saved on this record yet. Enter and save them first.');
+        }
+        Boolean differs = (String.isNotBlank(sortCode) && digits(sortCode) != digits(stored[0].Bank_Sort_Code__c))
+            || (String.isNotBlank(accountNumber) && digits(accountNumber) != digits(stored[0].Bank_Account_Number__c))
+            || (String.isNotBlank(accountHolder) && !sameHolder(accountHolder, stored[0].Bank_Account_Holder__c));
+        if (differs) {
+            throw new AuraHandledException('The bank details on screen are not the ones saved on this record. Save them first, then verify.');
+        }
+        Result r = verifyAccount(stored[0].Bank_Sort_Code__c, stored[0].Bank_Account_Number__c,
+            stored[0].Bank_Account_Holder__c, 'PERSONAL');
         AA_Application__c patch = new AA_Application__c(
             Id = applicationId,
             Bank_Verification_Status__c = r.status
@@ -148,8 +172,11 @@ public with sharing class AA_BankLookup {
     }
 
     /** Persist verification. Guard rails:
-     *   - Blank input for a field is treated as "keep prior value" so
-     *     the LWC doesn't accidentally null Bank_Name__c on a retry.
+     *   - A blank sort code, account number or holder means "keep the prior
+     *     value". The roll number and the bank name are saved as sent (audit
+     *     2026-11-11 AA-SFUI-11): a blank used to be read as "keep" there
+     *     too, so a roll number typed by mistake could never be removed and
+     *     the toast still said saved. Only null (not sent at all) keeps them.
      *   - `status` restricted to the picklist enum. That alone does NOT stop
      *     a caller sending 'Modulus Passed' for digits that were never
      *     checked (audit 2026-10-02 F61), so when the sort code or account
@@ -173,6 +200,13 @@ public with sharing class AA_BankLookup {
         'Verified', 'Bank Confirmed', 'Not Confirmed',
         'Not DD-capable', 'Invalid',
         'Name Verified', 'Name Close Match', 'Name Mismatch'
+    };
+
+    /** Statuses that let a Direct Debit be created (the "green" ones). Never
+     *  taken from the browser: see saveVerification. Superset of
+     *  AA_GoCardlessController.BANK_VERIFIED_STATUSES plus the legacy 'Verified'. */
+    private static final Set<String> GREEN_STATUSES = new Set<String>{
+        'Modulus Passed', 'Bank Confirmed', 'Name Verified', 'Name Close Match', 'Verified'
     };
 
     /** Prefix of the error the LWC recognises to ask for the live-mandate
@@ -206,9 +240,13 @@ public with sharing class AA_BankLookup {
         String newSort = keepIfBlank(sortCode,      existing.Bank_Sort_Code__c);
         String newAcct = keepIfBlank(accountNumber, existing.Bank_Account_Number__c);
         String newHolder = keepIfBlank(accountHolder, existing.Bank_Account_Holder__c);
-        String newBankName = keepIfBlank(bankName, existing.Bank_Name__c);
+        String newBankName = asSent(bankName, existing.Bank_Name__c);
         Boolean digitsChanged = digits(newSort) != digits(existing.Bank_Sort_Code__c)
             || digits(newAcct) != digits(existing.Bank_Account_Number__c);
+        // The holder name is part of the check (Name Verified / Name Close
+        // Match / Name Mismatch), so a new name is as unverified as new digits
+        // (audit 2026-11-11 AA-SFUI-7).
+        Boolean holderChanged = !sameHolder(newHolder, existing.Bank_Account_Holder__c);
 
         String mstat = existing.DD_Mandate_Status__c == null ? '' : existing.DD_Mandate_Status__c.toLowerCase();
         Boolean liveMandate = String.isNotBlank(existing.DD_Mandate_Id__c)
@@ -218,10 +256,21 @@ public with sharing class AA_BankLookup {
                 'Saving new bank details does not move it: the fee would still be collected from the old account.');
         }
 
-        // New digits: never trust a status the browser sends. Re-run the check
-        // here (callout before any DML) and store what the server says. If the
-        // check cannot run, store 'Unverified' so nobody relies on a stale green.
-        if (digitsChanged && cleanStatus != 'Unverified') {
+        // Never trust a status the browser sends (audit 2026-10-02 F61, widened
+        // 2026-11-11 AA-APEX-5 / AA-SFUI-7). The check is re-run here (callout
+        // before any DML) and what the server says is stored when:
+        //   - the digits or the holder name changed and the caller claims any
+        //     outcome other than 'Unverified'; or
+        //   - nothing verifiable changed but the caller sends a green status
+        //     the record does not already hold (same digits + 'Modulus Passed'
+        //     used to turn an 'Invalid Account Number' record green with no
+        //     check at all).
+        // A green status equal to the stored one with nothing changed is kept
+        // without a callout. If the check cannot run, 'Unverified' is stored so
+        // nobody relies on a stale green.
+        Boolean greenNotOnRecord = GREEN_STATUSES.contains(cleanStatus)
+            && cleanStatus != existing.Bank_Verification_Status__c;
+        if (((digitsChanged || holderChanged) && cleanStatus != 'Unverified') || greenNotOnRecord) {
             try {
                 Result r = verifyAccountViaEndpoint(newSort, newAcct, newHolder);
                 cleanStatus = ALLOWED_STATUSES.contains(r.status) ? r.status : 'Unverified';
@@ -237,11 +286,11 @@ public with sharing class AA_BankLookup {
             Bank_Sort_Code__c        = newSort,
             Bank_Account_Number__c   = newAcct,
             Bank_Account_Holder__c   = newHolder,
-            Bank_Roll_Number__c      = keepIfBlank(rollNumber,    existing.Bank_Roll_Number__c),
+            Bank_Roll_Number__c      = asSent(rollNumber, existing.Bank_Roll_Number__c),
             Bank_Name__c             = newBankName,
             Bank_Verification_Status__c = cleanStatus
         );
-        if (cleanStatus != 'Unverified' && (digitsChanged || cleanStatus != existing.Bank_Verification_Status__c)) {
+        if (cleanStatus != 'Unverified' && (digitsChanged || holderChanged || cleanStatus != existing.Bank_Verification_Status__c)) {
             patch.Bank_Verified_At__c = Datetime.now();
         }
         update patch;
@@ -266,8 +315,21 @@ public with sharing class AA_BankLookup {
         return s == null ? '' : s.replaceAll('[^0-9]', '');
     }
 
+    /** Same account holder name, ignoring case and outer / repeated spaces. */
+    private static Boolean sameHolder(String a, String b) {
+        String x = a == null ? '' : a.trim().replaceAll('\\s+', ' ');
+        String y = b == null ? '' : b.trim().replaceAll('\\s+', ' ');
+        return x.equalsIgnoreCase(y);
+    }
+
     private static String keepIfBlank(String incoming, String prior) {
         return String.isBlank(incoming) ? prior : incoming.trim();
+    }
+
+    /** The value as sent, trimmed (a blank clears the field); null = not sent, keep the prior value. */
+    private static String asSent(String incoming, String prior) {
+        if (incoming == null) return prior;
+        return String.isBlank(incoming) ? null : incoming.trim();
     }
     private static String getInternalToken() {
         AA_Config__c cfg = AA_Config__c.getOrgDefaults();

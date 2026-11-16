@@ -1,39 +1,75 @@
 <template>
-    <lightning-card title="Missing Information">
-        <div class="slds-p-around_medium slds-is-relative">
+    <lightning-card title="Missing Information" icon-name="utility:checklist">
+        <div slot="actions" class="actions">
+            <lightning-button label="Check Missing" onclick={handleCheckMissing} disabled={isLoading}></lightning-button>
+            <lightning-button label="Email the client" variant="brand" icon-name="utility:email" onclick={handleOpenPreview}
+                disabled={emailDisabled} title={emailTitle} class="slds-m-left_x-small"></lightning-button>
+        </div>
 
+        <div class="slds-p-horizontal_medium slds-p-bottom_small slds-is-relative">
             <template if:true={isLoading}>
-                <lightning-spinner
-                    alternative-text="Loading"
-                    size="medium">
-                </lightning-spinner>
+                <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
             </template>
 
-            <div class="slds-m-bottom_medium">
-                <lightning-button
-                    label="Check Missing"
-                    variant="brand"
-                    onclick={handleCheckMissing}
-                    disabled={isLoading}>
-                </lightning-button>
-            </div>
-
             <template if:true={hasMissing}>
-                <ul class="slds-list_dotted slds-p-left_medium">
-                    <template for:each={missingItems} for:item="item">
-                        <li key={item}>
-                            {item}
-                        </li>
-                    </template>
-                </ul>
+                <p class="summary">{summary}</p>
+                <template for:each={groups} for:item="g">
+                    <div key={g.key} class="group">
+                        <p class="group-label">{g.label}</p>
+                        <ul class="items">
+                            <template for:each={g.items} for:item="i">
+                                <li key={i.key} class="item" title={i.clientText}>
+                                    <span>{i.agentText}</span>
+                                    <template if:true={i.tag}>
+                                        <span class="tag">{i.tag}</span>
+                                    </template>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </template>
             </template>
 
             <template if:false={hasMissing}>
-                <p class="slds-text-color_success">
-                    No missing information.
-                </p>
+                <template if:false={isLoading}>
+                    <p class="slds-text-color_success">Nothing missing. The form is complete.</p>
+                </template>
             </template>
-
         </div>
     </lightning-card>
+
+    <template if:true={showPreview}>
+        <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="mi-title" class="slds-modal slds-fade-in-open slds-modal_medium">
+            <div class="slds-modal__container">
+                <button class="slds-button slds-button_icon slds-modal__close" title="Close" onclick={handleClose}>
+                    <lightning-icon icon-name="utility:close" size="small" variant="inverse" alternative-text="Close"></lightning-icon>
+                </button>
+                <div class="slds-modal__header">
+                    <h1 id="mi-title" class="slds-modal__title slds-hyphenate">Email the client</h1>
+                </div>
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative">
+                    <template if:true={previewLoading}>
+                        <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                    </template>
+                    <dl class="meta">
+                        <dt>To</dt><dd>{mail.to}</dd>
+                        <template if:true={mail.cc}><dt>Copy</dt><dd>{mail.cc}</dd></template>
+                        <dt>From</dt><dd>clients@xtrapension.com</dd>
+                        <dt>Subject</dt><dd>{mail.subject}</dd>
+                    </dl>
+                    <lightning-textarea label="Add a line of your own (optional)" placeholder="For example: Following our call today,"
+                        value={note} onchange={handleNote} max-length="600" class="slds-m-bottom_small"></lightning-textarea>
+                    <div class="preview">
+                        <lightning-formatted-rich-text value={mail.html}></lightning-formatted-rich-text>
+                    </div>
+                    <p class="hint">The email is saved on the claim. Items marked "for you" are not sent to the client.</p>
+                </div>
+                <div class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={handleClose}></lightning-button>
+                    <lightning-button label={sendLabel} variant="brand" onclick={handleSend} disabled={sendDisabled} class="slds-m-left_x-small"></lightning-button>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </template>
 </template>

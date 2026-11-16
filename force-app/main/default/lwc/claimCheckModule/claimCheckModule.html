@@ -1,0 +1,26 @@
+<template>
+    <div class="main-block">
+        <div class="title">
+            <b>
+                Claim Checks
+            </b>
+        </div>
+        <div class="title-description">DWP checks for Claims (UK State Pension claims). Queue: what to check next. Record: save a check or ask for one.</div>
+
+        <lightning-tabset active-tab-value={activeTab}>
+            <lightning-tab label="Check Queue" value="queue" onactive={handleTabActive}>
+                <c-claim-check-queue claims={claims} oncheckclaim={handleCheckFromQueue}></c-claim-check-queue>
+            </lightning-tab>
+            <lightning-tab label="Record / Request check" value="record" onactive={handleTabActive}>
+                <div class="tab-section">
+                    <c-claim-check-left-block class="item-block" search-apps={claims} prefill={prefill}
+                        onsavecheckreply={handleInsertReply}>
+                    </c-claim-check-left-block>
+                    <c-claim-check-right-block class="item-block" search-apps={claims}
+                        onhandlerequestcheck={handleRequestCheck}>
+                    </c-claim-check-right-block>
+                </div>
+            </lightning-tab>
+        </lightning-tabset>
+    </div>
+</template>

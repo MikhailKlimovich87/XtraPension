@@ -164,15 +164,24 @@
                         </td>
                     </tr>
 
+                    <!-- Item 5 by marital status (11/11/2026, docs/claims-call-1111b/CONTRACT.md): Single has none -->
+                    <apex:variable var="ms" value="{!client.Claimant_marital_Status__c}"/>
+                    <apex:variable var="sp" value="{!IF(client.Partner_Title__c == 'Mr', 'husband', IF(OR(client.Partner_Title__c == 'Mrs', client.Partner_Title__c == 'Ms', client.Partner_Title__c == 'Miss'), 'wife', 'husband / wife'))}"/>
+                    <apex:outputPanel layout="none" rendered="{!ms != 'Single'}">
                     <tr>
                         <td>
                             5. Certified Colour
                             <span style="font-weight:bold;">
                                 Photocopy of
                             </span>
-                            Marriage (/Death) Cert <i> if applicable</i>
+                            <apex:outputPanel layout="none" rendered="{!OR(ms == 'Married', ms == 'Civil Partner', ms == 'Separated')}">Marriage Cert</apex:outputPanel>
+                            <apex:outputPanel layout="none" rendered="{!ms == 'Divorced'}">Marriage Cert + Divorce Cert (Decree Absolute)<br/>+ your former {!sp}'s Death Cert <i>if they have died</i></apex:outputPanel>
+                            <apex:outputPanel layout="none" rendered="{!ms == 'Widowed'}">Marriage Cert + your late {!sp}'s Death Cert</apex:outputPanel>
+                            <apex:outputPanel layout="none" rendered="{!ms == 'Remarried'}">both Marriage Certs<br/>+ the Divorce Cert (Decree Absolute) or Death Cert from your first marriage</apex:outputPanel>
+                            <apex:outputPanel layout="none" rendered="{!ISBLANK(ms)}">Marriage / Divorce / Death Cert(s) <i> if applicable</i></apex:outputPanel>
                         </td>
                     </tr>
+                    </apex:outputPanel>
                     <tr>
                         <td>
                             <br/>

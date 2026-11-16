@@ -1,0 +1,54 @@
+<template>
+    <div class="main-block slds-p-around_medium" style={blockColours}>
+        <p>Last check for {currApp.Name}</p>
+        <p><span>Name:</span> {currApp.First_Name__c} {currApp.Last_Name__c}</p>
+        <p><span>Claim Status: </span> {currApp.Status__c}</p>
+        <p><span>Country: </span> {currApp.Current_Address_Abroad_Country_Name__c}</p>
+        <p><span>Posted to DWP: </span>
+            <lightning-formatted-date-time value={postedDate} year="numeric" month="numeric"
+                day="numeric" time-zone="UTC">
+            </lightning-formatted-date-time>
+        </p>
+        <template lwc:if={lastCheck}>
+            <hr class="slds-var-m-vertical_medium" />
+            <div>
+                <template for:each={lastCheck.badges} for:item="label">
+                    <span class="slds-badge slds-badge_lightest slds-m-bottom_x-small" style={blockColours}
+                        key={label}>{label}</span>
+                </template>
+            </div>
+            <p><span>Check Agent: </span> {lastCheck.agent}</p>
+            <p><span>Check Date: </span>
+                <lightning-formatted-date-time value={lastCheck.createdDate} year="numeric" month="numeric"
+                    day="numeric">
+                </lightning-formatted-date-time>
+            </p>
+            <p><span>Notes: </span> {lastCheck.notes}</p>
+            <template lwc:if={lastCheck.pdf}>
+                <p><span>PDF: </span> <a href={lastCheck.pdf} target="_blank" style={linkColour}>{lastCheck.pdf}</a></p>
+            </template>
+        </template>
+        <template lwc:else>
+            <hr class="slds-var-m-vertical_medium" />
+            <p>Never checked before</p>
+        </template>
+        <template lwc:if={hasHistory}>
+            <hr class="slds-var-m-vertical_medium" />
+            <p>Earlier checks ({history.length})</p>
+            <template for:each={history} for:item="item">
+                <div key={item.id} class="history-row">
+                    <lightning-formatted-date-time value={item.createdDate} year="numeric" month="numeric"
+                        day="numeric">
+                    </lightning-formatted-date-time>
+                    <span> · {item.agent} · {item.badgeText}</span>
+                    <template lwc:if={item.notes}>
+                        <span> · {item.notes}</span>
+                    </template>
+                    <template lwc:if={item.pdf}>
+                        <span> · </span><a href={item.pdf} target="_blank" style={linkColour}>PDF</a>
+                    </template>
+                </div>
+            </template>
+        </template>
+    </div>
+</template>

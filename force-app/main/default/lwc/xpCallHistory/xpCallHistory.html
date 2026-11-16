@@ -1,0 +1,177 @@
+<template>
+    <lightning-card title={cardTitle} icon-name="standard:call_history">
+        <div slot="actions" class="xp-ch__actions">
+            <template lwc:if={showViewAll}>
+                <lightning-button label={viewAllLabel} onclick={handleViewAll}></lightning-button>
+            </template>
+            <template lwc:if={isFull}>
+                <lightning-button label={backLabel} icon-name="utility:back" onclick={handleBack}></lightning-button>
+            </template>
+            <lightning-button-icon icon-name="utility:refresh" variant="bare" alternative-text="Refresh" title="Refresh" onclick={handleRefresh}></lightning-button-icon>
+        </div>
+
+        <div class="xp-ch">
+            <template lwc:if={loading}>
+                <div class="xp-ch__loading"><lightning-spinner alternative-text="Loading calls" size="small"></lightning-spinner></div>
+            </template>
+
+            <template lwc:if={error}>
+                <div class="slds-notify slds-notify_alert slds-theme_error slds-m-horizontal_medium slds-m-bottom_small" role="alert">{error}</div>
+            </template>
+
+            <template lwc:if={isEmpty}>
+                <p class="xp-ch__empty">No calls with this client yet. Calls on Nuacom show up here within about five minutes; calls from mobiles do not.</p>
+            </template>
+
+            <template lwc:if={hasData}>
+                <div class="xp-ch__summary">
+                    <template lwc:if={hasLastTalk}>
+                        <div class="xp-ch__last">{lastTalkLine}</div>
+                    </template>
+                    <template lwc:if={hasAlerts}>
+                        <template for:each={alerts} for:item="a">
+                            <div key={a.key} class={a.cls}>{a.text}</div>
+                        </template>
+                    </template>
+                    <template lwc:if={isFull}>
+                        <div class="xp-ch__stats">
+                            <template for:each={stats} for:item="s">
+                                <div key={s.key} class="xp-ch__stat">
+                                    <span class="xp-ch__stat-value">{s.value}</span>
+                                    <span class="xp-ch__stat-label">{s.label}</span>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="xp-ch__since">{sinceLine}</div>
+                    </template>
+                    <template lwc:else>
+                        <div class="xp-ch__since">{statsLine}</div>
+                    </template>
+                </div>
+
+                <template lwc:if={isFull}>
+                    <div class="xp-ch__filters">
+                        <div class="xp-ch__chips" role="group" aria-label="Filter calls">
+                            <template for:each={filterButtons} for:item="f">
+                                <button key={f.key} type="button" class={f.cls} data-key={f.key} aria-pressed={f.pressed} onclick={handleFilter}>{f.label}</button>
+                            </template>
+                        </div>
+                        <template lwc:if={showAgentPicker}>
+                            <lightning-combobox class="xp-ch__agent" label="Who" variant="label-hidden" value={agent} options={agentOptions} onchange={handleAgent} placeholder="Everyone"></lightning-combobox>
+                        </template>
+                    </div>
+                    <template lwc:if={noneForFilter}>
+                        <p class="xp-ch__empty">No calls match this filter.</p>
+                    </template>
+                </template>
+
+                <ul class={listClass}>
+                    <template for:each={visible} for:item="e">
+                        <template lwc:if={e.isDay}>
+                            <li key={e.key} class="xp-ch__day">{e.label}</li>
+                        </template>
+                        <template lwc:elseif={e.isCall}>
+                            <li key={e.key} class="xp-ch__item">
+                                <span class={e.iconCls} title={e.arrowLabel} aria-label={e.arrowLabel}>{e.arrow}</span>
+                                <div class="xp-ch__body">
+                                    <div class="xp-ch__head">
+                                        <span class="xp-ch__title">{e.title}</span>
+                                        <span class="xp-ch__right">
+                                            <span class={e.pillCls}>{e.pill}</span>
+                                            <span class="xp-ch__dur">{e.duration}</span>
+                                        </span>
+                                    </div>
+                                    <div class="xp-ch__meta">{e.meta}</div>
+                                    <div class="xp-ch__links">
+                                        <template lwc:if={e.hasRecording}>
+                                            <button type="button" class="xp-ch__link" data-id={e.id} onclick={handlePlay}>▶ {e.playLabel}</button>
+                                        </template>
+                                        <template lwc:if={e.hasTranscript}>
+                                            <button type="button" class="xp-ch__link" data-id={e.id} onclick={handleTranscript}>✎ {e.transcriptLabel}</button>
+                                        </template>
+                                        <template lwc:if={e.canEmail}>
+                                            <button type="button" class="xp-ch__link is-quiet" data-id={e.id} disabled={e.asking} onclick={handleTranscribe}>✉ Email me</button>
+                                        </template>
+                                        <template lwc:if={e.canTranscribe}>
+                                            <button type="button" class="xp-ch__link" data-id={e.id} disabled={e.asking} onclick={handleTranscribe}>✎ Transcribe</button>
+                                        </template>
+                                        <template lwc:if={e.transcribing}>
+                                            <span class="xp-ch__working">Transcribing, you will get an email</span>
+                                        </template>
+                                        <template lwc:if={isFull}>
+                                            <button type="button" class="xp-ch__link is-quiet" data-id={e.id} onclick={handleOpen}>Details</button>
+                                        </template>
+                                    </div>
+                                    <template lwc:if={e.transcriptProblem}>
+                                        <div class="xp-ch__hint">Not transcribed: {e.transcriptProblem}</div>
+                                    </template>
+                                    <template lwc:if={e.transcriptOpen}>
+                                        <div class="xp-ch__transcript">
+                                            <template lwc:if={e.transcriptSummary}>
+                                                <div class="xp-ch__transcript-summary">{e.transcriptSummary}</div>
+                                            </template>
+                                            <template lwc:if={isFull}>
+                                                <div class="xp-ch__transcript-text">{e.transcriptText}</div>
+                                            </template>
+                                            <template lwc:else>
+                                                <button type="button" class="xp-ch__link" onclick={handleViewAll}>Read the full transcript</button>
+                                            </template>
+                                        </div>
+                                    </template>
+                                    <template lwc:if={e.isPlaying}>
+                                        <audio class="xp-ch__audio" controls autoplay preload="none" src={e.recordingUrl}></audio>
+                                        <div class="xp-ch__hint">The recording takes up to ten minutes after the call to be ready. <a href={e.recordingUrl} target="_blank" rel="noopener">Open in a new tab</a></div>
+                                    </template>
+                                    <template lwc:if={e.nuacomNote}>
+                                        <div class="xp-ch__note"><span class="xp-ch__note-by">Nuacom note</span> {e.nuacomNote}</div>
+                                    </template>
+                                    <template lwc:if={e.hasNotes}>
+                                        <template for:each={e.notes} for:item="n">
+                                            <div key={n.noteKey} class="xp-ch__note">
+                                                <span class="xp-ch__note-by">{n.author}</span> {n.subject}
+                                                <template lwc:if={n.hasText}>
+                                                    <div class="xp-ch__note-text">{n.text}</div>
+                                                    <template lwc:if={n.isLong}>
+                                                        <button type="button" class="xp-ch__link is-quiet" data-id={n.id} onclick={handleNoteToggle}>{n.toggleLabel}</button>
+                                                    </template>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </template>
+                                </div>
+                            </li>
+                        </template>
+                        <template lwc:else>
+                            <li key={e.key} class="xp-ch__item">
+                                <span class="xp-ch__dot is-note" title="Logged call" aria-label="Logged call">✎</span>
+                                <div class="xp-ch__body">
+                                    <div class="xp-ch__head">
+                                        <span class="xp-ch__title">{e.author}: {e.subject}</span>
+                                    </div>
+                                    <div class="xp-ch__meta">{e.meta}</div>
+                                    <template lwc:if={e.hasText}>
+                                        <div class="xp-ch__note-text">{e.text}</div>
+                                        <template lwc:if={e.isLong}>
+                                            <button type="button" class="xp-ch__link is-quiet" data-id={e.id} onclick={handleNoteToggle}>{e.toggleLabel}</button>
+                                        </template>
+                                    </template>
+                                </div>
+                            </li>
+                        </template>
+                    </template>
+                </ul>
+
+                <template lwc:if={hasMore}>
+                    <div class="xp-ch__more">
+                        <lightning-button label={moreLabel} onclick={handleMore}></lightning-button>
+                    </div>
+                </template>
+                <template lwc:if={isFull}>
+                    <template lwc:if={truncatedLine}>
+                        <p class="xp-ch__since slds-p-horizontal_medium">{truncatedLine}</p>
+                    </template>
+                </template>
+            </template>
+        </div>
+    </lightning-card>
+</template>

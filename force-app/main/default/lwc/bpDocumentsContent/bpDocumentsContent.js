@@ -1,11 +1,43 @@
-import { LightningElement, api, track } from 'lwc';
+import { LightningElement, api, track, wire } from 'lwc';
 import { NavigationMixin } from "lightning/navigation";
+import { getRecord } from 'lightning/uiRecordApi';
+import STATUS from '@salesforce/schema/Basic__c.Status__c';
 import getContentDocuments from '@salesforce/apex/BP_DocumentsContentController.getContentDocuments';
 // import changeCustomLetter from '@salesforce/apex/DocumentsContentController.changeCustomLetter';
 // import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 // import pdfAction from '@salesforce/apex/DocumentsContentController.pdfAction';
 // import sendEmail from '@salesforce/apex/DocumentsContentController.sendHMRCResult';
 // import sendMissingPaymentsEmail from '@salesforce/apex/DocumentsContentController.sendMissingApplicationPaymentEmail';
+
+// abas:inicio
+// As 3 abas dos devs (Stage 1, DocuSign, Stage 2) com as linhas no desenho do Docs do Sales (04/11/2026, o Fernando
+// preferiu as abas à lista só). A aba vem do typeGroup do Apex (BP_DocumentsContentController, sem mudança); arquivo que o
+// Apex não reconhece (typeGroup vazio) continua fora. A aba que abre segue o estágio; se ela estiver vazia, abre a
+// primeira que tem arquivo. Clicar numa aba vale até recarregar a página.
+const TABS = [
+    { value: 'BigEnvelope', label: 'Stage 1', hint: 'Big Envelope: the wet-signature pack the printer posts to the client.', titles: ['Pink Page', 'Yellow Page', 'DWP Authority', 'IPCBR1 Wet', 'IPC1394 Wet', 'Payment Notes', 'Stage 1 ZIP (wet-signature pack)'] },
+    { value: 'DocuSign', label: 'DocuSign', hint: 'What the client signs in DocuSign.', titles: ['Client Summary', 'DD Mandate'] },
+    { value: 'FullForms', label: 'Stage 2', hint: 'Full forms: what the printer posts to the DWP.', titles: ['IPCBR1 Full Form', 'IPC1394 Full Form', 'Stage 2 ZIP (Big Envelope)'] }
+];
+// Nome curto na tela: a aba já diz o estágio.
+const SHORT = { 'Stage 1 ZIP (wet-signature pack)': 'Stage 1 ZIP', 'Stage 2 ZIP (Big Envelope)': 'Stage 2 ZIP' };
+// Estágio -> aba que abre: o Big Envelope sai até o Form completed; da revisão à assinatura o que importa é o pacote do
+// DocuSign; depois de assinado, os formulários completos (Stage 2) que vão para o DWP.
+const STAGE_TAB = {
+    'Form In Progress': 'BigEnvelope', 'Validation Call': 'BigEnvelope', 'Form completed': 'BigEnvelope',
+    'Pending Client': 'DocuSign', 'Agent Check': 'DocuSign', 'QC Approved': 'DocuSign', 'Sent for eSignature': 'DocuSign'
+};
+
+function docsOf(docs, tab) {
+    const list = Array.isArray(docs) ? docs : [];
+    const rank = t => { const i = tab.titles.indexOf(t); return i < 0 ? tab.titles.length : i; };
+    return list
+        .filter(d => d && d.typeGroup === tab.value)
+        .map((d, i) => ({ ...d, label: SHORT[d.title] || d.title, seq: i }))
+        .sort((a, b) => rank(a.title) - rank(b.title) || (a.order ?? 99) - (b.order ?? 99) || a.seq - b.seq);
+}
+// abas:fim
+
 export default class DocumentsContent extends NavigationMixin(LightningElement) {
     @api recordId;
     @track latestDocs;
@@ -31,27 +63,40 @@ export default class DocumentsContent extends NavigationMixin(LightningElement) 
     currentTemplate;
     emailSubject;
 
-    tabs = [
-        { label: 'Stage 1 - Wet Signature Pack', value: 'BigEnvelope' },
-        { label: 'DocuSign', value: 'DocuSign' },
-        { label: 'Stage 2 - Full Forms', value: 'FullForms' }
-    ];
-
-    activeTab = 'BigEnvelope';
+    // Só depois da resposta do Apex aparece o "No documents yet." (sem arquivo o Apex devolve null).
+    loaded = false;
+    status;
+    picked; // aba que o usuário clicou
 
     connectedCallback(){
         this.handleDocuments();
     }
 
-    handleTabActive(event) {
-        this.activeTab = event.target.value;
+    @wire(getRecord, { recordId: '$recordId', fields: [STATUS] })
+    wiredStatus({ data }) {
+        if (data) this.status = data.fields.Status__c.value;
     }
 
-    get filteredDocs() {
-      if(this.latestDocs) {
-        return this.latestDocs.filter(doc => doc.typeGroup === this.activeTab);
-      }
-        
+    get tabs() {
+        return TABS.map(t => {
+            const docs = docsOf(this.latestDocs, t);
+            return { ...t, docs, isEmpty: this.loaded && !this.error && docs.length === 0 };
+        });
+    }
+
+    get activeTab() {
+        if (this.picked) return this.picked;
+        const tabs = this.tabs;
+        const byStage = STAGE_TAB[this.status] || (this.status ? 'FullForms' : 'BigEnvelope');
+        const tab = tabs.find(t => t.value === byStage);
+        if (tab && tab.docs.length) return byStage;
+        const first = tabs.find(t => t.docs.length);
+        return first ? first.value : byStage;
+    }
+
+    handleTabActive(event) {
+        // o tabset também avisa quando a aba muda pelo estágio; só guarda o que foi clique de verdade
+        if (event.target.value !== this.activeTab) this.picked = event.target.value;
     }
 
     @api async handleDocuments() {
@@ -61,8 +106,6 @@ export default class DocumentsContent extends NavigationMixin(LightningElement) 
         .then(result => {
           
           this.latestDocs = result?.latestDocs;
-          console.log(structuredClone(this.latestDocs));
-          console.log(structuredClone(this.activeTab));
           // this.allDocs                 = result?.latestDocs;
           // this.replyDocs               = result?.replyDocs;
           // this.application             = result?.application;
@@ -101,14 +144,15 @@ export default class DocumentsContent extends NavigationMixin(LightningElement) 
           // }
         }).catch(error => {
           this.error = error;
+        }).finally(() => {
+          this.loaded = true;
         });
         // if (this.replyDocs) this.isExistReplyDocs = true;
     }
     navigateToFiles(event) {
         const documentName = event.currentTarget.getAttribute("value");
         const searchValue = this.latestDocs.find(el => el.title == documentName);
-        console.log(structuredClone(documentName))
-        console.log(structuredClone(searchValue))
+        // Sem structuredClone aqui: o item é um proxy do LWC e o clone dá DataCloneError antes de abrir o arquivo.
         this[NavigationMixin.Navigate]({
           type: "standard__namedPage",
           attributes: {

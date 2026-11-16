@@ -2,28 +2,23 @@ import { LightningElement, api, track, wire } from 'lwc';
 import { getRecord } from "lightning/uiRecordApi";
 import { updateRecord } from 'lightning/uiRecordApi';
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
-import { refreshApex } from '@salesforce/apex';
 import Id from '@salesforce/user/Id';
 import logCall from '@salesforce/apex/CallFollowUpModuleController.logCall';
-
-import X1_FOLLOW_UP_CALL from '@salesforce/schema/Application__c.X1st_Follow_Up_Call__c';
-import X2_FOLLOW_UP_CALL from '@salesforce/schema/Application__c.X2nd_Follow_Up_Call__c';
-import X3_FOLLOW_UP_CALL from '@salesforce/schema/Application__c.X3rd_Follow_Up_Call__c';
-import CALL_FOLLOW_UP_CALL_CHANGE_USER from '@salesforce/schema/Application__c.Call_Follow_Up_Change_User__c';
 import USER_NAME_FIELD from '@salesforce/schema/User.Name';
-import X1_FOLLOW_UP_CALL_CHANGED_DATE from '@salesforce/schema/Application__c.X1st_Esign_Follow_Up_Call_Changed_Date__c';
-import X2_FOLLOW_UP_CALL_CHANGED_DATE from '@salesforce/schema/Application__c.X2nd_Esign_Follow_Up_Call_Changed_Date__c';
-import X3_FOLLOW_UP_CALL_CHANGED_DATE from '@salesforce/schema/Application__c.X3rd_Esign_Follow_Up_Call_Changed_Date__c';
 
-const FIELDS = [
-    X1_FOLLOW_UP_CALL,
-    X2_FOLLOW_UP_CALL,
-    X3_FOLLOW_UP_CALL,
+// Mesmo card no Application__c (Sales) e no Basic__c (Claims): os 7 campos têm o mesmo nome nos dois objetos (04/11/2026).
+const CALL_FOLLOW_UP_CALL_CHANGE_USER = 'Call_Follow_Up_Change_User__c';
+const FIELD_NAMES = [
+    'X1st_Follow_Up_Call__c',
+    'X2nd_Follow_Up_Call__c',
+    'X3rd_Follow_Up_Call__c',
     CALL_FOLLOW_UP_CALL_CHANGE_USER,
-    X1_FOLLOW_UP_CALL_CHANGED_DATE,
-    X2_FOLLOW_UP_CALL_CHANGED_DATE,
-    X3_FOLLOW_UP_CALL_CHANGED_DATE
+    'X1st_Esign_Follow_Up_Call_Changed_Date__c',
+    'X2nd_Esign_Follow_Up_Call_Changed_Date__c',
+    'X3rd_Esign_Follow_Up_Call_Changed_Date__c'
 ];
+// Texto do toast por objeto; Application é o de sempre.
+const NOUN = { Application__c: 'Application', Basic__c: 'Claim' };
 const FOLLOW_FIELD_BY_CHANGED_DATE = new Map([
     ['X1st_Follow_Up_Call__c', 'X1st_Esign_Follow_Up_Call_Changed_Date__c'],
     ['X2nd_Follow_Up_Call__c', 'X2nd_Esign_Follow_Up_Call_Changed_Date__c'],
@@ -32,6 +27,7 @@ const FOLLOW_FIELD_BY_CHANGED_DATE = new Map([
 
 export default class CallFollowUpModule extends LightningElement {
     @api recordId;
+    @api objectApiName;
     userId = Id;
     loaded = false;
     chooseCheckboxLabel;
@@ -46,10 +42,20 @@ export default class CallFollowUpModule extends LightningElement {
     ];
     
     today = new Date();
-    @wire(getRecord, { recordId: "$recordId", fields: FIELDS })
+
+    // Campos do objeto da página ("Application__c.X1st_Follow_Up_Call__c" ou "Basic__c....").
+    get fields() {
+        return this.objectApiName ? FIELD_NAMES.map((f) => `${this.objectApiName}.${f}`) : undefined;
+    }
+
+    get noun() {
+        return NOUN[this.objectApiName] || 'Application';
+    }
+
+    @wire(getRecord, { recordId: "$recordId", fields: '$fields' })
     wiredRecords({ error, data }) {
         if (data) {
-            this.currentAgentId = data.fields[CALL_FOLLOW_UP_CALL_CHANGE_USER.fieldApiName]?.value || '';
+            this.currentAgentId = data.fields[CALL_FOLLOW_UP_CALL_CHANGE_USER]?.value || '';
             this.currentAgent = '';
             this.currentFollowUpDateRaw = '';
             this.options.forEach(checkbox => {
@@ -86,13 +92,15 @@ export default class CallFollowUpModule extends LightningElement {
                 this.currentFollowUpDateRaw = this.followUpDateValues[checkbox.value] || '';
             }
         });
+        // Faltava desde 03/06/2026: o tick só mudava na tela e sumia ao recarregar.
+        this.updateApplicationData();
     }
 
     updateApplicationData() {
         this.loaded = !this.loaded;
         const fields = {};
         fields['Id'] = this.recordId;
-        fields[CALL_FOLLOW_UP_CALL_CHANGE_USER.fieldApiName] = this.userId;
+        fields[CALL_FOLLOW_UP_CALL_CHANGE_USER] = this.userId;
 
         this.options.forEach(
             data => {
@@ -110,18 +118,18 @@ export default class CallFollowUpModule extends LightningElement {
             this.dispatchEvent(
                 new ShowToastEvent({
                     title: "Success",
-                    message: "Application updated",
+                    message: `${this.noun} updated`,
                     variant: "success",
                 }),
             );
             this.loaded = !this.loaded;
-            refreshApex(this.wiredRecords)
+            // updateRecord já atualiza o getRecord (o refreshApex de antes não fazia nada)
         })
         .catch((error) => {
             this.dispatchEvent(
                 new ShowToastEvent({
-                    title: "Error updating application",
-                    message: error.body.message,
+                    title: `Error updating ${this.noun.toLowerCase()}`,
+                    message: error.body?.message || error.message || 'Unknown error',
                     variant: "error",
                 }),
             );

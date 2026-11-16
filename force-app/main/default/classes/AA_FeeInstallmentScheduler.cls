@@ -11,7 +11,14 @@
  *      The stamp means "handed to the dispatcher", NOT "delivered": dispatch()
  *      returns normally when no active Bacs_Advance_Notice template exists,
  *      so the sweep checks for one first and leaves the rows unstamped when
- *      there is none. AA_Message_Send_Log__c is the delivery evidence.
+ *      there is none. AA_Message_Send_Log__c is the delivery evidence, and the
+ *      collection step reads it (audit 2026-11-11 AA-APEX-1): a payment is
+ *      only created for a row whose notice has a 'Sent' row on the send log at
+ *      or after its stamp (rowsWithSentNotice). The dispatcher reports a
+ *      notice that did not go (noticeNotSent: stamp cleared + Task) and the
+ *      sweep re-checks old stamps itself (reconcileUnsentNotices), so the row
+ *      is re-dated and noticed again on the next run instead of being
+ *      collected with no notice.
  *      Notice window changed 3 working days → 5 calendar days on 2026-08-25;
  *      5 calendar days re-confirmed by Fernando on 2026-09-09.
  *
@@ -161,6 +168,9 @@ public with sharing class AA_FeeInstallmentScheduler implements Schedulable {
         // Rows put on hold (Payment_Status__c='failed' + High Task) because
         // Heroku refused them for a reason a retry cannot fix.
         public Integer held = 0;
+        // Noticed rows left alone because the send log does not (yet) show
+        // their advance notice as Sent. Nothing is created for them.
+        public Integer unproven = 0;
     }
 
     // Heroku charge-fee refusals that are NOT terminal although they are 4xx:
@@ -270,7 +280,7 @@ public with sharing class AA_FeeInstallmentScheduler implements Schedulable {
         List<AA_Fee_Installment__c> due = [
             SELECT Id, Application__c, Installment_Number__c, Amount__c,
                    Scheduled_Date__c, Payment_Status__c, Payment_Id__c, Bacs_Notice_Sent__c,
-                   Application__r.Fee_Plan_Installments__c
+                   Bacs_Notice_Sent_At__c, Application__r.Fee_Plan_Installments__c
               FROM AA_Fee_Installment__c
              WHERE Payment_Status__c = 'pending'
                AND Charged_At__c = null
@@ -285,11 +295,22 @@ public with sharing class AA_FeeInstallmentScheduler implements Schedulable {
         ];
         res.due = due.size();
 
+        // The charge depends on a SENT notice, not on the stamp (audit
+        // 2026-11-11 AA-APEX-1). This job and the dispatcher's are unordered,
+        // so a row whose notice is not on the send log yet simply waits: the
+        // dispatcher enqueues this step again once it has sent, and a notice
+        // that never goes is un-stamped by noticeNotSent / the next sweep.
+        Set<Id> proven = noticeProofRequired() ? rowsWithSentNotice(due) : null;
+
         // ---- Phase A: callouts only, collect updates (NO DML yet) ----
         List<AA_Fee_Installment__c> toUpdate = new List<AA_Fee_Installment__c>();
         List<Task> tasks = new List<Task>();
         Set<Id> touchedApps = new Set<Id>();
         for (AA_Fee_Installment__c row : due) {
+            if (proven != null && !proven.contains(row.Id)) {
+                res.unproven++;
+                continue;
+            }
             touchedApps.add(row.Application__c);
             try {
                 Map<String, Object> resp = fireInstallmentCallout(row.Application__c, row);
@@ -384,7 +405,174 @@ public with sharing class AA_FeeInstallmentScheduler implements Schedulable {
         }
         insertTasks(tasks);
         advanceParentNextChargeDates(touchedApps);
+        // audit 2026-11-11 AA-APEX-13: a failing charge step used to leave only
+        // a debug line (a wrong Internal_Admin_Token__c fails every row for
+        // five days before anything is held). One email per run, after the DML.
+        if (res.errored > 0) {
+            AA_HandoffService.emailOps('AA fee sweep: ' + res.errored + ' instalment(s) could not be set up at GoCardless',
+                'AA_FeeInstallmentScheduler.chargeDue on ' + today.format() + ': ' + res.errored + ' of ' + res.due
+                + ' noticed instalment(s) failed (Heroku unreachable, a token problem, a GoCardless error, or the '
+                + 'payment was created but the row could not be updated). They are retried by the next daily run; '
+                + 'an instalment whose date passes is put on hold with a Task. Created: ' + res.fired
+                + ', re-dated: ' + res.redated + ', held: ' + res.held + '. See the Apex job log of '
+                + 'AA_FeeInstallmentChargeQueueable for the error of each row.');
+        }
         return res;
+    }
+
+    // ---------- the charge depends on a SENT notice (audit 2026-11-11 AA-APEX-1) ----
+    // Tests written before the send-log check drive chargeDue with rows they
+    // stamp by hand and with the dispatcher bypassed, so the check is opt-in
+    // in a test. It is always on outside tests.
+    @TestVisible private static Boolean testRequireNoticeProof = false;
+    private static Boolean noticeProofRequired() {
+        return !Test.isRunningTest() || testRequireNoticeProof;
+    }
+
+    // A stamp younger than this may simply not have been processed by the
+    // dispatcher yet; the sweep's own check leaves it alone.
+    @TestVisible private static Integer NOTICE_PROOF_GRACE_MINUTES = 120;
+
+    // Subject of the Task raised when a notice did not go out. noticeNotSent
+    // looks for an open one before raising another, so do not reword it
+    // without changing NOTICE_NOT_SENT_LIKE.
+    @TestVisible private static final String NOTICE_NOT_SENT_SUBJECT = 'Fee advance notice NOT sent';
+    private static final String NOTICE_NOT_SENT_LIKE = 'Fee advance notice NOT sent%';
+
+    /**
+     * Of these stamped rows, the ones whose advance notice is on the send log:
+     * a 'Sent' AA_Message_Send_Log__c row of a Bacs_Advance_Notice template for
+     * the row's application, dated at or after the row's own stamp (the stamp
+     * is taken just before the dispatch, so the log row of that dispatch is
+     * never older). A stamp with no time cannot be proven. One query.
+     */
+    @TestVisible
+    private static Set<Id> rowsWithSentNotice(List<AA_Fee_Installment__c> rows) {
+        Set<Id> out = new Set<Id>();
+        Set<Id> appIds = new Set<Id>();
+        Datetime earliest = null;
+        for (AA_Fee_Installment__c r : rows) {
+            if (r.Bacs_Notice_Sent_At__c == null) continue;
+            appIds.add(r.Application__c);
+            if (earliest == null || r.Bacs_Notice_Sent_At__c < earliest) earliest = r.Bacs_Notice_Sent_At__c;
+        }
+        if (appIds.isEmpty()) return out;
+        Map<Id, Datetime> lastSentByApp = new Map<Id, Datetime>();
+        for (AA_Message_Send_Log__c l : [
+            SELECT Application__c, Sent_At__c
+              FROM AA_Message_Send_Log__c
+             WHERE Application__c IN :appIds
+               AND Template__r.Trigger_Event__c = :BACS_ADVANCE_TEMPLATE
+               AND Status__c = 'Sent'
+               AND Sent_At__c >= :earliest
+             ORDER BY Sent_At__c DESC
+        ]) {
+            if (!lastSentByApp.containsKey(l.Application__c)) lastSentByApp.put(l.Application__c, l.Sent_At__c);
+        }
+        for (AA_Fee_Installment__c r : rows) {
+            Datetime lastSent = lastSentByApp.get(r.Application__c);
+            if (r.Bacs_Notice_Sent_At__c != null && lastSent != null && lastSent >= r.Bacs_Notice_Sent_At__c) out.add(r.Id);
+        }
+        return out;
+    }
+
+    /**
+     * The advance notice of these instalments did NOT go out (instalment id ->
+     * why). Called by AA_MessageDispatcher right after a send that failed or
+     * was suppressed (no email address on the record, email sending switched
+     * off, a broken template...) and by the sweep's own check below. Each row
+     * that is still stamped, pending and not created at GoCardless loses its
+     * stamp, so nothing is collected on it and the next notice step moves it
+     * to a new date and notices it again. One High Task per application is
+     * raised and no second one while it is still open. Returns the number of
+     * rows un-stamped. No callouts.
+     */
+    public static Integer noticeNotSent(Map<Id, String> reasonByInstallment) {
+        if (reasonByInstallment == null || reasonByInstallment.isEmpty()) return 0;
+        List<AA_Fee_Installment__c> rows = [
+            SELECT Id, Application__c, Installment_Number__c, Amount__c, Scheduled_Date__c
+              FROM AA_Fee_Installment__c
+             WHERE Id IN :reasonByInstallment.keySet()
+               AND Payment_Status__c = 'pending'
+               AND Charged_At__c = null
+               AND Bacs_Notice_Sent__c = true
+        ];
+        if (rows.isEmpty()) return 0;
+        Set<Id> appIds = new Set<Id>();
+        for (AA_Fee_Installment__c r : rows) appIds.add(r.Application__c);
+        Set<Id> hasOpenTask = new Set<Id>();
+        for (Task t : [
+            SELECT WhatId FROM Task
+             WHERE WhatId IN :appIds AND IsClosed = false AND Subject LIKE :NOTICE_NOT_SENT_LIKE
+        ]) {
+            hasOpenTask.add(t.WhatId);
+        }
+        List<AA_Fee_Installment__c> ups = new List<AA_Fee_Installment__c>();
+        List<Task> tasks = new List<Task>();
+        for (AA_Fee_Installment__c r : rows) {
+            ups.add(new AA_Fee_Installment__c(Id = r.Id, Bacs_Notice_Sent__c = false, Bacs_Notice_Sent_At__c = null));
+            if (hasOpenTask.contains(r.Application__c)) continue;
+            hasOpenTask.add(r.Application__c);
+            String n = String.valueOf(r.Installment_Number__c);
+            String dateTold = r.Scheduled_Date__c == null ? 'its date' : r.Scheduled_Date__c.format();
+            tasks.add(alertTask(r.Application__c,
+                NOTICE_NOT_SENT_SUBJECT + ': instalment ' + n + ' was not set up',
+                'The Direct Debit advance notice for instalment ' + n + ' (£' + r.Amount__c + ', ' + dateTold +
+                ') did not go out, so the payment was NOT set up at GoCardless and nothing will be taken on that date.\n\n' +
+                'Reason: ' + safe(reasonByInstallment.get(r.Id)) + '\n\n' +
+                'What happens next: the next daily run moves the instalment to a new date at least ' + NOTICE_DAYS +
+                ' days ahead and sends the notice again. A payment is only set up once a notice shows as Sent on the Send Log.\n\n' +
+                'What to do: if the reason is on this record (for example no email address), correct it. If it is not ' +
+                '(email sending is switched off, the Bacs advance notice template is broken), tell the tech team. ' +
+                'No further task is raised for this application while this one is open: close it when the notice has gone.'));
+        }
+        Integer ok = 0;
+        Database.SaveResult[] srs = Database.update(ups, false);
+        for (Integer i = 0; i < srs.size(); i++) {
+            if (srs[i].isSuccess()) { ok++; continue; }
+            System.debug(LoggingLevel.ERROR,
+                'AA_FeeInstallmentScheduler: could not clear the notice stamp of ' + ups[i].Id + ': ' + srs[i].getErrors());
+        }
+        insertTasks(tasks);
+        return ok;
+    }
+
+    /**
+     * The sweep's own check of the send log (ported from the reconciliation in
+     * PC1_FeeInstallmentScheduler): every stamped, still-uncreated pending row
+     * whose stamp is older than NOTICE_PROOF_GRACE_MINUTES (or has no time)
+     * and has no 'Sent' notice at or after it goes through noticeNotSent. It
+     * catches what the dispatcher could not report itself: a dispatcher job
+     * that died, a send-log insert that failed. Runs before the notice step,
+     * which then re-dates and re-notices those rows in the same run.
+     */
+    @TestVisible
+    private static Integer reconcileUnsentNotices(Set<Id> onlyApps) {
+        if (!noticeProofRequired()) return 0;
+        Datetime cutoff = Datetime.now().addMinutes(-NOTICE_PROOF_GRACE_MINUTES);
+        List<AA_Fee_Installment__c> stamped = new List<AA_Fee_Installment__c>();
+        for (AA_Fee_Installment__c r : [
+            SELECT Id, Application__c, Bacs_Notice_Sent_At__c
+              FROM AA_Fee_Installment__c
+             WHERE Payment_Status__c = 'pending'
+               AND Charged_At__c = null
+               AND Bacs_Notice_Sent__c = true
+               AND (Bacs_Notice_Sent_At__c = null OR Bacs_Notice_Sent_At__c <= :cutoff)
+             LIMIT 2000
+        ]) {
+            if (onlyApps != null && !onlyApps.contains(r.Application__c)) continue;
+            stamped.add(r);
+        }
+        if (stamped.isEmpty()) return 0;
+        Set<Id> proven = rowsWithSentNotice(stamped);
+        Map<Id, String> unsent = new Map<Id, String>();
+        for (AA_Fee_Installment__c r : stamped) {
+            if (proven.contains(r.Id)) continue;
+            unsent.put(r.Id, 'the Send Log has no "Sent" Bacs advance notice for this application since the notice was requested' +
+                (r.Bacs_Notice_Sent_At__c == null ? '' : ' (' + r.Bacs_Notice_Sent_At__c.format('d MMM yyyy HH:mm', 'Europe/London') + ' UK)') +
+                '. Look at the newest rows of the Send Log on this application for the cause.');
+        }
+        return noticeNotSent(unsent);
     }
 
     /**
@@ -743,6 +931,17 @@ public with sharing class AA_FeeInstallmentScheduler implements Schedulable {
             }
         }
 
+        // 0b. Stamped rows whose notice never reached the send log lose their
+        //     stamp here (audit 2026-11-11 AA-APEX-1), so the steps below move
+        //     and notice them again. Guarded: a failure of this check must not
+        //     stop today's notices.
+        try {
+            reconcileUnsentNotices(onlyApps);
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR,
+                'AA_FeeInstallmentScheduler: send-log check of old notice stamps failed: ' + e.getMessage());
+        }
+
         // 1. Applications with a row that needs a notice, a new date or a hold:
         //    an un-noticed, uncreated pending row dated within the notice
         //    horizon, or a noticed one whose date has passed before it was
@@ -837,10 +1036,19 @@ public with sharing class AA_FeeInstallmentScheduler implements Schedulable {
 
         Integer notices = 0;
         Integer errored = 0;
-        Set<Id> noticeApps = new Set<Id>();
-        for (AA_Fee_Installment__c row : toNotice) noticeApps.add(row.Application__c);
+        // One notice per application per run, and the dispatcher is told which
+        // instalment it is for (audit 2026-11-11 AA-APEX-4). A second row of
+        // the same application (the month gap makes that rare) stays
+        // un-noticed and is picked up by the next run.
+        Map<Id, Id> noticeRowByApp = new Map<Id, Id>();
+        List<AA_Fee_Installment__c> noticedRows = new List<AA_Fee_Installment__c>();
+        for (AA_Fee_Installment__c row : toNotice) {
+            if (noticeRowByApp.containsKey(row.Application__c)) continue;
+            noticeRowByApp.put(row.Application__c, row.Id);
+            noticedRows.add(row);
+        }
 
-        if (!noticeApps.isEmpty()) {
+        if (!noticeRowByApp.isEmpty()) {
             // dispatch() cannot tell us whether anything will go out: with no active
             // Bacs_Advance_Notice template its execute() returns at templates.isEmpty()
             // and the rows would still be stamped "sent". Same predicate as the
@@ -853,6 +1061,9 @@ public with sharing class AA_FeeInstallmentScheduler implements Schedulable {
                    AND Trigger_Event__c = :BACS_ADVANCE_TEMPLATE
             ];
             Boolean dispatched = false;
+            // Taken BEFORE the dispatch: the 'Sent' row the dispatcher writes
+            // must never be older than the stamp it has to prove.
+            Datetime nowStamp = Datetime.now();
             if (activeTemplates == 0) {
                 System.debug(LoggingLevel.ERROR,
                     'AA_FeeInstallmentScheduler: no active ' + BACS_ADVANCE_TEMPLATE +
@@ -860,20 +1071,19 @@ public with sharing class AA_FeeInstallmentScheduler implements Schedulable {
                 errored = 1;
             } else {
                 try {
-                    dispatchBacsAdvanceNotice(noticeApps);
+                    dispatchBacsAdvanceNotice(noticeRowByApp);
                     dispatched = true;
-                    notices = noticeApps.size();
+                    notices = noticeRowByApp.size();
                 } catch (Exception e) {
                     // Leave the rows unstamped: the next sweep re-picks them.
                     System.debug(LoggingLevel.ERROR,
                         'AA_FeeInstallmentScheduler: Bacs notice dispatch failed for ' +
-                        noticeApps.size() + ' apps — ' + e.getMessage());
+                        noticeRowByApp.size() + ' apps — ' + e.getMessage());
                     errored = 1;
                 }
             }
             if (dispatched) {
-                Datetime nowStamp = Datetime.now();
-                for (AA_Fee_Installment__c row : toNotice) {
+                for (AA_Fee_Installment__c row : noticedRows) {
                     AA_Fee_Installment__c up = changes.containsKey(row.Id)
                         ? changes.get(row.Id) : new AA_Fee_Installment__c(Id = row.Id);
                     up.Bacs_Notice_Sent__c    = true;
@@ -886,8 +1096,8 @@ public with sharing class AA_FeeInstallmentScheduler implements Schedulable {
         // Re-dates are persisted even when no notice could go out, so a row is
         // never left dated sooner than a notice could cover. Partial success:
         // one bad row (lock, FLS drift) cannot roll back the batch's stamps and
-        // re-send every notice tomorrow; the dispatcher's 24h dedup absorbs
-        // a single re-send.
+        // re-send every notice tomorrow. (A row whose stamp did fail is moved
+        // one day on and noticed again by the next run, with its new date.)
         for (AA_Fee_Installment__c h : holds) changes.put(h.Id, h);
         if (!changes.isEmpty()) {
             Database.SaveResult[] srs = Database.update(changes.values(), false);
@@ -907,17 +1117,18 @@ public with sharing class AA_FeeInstallmentScheduler implements Schedulable {
     @TestVisible private static Boolean testBypass = false;
     @TestVisible private static List<String> testDispatched = new List<String>();
 
-    /** One dispatch for the whole set — the dispatcher enqueues a single job. */
+    /**
+     * One dispatch for the whole set (application -> the instalment being
+     * noticed): the dispatcher enqueues a single job, renders the notice from
+     * that row and reports back the ones it could not send (noticeNotSent).
+     */
     @TestVisible
-    private static void dispatchBacsAdvanceNotice(Set<Id> appIds) {
+    private static void dispatchBacsAdvanceNotice(Map<Id, Id> installmentByApp) {
         if (testBypass) {
-            for (Id appId : appIds) testDispatched.add(String.valueOf(appId));
+            for (Id appId : installmentByApp.keySet()) testDispatched.add(String.valueOf(appId));
             return;
         }
-        // Dispatcher dedupes by (Template, Application) within 24h. The sweep
-        // keeps a month between one app's instalments, so one email per app per
-        // sweep is the intended behaviour.
-        AA_MessageDispatcher.dispatch(appIds, BACS_ADVANCE_TEMPLATE);
+        AA_MessageDispatcher.dispatchBacsAdvanceNotice(installmentByApp);
     }
 
     // ---------- callout plumbing (mirrors AA_GoCardlessController) ---

@@ -1,7 +1,9 @@
-import { LightningElement, api, track } from 'lwc';
+import { LightningElement, api, track, wire } from 'lwc';
+import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getThread from '@salesforce/apex/PC1_TwilioController.getThread';
 import sendSMS   from '@salesforce/apex/PC1_TwilioController.sendSMS';
+import DNC_FIELD from '@salesforce/schema/PC1_Application__c.Do_Not_Contact__c';
 
 /**
  * pc1SmsPanel — SMS chat embedded below pc1WhatsAppPanel in the record page
@@ -28,6 +30,14 @@ export default class Pc1SmsPanel extends LightningElement {
     _inView = true;
     _userScrolledUp = false;
     _lastMsgCount = 0;
+
+    // Do Not Contact (set when a caller reports the client deceased). The
+    // panel shows a banner and stops sending; PC1_TwilioController.sendSMS
+    // refuses too (audit 2026-11-11 PC-SFUI-3). optionalFields: a user
+    // without access to the field still gets the panel.
+    @wire(getRecord, { recordId: '$recordId', optionalFields: [DNC_FIELD] })
+    wiredApp;
+    get doNotContact() { return getFieldValue(this.wiredApp?.data, DNC_FIELD) === true; }
 
     // ─── lifecycle ─────────────────────────────────────────────────────
     connectedCallback() {
@@ -160,6 +170,10 @@ export default class Pc1SmsPanel extends LightningElement {
     async handleSend() {
         const body = (this.composerText || '').trim();
         if (this.sending || !body) return;
+        if (this.doNotContact) {
+            this.dispatchEvent(new ShowToastEvent({ title: 'Cannot send', message: 'This application is flagged Do Not Contact.', variant: 'warning' }));
+            return;
+        }
         if (!this.appPhone) {
             this.dispatchEvent(new ShowToastEvent({ title: 'Cannot send', message: 'No phone on this application.', variant: 'warning' }));
             return;
@@ -205,9 +219,10 @@ export default class Pc1SmsPanel extends LightningElement {
     }
     get isEmpty()      { return !this.loading && !this.loadError && this.messages.length === 0; }
     get hasMessages()  { return !this.loading && !this.loadError && this.messages.length > 0; }
-    get sendDisabled() { return this.sending || !(this.composerText || '').trim() || !this.appPhone; }
-    get disableAll()   { return this.sending || !this.appPhone; }
+    get sendDisabled() { return this.sending || !(this.composerText || '').trim() || !this.appPhone || this.doNotContact; }
+    get disableAll()   { return this.sending || !this.appPhone || this.doNotContact; }
     get composerPlaceholder() {
+        if (this.doNotContact) return 'Do Not Contact is set on this application.';
         if (!this.appPhone) return 'No phone number on this application.';
         return 'Type an SMS… (Enter to send, Shift+Enter for newline)';
     }

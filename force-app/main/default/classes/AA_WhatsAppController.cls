@@ -38,6 +38,7 @@ public with sharing class AA_WhatsAppController {
     public static SendResult sendFileMessage(Id applicationId, Id contentVersionId, String caption) {
         if (contentVersionId == null) throw new AuraHandledException('contentVersionId required');
         assertContactable(applicationId);
+        assertFileOfApplication(applicationId, contentVersionId);
         Map<String, Object> body = new Map<String, Object>{
             'appId'            => (String) applicationId,
             'contentVersionId' => (String) contentVersionId,
@@ -178,6 +179,31 @@ public with sharing class AA_WhatsAppController {
         if (apps.isEmpty()) throw new AuraHandledException('Application not found.');
         if (apps[0].Do_Not_Contact__c == true) {
             throw new AuraHandledException('This client is marked Do Not Contact. WhatsApp is blocked; speak to a supervisor before contacting them.');
+        }
+    }
+
+    /**
+     * Only a file of THIS application may be sent to its client (audit
+     * 2026-11-11 AA-APEX-6). The id used to be forwarded as it came, and
+     * Heroku fetches the bytes as the integration user, so another client's
+     * mandate or Check Your Answers PDF (a stale selection after moving
+     * between records, or a crafted call) went out on WhatsApp. Heroku runs
+     * the same check (src/webhooks/whatsapp.js).
+     */
+    @TestVisible
+    private static void assertFileOfApplication(Id applicationId, Id contentVersionId) {
+        List<ContentVersion> cvs = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :contentVersionId LIMIT 1];
+        Integer links = 0;
+        if (!cvs.isEmpty()) {
+            Id documentId = cvs[0].ContentDocumentId;
+            links = [
+                SELECT COUNT() FROM ContentDocumentLink
+                 WHERE LinkedEntityId = :applicationId AND ContentDocumentId = :documentId
+            ];
+        }
+        if (links == 0) {
+            throw new AuraHandledException('That file is not in the Files of this application, so it cannot be sent to this client. ' +
+                'Refresh the page and pick the file again.');
         }
     }
 

@@ -1,0 +1,26 @@
+.card-body{
+    margin: 1rem;
+}
+
+p {
+    margin: 0.5rem;
+}
+
+.custom-combobox-label {
+  font-weight: bold;
+}
+
+.request-sign{
+    color: red !important;
+}
+
+.button-area{
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.comment-data{
+    color: grey;
+    font-weight: normal;
+    font-size: 0.8rem;
+}

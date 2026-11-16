@@ -167,7 +167,13 @@ public with sharing class PC1_WhatsAppController {
     /** Sandbox gate (PC1_SendGate) — the WhatsApp panel used to message any
      *  client number from the sandbox (audit 2026-10-02). */
     private static void assertMaySend(Id applicationId) {
-        List<PC1_Application__c> rows = [SELECT Phone__c FROM PC1_Application__c WHERE Id = :applicationId LIMIT 1];
+        List<PC1_Application__c> rows = [SELECT Phone__c, Do_Not_Contact__c FROM PC1_Application__c WHERE Id = :applicationId LIMIT 1];
+        // Audit 2026-11-11 PC-APEX-6 / PC-SFUI-3: Do Not Contact was honoured
+        // by the dialler only. Same wording as the Heroku refusal.
+        if (!rows.isEmpty() && rows[0].Do_Not_Contact__c == true) {
+            throw new AuraHandledException(
+                'This client is marked Do Not Contact. WhatsApp is blocked; speak to a supervisor before contacting them.');
+        }
         String phone = rows.isEmpty() ? null : rows[0].Phone__c;
         if (!PC1_SendGate.allowSms(phone)) {
             throw new AuraHandledException(PC1_SendGate.blockReason(String.isBlank(phone) ? '(no phone)' : phone));

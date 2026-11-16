@@ -1,9 +1,9 @@
 <template>
-    <lightning-modal-header label="Confirm fee charge"></lightning-modal-header>
+    <lightning-modal-header label="Confirm fee collection"></lightning-modal-header>
     <lightning-modal-body>
         <div class="pc1-feemodal__body">
             <p class="pc1-feemodal__prompt">
-                Charge&nbsp;
+                Schedule&nbsp;
                 <strong>
                     <lightning-formatted-number
                         value={firstInstallmentAmount}
@@ -12,7 +12,7 @@
                     </lightning-formatted-number>
                 </strong>
                 &nbsp;from
-                <strong>{clientName}</strong>'s account?
+                <strong>{clientName}</strong>'s account on <strong>{firstChargeDateDisplay}</strong>?
             </p>
             <p class="pc1-feemodal__context">
                 This is 20% of the&nbsp;
@@ -35,13 +35,13 @@
             </p>
             <template if:true={multiInstallment}>
                 <p class="pc1-feemodal__plan">
-                    Remaining {remainingCount} installment<template if:true={remainingPlural}>s</template>
-                    ({remainingDates}) will be charged automatically by the daily
-                    scheduler. Bacs advance notice fires 3 working days before each.
+                    The remaining {remainingCount} payment<template if:true={remainingPlural}>s</template>
+                    ({remainingDates}) are collected automatically.
                 </p>
             </template>
             <p class="pc1-feemodal__notice">
-                The client will receive a Bacs advance notice 3 working days before the charge lands.
+                Nothing is taken today. The client is emailed a Direct Debit advance notice at least 5 days before
+                each payment, and each payment is collected on the date its notice gives.
             </p>
 
             <div class="pc1-feemodal__checks">

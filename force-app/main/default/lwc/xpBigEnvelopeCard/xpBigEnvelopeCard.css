@@ -1,0 +1,89 @@
+.card {
+    overflow: hidden;
+    font-size: 0.8125rem;
+}
+.head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #f3f3f3;
+    border-bottom: 1px solid #c9c9c9;
+}
+.title {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+.rows {
+    list-style: none;
+    margin: 0;
+    padding: 0.125rem 0;
+}
+/* name | hint | date: the dates line up on the right */
+.row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.3125rem 0.75rem;
+}
+.row + .row {
+    border-top: 1px solid #e5e5e5;
+}
+.name {
+    font-weight: 700;
+    white-space: nowrap;
+}
+a.name {
+    cursor: pointer;
+}
+.name.missing {
+    font-weight: 400;
+    color: #5c5c5c;
+}
+.hint {
+    font-size: 0.75rem;
+    color: #5c5c5c;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.date {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+.note {
+    padding: 0.5rem 0.75rem;
+    color: #5c5c5c;
+}
+.note.err {
+    color: #ba0517;
+}
+/* Só neste card: linha inteira embaixo da linha, para o que não cabe na dica (erros, avisos, plano de envelopes) */
+.detail {
+    grid-column: 1 / -1;
+    margin-top: -0.25rem;
+    font-size: 0.75rem;
+    color: #5c5c5c;
+    overflow-wrap: anywhere;
+}
+.hint.warn,
+.date.warn,
+.detail.warn {
+    color: #8c4b02;
+}
+.hint.err,
+.detail.err {
+    color: #ba0517;
+}
+/* Alguém precisa agir agora (documentos na gráfica, Stage 2 não enviado) */
+.row.act {
+    background: #fbf3e0;
+}
+.row.act .hint {
+    font-weight: 700;
+}

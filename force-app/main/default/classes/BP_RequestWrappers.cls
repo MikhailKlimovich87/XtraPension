@@ -1,4 +1,38 @@
 public with sharing class BP_RequestWrappers {
+    // Every wrapper reads an empty string as null with replaceAll('""', 'null'). That also hits a text that ENDS with a
+    // double quote (JSON: ...said \"yes\""), turning it into broken JSON, so the whole save failed. The long form's body
+    // and its application object, which carry the free-text notes, skip a "" that follows a backslash (11/11/2026).
+    public static String blankToNull(String json) {
+        return json.replaceAll('(?<!\\\\)""', 'null');
+    }
+
+    // Call of 11/11/2026 17h13 (docs/claims-call-1111b/CONTRACT.md): keys a field is written from only when the form
+    // sends them, so an older form build (that does not send them) never blanks what the Short Form or the Claim page set.
+    public static final List<String> CALL_1111B_KEYS = new List<String>{
+        'hasNinoValue', 'previousMarriageEnded', 'dateOfRemarriage', 'currentSpouseFirstName', 'currentSpouseLastName',
+        'currentSpouseDob', 'currentSpouseNino', 'marriageNotes', 'addressUnknown'
+    };
+
+    /** The keys of application.<section> that came with a value ("" included); absent or null = not sent. */
+    public static Set<String> sentKeys(String inputData, String section) {
+        Set<String> out = new Set<String>();
+        if (String.isBlank(inputData)) return out;
+        Boolean hasKey = false;
+        for (String k : CALL_1111B_KEYS) {
+            if (inputData.contains('"' + k + '"')) { hasKey = true; break; }
+        }
+        if (!hasKey) return out;
+        Object raw = JSON.deserializeUntyped(inputData);
+        Object app = raw instanceof Map<String, Object> ? ((Map<String, Object>) raw).get('application') : null;
+        Object sec = app instanceof Map<String, Object> ? ((Map<String, Object>) app).get(section) : null;
+        if (!(sec instanceof Map<String, Object>)) return out;
+        Map<String, Object> m = (Map<String, Object>) sec;
+        for (String k : m.keySet()) {
+            if (m.get(k) != null) out.add(k);
+        }
+        return out;
+    }
+
     public class ApplicationCreateDataWrapper {
         public String id;
         public String currencyCode;
@@ -66,21 +100,39 @@ public with sharing class BP_RequestWrappers {
         // Partial autosave: only the form sections the client changed are in the payload
         public Boolean isPartial;
         public Set<String> sentSections;
+        // Notes for validation (application.otherInformation.validationNotes, 11/11/2026). Read from the raw body: the
+        // typed parse turns "" into null, and a box the agent emptied must not look like a form that does not send the
+        // key (an older build). Sent = the key came with a string, "" included; absent or null = leave the claim alone.
+        public Boolean validationNotesSent = false;
+        public String validationNotes;
+        // Call of 11/11/2026 17h13: the claimant / partner keys the payload really has (see sentKeys)
+        public Set<String> claimantKeys = new Set<String>();
+        public Set<String> partnerKeys = new Set<String>();
          public ApplicationDetailsDataWrapper(String inputData) {
-            ApplicationDetailsDataWrapper wrapper = (ApplicationDetailsDataWrapper) JSON.deserialize(inputData.replaceAll('""', 'null'), ApplicationDetailsDataWrapper.class);
+            ApplicationDetailsDataWrapper wrapper = (ApplicationDetailsDataWrapper) JSON.deserialize(BP_RequestWrappers.blankToNull(inputData), ApplicationDetailsDataWrapper.class);
             this.applicationId = wrapper.applicationId;
             this.currentStep = wrapper.currentStep;
             this.isAgentForm = wrapper.isAgentForm;
             this.isAutoSave = wrapper.isAutoSave != null ? wrapper.isAutoSave : false;
             this.isPartial = this.isAutoSave && wrapper.isPartial == true;
-            if (this.isPartial) {
-                // The typed wrapper replaces absent sections with empty objects, so read the raw keys
-                this.sentSections = new Set<String>();
+            Boolean hasNotesKey = inputData.contains('"validationNotes"');
+            if (this.isPartial || hasNotesKey) {
                 Object rawApplication = ((Map<String, Object>) JSON.deserializeUntyped(inputData)).get('application');
-                if (rawApplication instanceof Map<String, Object>) {
-                    this.sentSections.addAll(((Map<String, Object>) rawApplication).keySet());
+                Map<String, Object> rawSections = rawApplication instanceof Map<String, Object> ? (Map<String, Object>) rawApplication : new Map<String, Object>();
+                if (this.isPartial) {
+                    // The typed wrapper replaces absent sections with empty objects, so read the raw keys
+                    this.sentSections = new Set<String>();
+                    this.sentSections.addAll(rawSections.keySet());
+                }
+                Object rawOther = rawSections.get('otherInformation');
+                Object rawNotes = rawOther instanceof Map<String, Object> ? ((Map<String, Object>) rawOther).get('validationNotes') : null;
+                if (rawNotes != null) {
+                    this.validationNotesSent = true;
+                    this.validationNotes = String.valueOf(rawNotes);
                 }
             }
+            this.claimantKeys = BP_RequestWrappers.sentKeys(inputData, 'claimant');
+            this.partnerKeys = BP_RequestWrappers.sentKeys(inputData, 'partner');
             if (wrapper.application != null) {
                 this.application = new ApplicationFullWrapper(JSON.serialize(wrapper.application));
             } else {
@@ -102,7 +154,7 @@ public with sharing class BP_RequestWrappers {
         public BenefitsWrapper benefits;
 
         public ApplicationFullWrapper(String inputData) {
-            ApplicationFullWrapper wrapper = (ApplicationFullWrapper) JSON.deserialize(inputData.replaceAll('""', 'null'), ApplicationFullWrapper.class);
+            ApplicationFullWrapper wrapper = (ApplicationFullWrapper) JSON.deserialize(BP_RequestWrappers.blankToNull(inputData), ApplicationFullWrapper.class);
             if(wrapper.contactCommunication != null) {
                 this.contactCommunication = new ApplicationContactCommunication(JSON.serialize(wrapper.contactCommunication));
             } else {
@@ -172,6 +224,9 @@ public with sharing class BP_RequestWrappers {
         public String tel;
         public String email;
         public String relationship;
+        // "Wants a helper / Doesn't want a helper" at the top of the helper page (11/11/2026). Null = not asked yet, or a
+        // form build that does not send it: the claim keeps what it has.
+        public Boolean wantsHelper;
         public ApplicationContactCommunication(String inputData) {
             ApplicationContactCommunication wrapper = (ApplicationContactCommunication) JSON.deserialize(inputData.replaceAll('""', 'null'), ApplicationContactCommunication.class);
             this.firstName = wrapper.firstName;
@@ -179,6 +234,7 @@ public with sharing class BP_RequestWrappers {
             this.tel = wrapper.tel;
             this.email = wrapper.email;
             this.relationship = wrapper.relationship;
+            this.wantsHelper = wrapper.wantsHelper;
         }
         public ApplicationContactCommunication() {
             this.firstName = '';
@@ -234,11 +290,29 @@ public with sharing class BP_RequestWrappers {
         public Boolean wasCleansed;
         public Boolean everWorkedUKuseSameDates;
         public String phoneType;
-        public Integer approxYearsInUK;
+        public Decimal approxYearsInUK; // half years allowed (11/11/2026)
         public String everLivedUKNotes;
         public String firstName;
         public String state;
         public String stateName;
+        // HM Forces (BR1 Q17), long form "About the Claimant" (agreed with the devs 10/11/2026). Null when the form does not send them.
+        public Boolean hmForces;
+        public String hmForcesService;
+        public String hmForcesEnlisted;
+        public String hmForcesDischarged;
+        public String hmForcesDischargedWhere;
+        public String hmForcesRegiment;
+        public String hmForcesServiceNumber;
+        public String hmForcesRank;
+        // Call of 11/11/2026 17h13 (docs/claims-call-1111b/CONTRACT.md). Null when the form does not send them.
+        public String hasNinoValue; // 'Yes', 'Forgot', 'Never Had' (Has_Nino__c)
+        public String previousMarriageEnded; // Remarried: 'Divorced' or 'Widowed'
+        public String dateOfRemarriage;
+        public String currentSpouseFirstName;
+        public String currentSpouseLastName;
+        public String currentSpouseDob;
+        public String currentSpouseNino;
+        public String marriageNotes;
         //public Boolean verifiedReference;
         //public Boolean verificationDetails;
 
@@ -289,6 +363,22 @@ public with sharing class BP_RequestWrappers {
             this.state = wrapper.state == 'IE' ? wrapper.state : CountryCodeHelper.getCountryStateISOByName(wrapper.state);
             this.stateName = wrapper.state;
             this.middleName = wrapper.middleName;
+            this.hmForces = wrapper.hmForces;
+            this.hmForcesService = wrapper.hmForcesService;
+            this.hmForcesEnlisted = wrapper.hmForcesEnlisted;
+            this.hmForcesDischarged = wrapper.hmForcesDischarged;
+            this.hmForcesDischargedWhere = wrapper.hmForcesDischargedWhere;
+            this.hmForcesRegiment = wrapper.hmForcesRegiment;
+            this.hmForcesServiceNumber = wrapper.hmForcesServiceNumber;
+            this.hmForcesRank = wrapper.hmForcesRank;
+            this.hasNinoValue = wrapper.hasNinoValue;
+            this.previousMarriageEnded = wrapper.previousMarriageEnded;
+            this.dateOfRemarriage = wrapper.dateOfRemarriage;
+            this.currentSpouseFirstName = wrapper.currentSpouseFirstName;
+            this.currentSpouseLastName = wrapper.currentSpouseLastName;
+            this.currentSpouseDob = wrapper.currentSpouseDob;
+            this.currentSpouseNino = wrapper.currentSpouseNino;
+            this.marriageNotes = wrapper.marriageNotes;
 
             System.debug(this.stateName);
             if(wrapper.countriesLived != null) {    
@@ -548,8 +638,13 @@ public with sharing class BP_RequestWrappers {
         public String fullName;
         public Boolean claimingUKPension;
         public String referenceOnAnyDWPLetters;
+        // The spouse's UK employers (long form, shown when the spouse gets a UK State Pension; devs 11/11/2026)
+        public List<CompaniesWrapper> ukCompanies;
         public String state;
         public String stateName;
+        // Call of 11/11/2026 17h13 (docs/claims-call-1111b/CONTRACT.md). Null when the form does not send them.
+        public String hasNinoValue; // 'Yes', 'Forgot', 'Never Had' (Partner_Has_Nino_values__c)
+        public Boolean addressUnknown; // Partner_Address_Unknown__c
 
        // public Boolean verifiedReference;
         //public Boolean verificationDetails;
@@ -582,8 +677,11 @@ public with sharing class BP_RequestWrappers {
             this.everLivedUKNotes = wrapper.everLivedUKNotes;
             this.claimingUKPension = wrapper.claimingUKPension;
             this.referenceOnAnyDWPLetters = wrapper.referenceOnAnyDWPLetters;
+            this.ukCompanies = wrapper.ukCompanies == null ? new List<CompaniesWrapper>() : wrapper.ukCompanies;
             this.state = wrapper.state == 'IE' ? wrapper.state : CountryCodeHelper.getCountryStateISOByName(wrapper.state);
             this.stateName = wrapper.state;
+            this.hasNinoValue = wrapper.hasNinoValue;
+            this.addressUnknown = wrapper.addressUnknown;
         }
          public PartnerWrapper() {
             this.title = '';
@@ -612,6 +710,7 @@ public with sharing class BP_RequestWrappers {
             this.everLivedUKNotes = '';
             this.claimingUKPension = false;
             this.referenceOnAnyDWPLetters = '';
+            this.ukCompanies = new List<CompaniesWrapper>();
             this.state = '';
             this.stateName = '';
         }
@@ -735,11 +834,15 @@ public with sharing class BP_RequestWrappers {
         public Boolean hasEnvelope;
         public FormDataWrapper application;
         public Boolean isAutoSave;
-        
+        // Call of 11/11/2026 17h13: the client / trackB keys the payload really has (see sentKeys)
+        public Set<String> clientKeys = new Set<String>();
+        public Set<String> trackBKeys = new Set<String>();
 
         public ShortApplicationDataWrapper(String inputData) {
             ShortApplicationDataWrapper wrapper = (ShortApplicationDataWrapper) JSON.deserialize(inputData.replaceAll('""', 'null'), ShortApplicationDataWrapper.class);
             this.applicationId = wrapper.applicationId;
+            this.clientKeys = BP_RequestWrappers.sentKeys(inputData, 'client');
+            this.trackBKeys = BP_RequestWrappers.sentKeys(inputData, 'trackB');
             if(wrapper.application != null) {
                 this.application = new FormDataWrapper(JSON.serialize(wrapper.application));
             } else {
@@ -849,9 +952,13 @@ public with sharing class BP_RequestWrappers {
         public String verificationStatus;
         public Boolean wasCleansed;
         public String nationality;
-        public Integer approxYearsInUK;
+        public Decimal approxYearsInUK; // half years allowed (11/11/2026)
         public String state;
         public String stateName;
+        // Call of 11/11/2026 17h13 (docs/claims-call-1111b/CONTRACT.md). Null when the form does not send them.
+        public String previousMarriageEnded;
+        public String dateOfRemarriage;
+        public String marriageNotes;
         //public Boolean verifiedReference;
         //public Boolean verificationDetails;
       
@@ -886,7 +993,9 @@ public with sharing class BP_RequestWrappers {
             this.approxYearsInUK = wrapper.approxYearsInUK;
             this.state = wrapper.state == 'IE' ? wrapper.state : CountryCodeHelper.getCountryStateISOByName(wrapper.state);
             this.stateName = wrapper.state;
-            
+            this.previousMarriageEnded = wrapper.previousMarriageEnded;
+            this.dateOfRemarriage = wrapper.dateOfRemarriage;
+            this.marriageNotes = wrapper.marriageNotes;
         }
 
         public ClientWrapper() {
@@ -984,9 +1093,12 @@ public with sharing class BP_RequestWrappers {
         //public Boolean verificationDetails;
         public String state;
         public String stateName;
+        // Call of 11/11/2026 17h13: the husband's address "Not known" (Partner_Address_Unknown__c), only when sent
+        public Boolean addressUnknown;
 
         public TrackBWrapper(String inputData) {
             TrackBWrapper wrapper = (TrackBWrapper) JSON.deserialize(inputData.replaceAll('""', 'null'), TrackBWrapper.class);
+            this.addressUnknown = wrapper.addressUnknown;
             this.husbandAlive = wrapper.husbandAlive;
             this.husbandFullName = wrapper.husbandFullName;
             this.husbandFirstName = wrapper.husbandFirstName;
@@ -1068,6 +1180,8 @@ public with sharing class BP_RequestWrappers {
         public String city;
         public String wifeHasNino;
         public String wifeNino;
+        // "Is your wife getting a UK State Pension now?" (Short Form, devs 11/11/2026) -> Partner_State_Pension__c
+        public Boolean wifeGettinStatePensionNow;
         public List<CompaniesWrapper> employers;
         public List<CompaniesWrapper> addresses;
 
@@ -1095,6 +1209,7 @@ public with sharing class BP_RequestWrappers {
             this.city = wrapper.city;
             this.wifeHasNino = wrapper.wifeHasNino;
             this.wifeNino = wrapper.wifeNino;
+            this.wifeGettinStatePensionNow = wrapper.wifeGettinStatePensionNow;
             this.employers = wrapper.employers;
             this.addresses = wrapper.addresses;
 

@@ -24,7 +24,7 @@ private class PC1_MorningReminderSchedulerTest {
             First_Name__c = 'Morning',
             Last_Name__c  = 'Test' + System.now().getTime() + counter,
             Phone__c      = '+441234567890',
-            Stage__c      = 'New'
+            Stage__c      = 'Awaiting First Call'   // a stage the dialler calls
         );
     }
 
@@ -176,6 +176,34 @@ private class PC1_MorningReminderSchedulerTest {
 
         System.assert(out.contains('dispatched=0'),
             'A row 3 days out must not dispatch on today\'s UK window: ' + out);
+    }
+
+    // ── 6b. Audit 2026-11-11 PC-APEX-6: no reminder where nobody will ring.
+    @isTest static void skips_do_not_contact_and_non_dialable_stages() {
+        PC1_MorningReminderScheduler.testBypass = true;
+        PC1_MorningReminderScheduler.testDispatched.clear();
+
+        PC1_Application__c ok = makeApp();
+        PC1_Application__c deceased = makeApp();
+        deceased.Do_Not_Contact__c = true;
+        PC1_Application__c submitted = makeApp();
+        submitted.Stage__c = 'Awarded';
+        insert new List<PC1_Application__c>{ ok, deceased, submitted };
+
+        Datetime anchor = Datetime.now().addMinutes(30);
+        insert new List<PC1_Call_Schedule__c>{
+            new PC1_Call_Schedule__c(Application__c = ok.Id, Scheduled_At__c = anchor, Status__c = 'Pending'),
+            new PC1_Call_Schedule__c(Application__c = deceased.Id, Scheduled_At__c = anchor, Status__c = 'Pending'),
+            new PC1_Call_Schedule__c(Application__c = submitted.Id, Scheduled_At__c = anchor, Status__c = 'Pending')
+        };
+
+        Test.startTest();
+        String out = PC1_MorningReminderScheduler.run(ukSameDay(anchor, 7));
+        Test.stopTest();
+
+        System.assert(out.contains('dispatched=1'), 'only the dialable, contactable client: ' + out);
+        System.assertEquals(1, PC1_MorningReminderScheduler.testDispatched.size());
+        System.assertEquals(ok.Id, PC1_MorningReminderScheduler.testDispatched[0]);
     }
 
     // ── 7. execute() entrypoint smoke — proves Schedulable contract works.

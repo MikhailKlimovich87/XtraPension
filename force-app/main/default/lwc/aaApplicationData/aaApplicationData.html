@@ -40,6 +40,17 @@
                                                             <template lwc:if={f.editorIsText}>
                                                                 <input class="slds-input ed-input" type="text" data-input value={f.editorSpec.value} aria-label={f.label} />
                                                             </template>
+                                                            <!-- health-conditions, after a Save refused for a name
+                                                                 that is not on DWP's list (AA-ENGINE-1). -->
+                                                            <template lwc:if={f.hasConditionHelp}>
+                                                                <div class="cond-help" role="note">
+                                                                    <span class="cond-help-text">{f.conditionHelpText}</span>
+                                                                    <template for:each={f.conditionChoices} for:item="c">
+                                                                        <button key={c} type="button" class="slds-button slds-button_neutral cond-choice" data-name={c} onclick={handleConditionChoice}>{c}</button>
+                                                                    </template>
+                                                                    <button type="button" class="slds-button cond-manual" onclick={handleConditionManual}>{f.conditionManualLabel}</button>
+                                                                </div>
+                                                            </template>
                                                             <template lwc:if={f.editorIsTextarea}>
                                                                 <textarea class="slds-textarea ed-input" data-input rows="3" value={f.editorSpec.value} aria-label={f.label}></textarea>
                                                             </template>
@@ -178,6 +189,17 @@
                                                         <div class="editor" data-editor-key={f.editKey} data-fieldid={f.fieldId} data-suffix={f.suffix} data-kind={f.editorSpec.kind} data-fieldtype={f.fieldType} onkeydown={handleEditorKey}>
                                                             <template lwc:if={f.editorIsText}>
                                                                 <input class="slds-input ed-input" type="text" data-input value={f.editorSpec.value} aria-label={f.label} />
+                                                            </template>
+                                                            <!-- health-conditions, after a Save refused for a name
+                                                                 that is not on DWP's list (AA-ENGINE-1). -->
+                                                            <template lwc:if={f.hasConditionHelp}>
+                                                                <div class="cond-help" role="note">
+                                                                    <span class="cond-help-text">{f.conditionHelpText}</span>
+                                                                    <template for:each={f.conditionChoices} for:item="c">
+                                                                        <button key={c} type="button" class="slds-button slds-button_neutral cond-choice" data-name={c} onclick={handleConditionChoice}>{c}</button>
+                                                                    </template>
+                                                                    <button type="button" class="slds-button cond-manual" onclick={handleConditionManual}>{f.conditionManualLabel}</button>
+                                                                </div>
                                                             </template>
                                                             <template lwc:if={f.editorIsTextarea}>
                                                                 <textarea class="slds-textarea ed-input" data-input rows="3" value={f.editorSpec.value} aria-label={f.label}></textarea>

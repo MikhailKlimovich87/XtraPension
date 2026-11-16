@@ -35,7 +35,17 @@ trigger PC1_DDTermsReadTrigger on PC1_Application__c (before insert, before upda
 
         if (nowRead) {
             app.DD_Terms_Read_At__c = now;
-            app.DD_Terms_Read_By__c = userId;
+            // Audit 2026-11-11 PC-APEX-15 (port of AA F118): intake writes
+            // through the single Heroku integration user, so UserInfo names
+            // that user, not the agent who read the Direct Debit terms. When
+            // the caller sets DD_Terms_Read_By__c in the same DML (intake
+            // mapping the signed-in agent to their User), keep it; otherwise
+            // stamp the current user as before.
+            Id supplied = app.DD_Terms_Read_By__c;
+            Id prior = Trigger.isInsert ? null : Trigger.oldMap.get(app.Id).DD_Terms_Read_By__c;
+            if (supplied == null || supplied == prior) {
+                app.DD_Terms_Read_By__c = userId;
+            }
         } else {
             app.DD_Terms_Read_At__c = null;
             app.DD_Terms_Read_By__c = null;

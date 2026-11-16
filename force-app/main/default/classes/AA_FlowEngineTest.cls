@@ -466,7 +466,7 @@ private class AA_FlowEngineTest {
         AA_Application__c waiting = makeApp();
         AA_Answer__c a2 = signedAppWithAnswer(waiting, 'form');
         update new List<AA_Application__c>{
-            new AA_Application__c(Id = awarded.Id, Stage__c = 'Awarded'),
+            new AA_Application__c(Id = awarded.Id, Stage__c = 'Awarded', Award_Amount__c = 3988.40),
             new AA_Application__c(Id = waiting.Id, Stage__c = 'Awaiting DWP Decision')
         };
 

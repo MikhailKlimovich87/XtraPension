@@ -187,4 +187,25 @@ private class AA_WhatsAppControllerTest {
         System.assertEquals(1, files.size());
         System.assertEquals('doc.pdf', files[0].filename);
     }
+
+    // audit 2026-11-11 AA-APEX-6: only a file of THIS application may be sent
+    // to its client.
+    @IsTest static void a_file_of_another_application_is_refused_before_the_callout() {
+        seedConfig();
+        AA_Application__c app = makeApp(false);
+        AA_Application__c other = makeApp(false);
+        ContentVersion cv = new ContentVersion(Title = 'Other client mandate', PathOnClient = 'mandate.pdf',
+            VersionData = Blob.valueOf('%PDF-1.4'), FirstPublishLocationId = other.Id);
+        insert cv;
+        HerokuMock mock = new HerokuMock(200, '{"status":"ok","message":{"uid":"x"}}');
+        Test.setMock(HttpCalloutMock.class, mock);
+
+        Boolean threw = false;
+        Test.startTest();
+        try { AA_WhatsAppController.sendFileMessage(app.Id, cv.Id, null); } catch (AuraHandledException e) { threw = true; }
+        Test.stopTest();
+
+        System.assert(threw, 'a file linked to another application must not be sent to this client');
+        System.assertEquals(null, mock.lastReq, 'Heroku must not be called at all');
+    }
 }

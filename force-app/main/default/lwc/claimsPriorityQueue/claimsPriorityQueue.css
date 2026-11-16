@@ -1,0 +1,240 @@
+.page {
+    font-size: 0.875rem;
+    background: #ffffff;
+    padding: 1rem;
+    min-height: 100%;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.title {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.subtitle,
+.muted,
+.updated {
+    color: #706e6b;
+    font-size: 0.75rem;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.help {
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #c9c9c9;
+    border-radius: 6px;
+    background: #f8f8f8;
+    font-size: 0.8rem;
+}
+
+.help p {
+    margin-bottom: 0.4rem;
+}
+
+.help ol {
+    list-style: decimal;
+    margin: 0.25rem 0 0.5rem 1.25rem;
+}
+
+.help li {
+    margin-bottom: 0.2rem;
+}
+
+.warning {
+    margin-top: 0.75rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    background: #fffbea;
+    color: #9f5919;
+}
+
+.stats {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    margin: 0.75rem 0;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    background: #f3f3f3;
+}
+
+.stat-due {
+    color: #9b2935;
+}
+
+.by-agent {
+    margin-left: auto;
+    color: #444444;
+    font-size: 0.8rem;
+}
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.chip {
+    border: 1px solid #c9c9c9;
+    border-radius: 999px;
+    padding: 0.15rem 0.7rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.chip-active {
+    border-color: #0176d3;
+    box-shadow: 0 0 0 2px rgba(1, 118, 211, 0.25);
+}
+
+.chip-empty {
+    opacity: 0.6;
+}
+
+.chip-due { background: #f3f3f3; color: #181818; }
+.chip-problem, .lane-problem { background: #fef3f2; color: #9b2935; }
+.chip-reply, .lane-reply { background: #f3edff; color: #5a2d9e; }
+.chip-next, .lane-next { background: #eef4ff; color: #0b5cab; }
+.chip-call, .lane-call { background: #e9f9fb; color: #0b6b78; }
+.chip-chase, .lane-chase { background: #fffbea; color: #8c4b02; }
+.chip-esign, .lane-esign { background: #fdf2f8; color: #8f1d5c; }
+.chip-pack, .lane-pack { background: #f1f8ee; color: #2e6b1f; }
+.chip-dwp, .lane-dwp { background: #effdf4; color: #076838; }
+.chip-hold, .lane-hold { background: #f3f3f3; color: #444444; }
+.chip-upcoming { background: #ffffff; color: #444444; }
+
+.selects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.select {
+    min-width: 10rem;
+}
+
+.search {
+    min-width: 12rem;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+.queue-table {
+    font-size: 0.8rem;
+}
+
+.queue-table td {
+    vertical-align: top;
+}
+
+.sort {
+    border: none;
+    background: none;
+    padding: 0;
+    font-weight: bold;
+    color: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.sort-active {
+    color: #0176d3;
+}
+
+.lane {
+    display: inline-block;
+    margin-top: 0.15rem;
+    border-radius: 4px;
+    padding: 0 0.35rem;
+    font-size: 0.7rem;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.action {
+    white-space: normal;
+    min-width: 18rem;
+    max-width: 30rem;
+}
+
+.action-text {
+    font-weight: bold;
+}
+
+.also {
+    margin-top: 0.3rem;
+    padding-left: 0.5rem;
+    border-left: 3px solid #e5e5e5;
+    color: #444444;
+}
+
+.also-label {
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: #706e6b;
+}
+
+.nowrap,
+.due {
+    white-space: nowrap;
+}
+
+.due-late { color: #9b2935; font-weight: bold; }
+.due-over { color: #9b2935; }
+.due-today { color: #9f5919; font-weight: bold; }
+.due-soon { color: #706e6b; }
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.loading {
+    position: relative;
+    min-height: 6rem;
+}
+
+.empty {
+    margin: 1.5rem 0;
+    text-align: center;
+}
+
+.empty-title {
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+}
+
+.error {
+    margin: 1rem 0;
+    color: #9b2935;
+}

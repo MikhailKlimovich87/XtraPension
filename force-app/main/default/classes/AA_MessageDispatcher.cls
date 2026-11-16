@@ -164,7 +164,32 @@ public with sharing class AA_MessageDispatcher implements Queueable, Database.Al
         'Awarded'          => 'Application_Approved_by_DWP',
         'Closed - Refused' => 'Application_Rejected_by_DWP'
     };
-    @TestVisible private static final Set<String> ONCE_PER_APP_EVENTS = new Set<String>(OUTCOME_EVENT_BY_STAGE.values());
+    // The welcome pack is once per application too (audit 2026-11-11
+    // AA-APEX-7): AA_ApplicationTrigger dispatches Intake_Created whenever
+    // DD_Mandate_Id__c goes from blank to set, which also happens months later
+    // when a dead mandate is replaced and its PDF arrives late. The new mandate
+    // is announced by DD_Mandate_Confirmed (Heroku, on activation).
+    @TestVisible private static final Set<String> ONCE_PER_APP_EVENTS = buildOncePerAppEvents();
+    private static Set<String> buildOncePerAppEvents() {
+        Set<String> s = new Set<String>(OUTCOME_EVENT_BY_STAGE.values());
+        s.add('Intake_Created');
+        return s;
+    }
+
+    private static final String BACS_NOTICE_EVENT = 'Bacs_Advance_Notice';
+
+    // Applications handled per execute() (audit 2026-11-11 AA-APEX-2, ported
+    // from PC1_MessageDispatcher R9-CRIT#2). One Twilio callout is made per
+    // application per SMS template and the limit is 100 callouts (120 s) per
+    // transaction: past it an uncatchable LimitException killed the job AFTER
+    // the first 100 texts had gone, and no log row was written for anyone.
+    // execute() takes at most this many (fewer with several SMS templates or
+    // per-application PDFs) and enqueues the rest as a follow-up job.
+    @TestVisible private static final Integer MAX_APPS_PER_EXECUTE = 25;
+
+    // Jobs execute() would have enqueued. A test cannot chain Queueables, so
+    // in a test they are collected here instead (and can be run by hand).
+    @TestVisible private static List<Queueable> testFollowUps = new List<Queueable>();
 
     // ─── queueable state ────────────────────────────────────────────
     private final Set<Id> appIds;
@@ -174,15 +199,24 @@ public with sharing class AA_MessageDispatcher implements Queueable, Database.Al
     // for the template+app, not just the last 24 h, so only the parts that
     // never went out are sent.
     private final Boolean resendHeld;
+    // Bacs advance notice only (dispatchBacsAdvanceNotice): application ->
+    // the AA_Fee_Installment__c row this notice announces. null for every
+    // other dispatch.
+    private final Map<Id, Id> noticeInstallmentByApp;
 
     private AA_MessageDispatcher(Set<Id> appIds, String triggerEvent) {
-        this(appIds, triggerEvent, false);
+        this(appIds, triggerEvent, false, null);
     }
 
     private AA_MessageDispatcher(Set<Id> appIds, String triggerEvent, Boolean resendHeld) {
+        this(appIds, triggerEvent, resendHeld, null);
+    }
+
+    private AA_MessageDispatcher(Set<Id> appIds, String triggerEvent, Boolean resendHeld, Map<Id, Id> noticeInstallmentByApp) {
         this.appIds       = appIds;
         this.triggerEvent = triggerEvent;
         this.resendHeld   = resendHeld == true;
+        this.noticeInstallmentByApp = noticeInstallmentByApp;
     }
 
     // ═════════════════════════ HELPERS ══════════════════════════════
@@ -235,6 +269,30 @@ public with sharing class AA_MessageDispatcher implements Queueable, Database.Al
     public static Id dispatchHeldResend(Set<Id> appIds, String triggerEvent) {
         if (appIds == null || appIds.isEmpty() || String.isBlank(triggerEvent)) return null;
         return run(new AA_MessageDispatcher(appIds, triggerEvent, true));
+    }
+
+    /**
+     * The Bacs advance notice for NAMED instalments (audit 2026-11-11
+     * AA-APEX-1 / AA-APEX-4): application -> the AA_Fee_Installment__c row
+     * the notice is for. Used by AA_FeeInstallmentScheduler, which has just
+     * decided (per row, by its Bacs_Notice_Sent__c stamp) that a notice is due.
+     * Differences from dispatch(appIds, 'Bacs_Advance_Notice'):
+     *   - {{FeeNextInstallmentNumber/Amount/Date}} come from that row, not
+     *     from "the earliest pending row": a retried instalment #1 used to be
+     *     announced with the number, amount and date of instalment #2;
+     *   - no 24 h dedup. The scheduler's per-row stamp is the dedup, and every
+     *     second notice inside 24 h is for a different instalment or a new
+     *     date, which the client must be told;
+     *   - the outcome goes back to the scheduler: a notice that was not Sent
+     *     clears the row's stamp and raises a Task
+     *     (AA_FeeInstallmentScheduler.noticeNotSent), and the charge step is
+     *     enqueued after the send, so a payment is only created once its
+     *     notice is on the send log.
+     */
+    public static Id dispatchBacsAdvanceNotice(Map<Id, Id> installmentByApp) {
+        if (installmentByApp == null || installmentByApp.isEmpty()) return null;
+        return run(new AA_MessageDispatcher(
+            new Set<Id>(installmentByApp.keySet()), BACS_NOTICE_EVENT, false, new Map<Id, Id>(installmentByApp)));
     }
 
     /**
@@ -358,6 +416,67 @@ public with sharing class AA_MessageDispatcher implements Queueable, Database.Al
         ];
         if (templates.isEmpty()) return;
 
+        // 1b. This run's share of the applications (see MAX_APPS_PER_EXECUTE).
+        //     SMS: at most ~80 Twilio callouts per run. Per-application PDFs:
+        //     at most 8 applications, they are loaded into the 12 MB heap.
+        Integer smsTemplates = 0;
+        Boolean anyAppFiles = false;
+        for (AA_Message_Template__c t : templates) {
+            if ('SMS'.equalsIgnoreCase(t.Channel__c)) smsTemplates++;
+            if (String.isNotBlank(t.Attach_App_File_Titles__c)) anyAppFiles = true;
+        }
+        Integer maxApps = smsTemplates == 0
+            ? MAX_APPS_PER_EXECUTE
+            : Math.max(5, Math.min(MAX_APPS_PER_EXECUTE, 80 / smsTemplates));
+        if (anyAppFiles) maxApps = Math.min(maxApps, 8);
+        Set<Id> chunkIds = new Set<Id>();
+        Set<Id> remainder = new Set<Id>();
+        for (Id anId : appIds) {
+            if (chunkIds.size() < maxApps) chunkIds.add(anId); else remainder.add(anId);
+        }
+        // From a @future or Batch context run() executes this inline and a
+        // follow-up job cannot be relied on: send everything in this run.
+        if (!remainder.isEmpty() && (System.isFuture() || System.isBatch())) {
+            System.debug(LoggingLevel.WARN, 'AA_MessageDispatcher: ' + appIds.size() + ' applications for '
+                + triggerEvent + ' in a future/batch context (limit per run ' + maxApps + '): sent in one run.');
+            chunkIds = new Set<Id>(appIds);
+            remainder = new Set<Id>();
+        }
+
+        sendChunk(templates, chunkIds);
+
+        // A running Queueable may enqueue ONE job: the rest of the applications
+        // first; the last run of a Bacs advance notice hands over to the charge
+        // step, which creates the payments whose notice is now on the send log.
+        if (!remainder.isEmpty()) {
+            enqueueFollowUp(new AA_MessageDispatcher(remainder, triggerEvent, resendHeld, noticeInstallmentByApp),
+                remainder.size() + ' more application(s) for ' + triggerEvent);
+        } else if (isNamedBacsNotice()) {
+            enqueueFollowUp(new AA_FeeInstallmentChargeQueueable(Date.today()), 'the fee charge step');
+        }
+    }
+
+    private Boolean isNamedBacsNotice() {
+        return noticeInstallmentByApp != null && BACS_NOTICE_EVENT.equals(triggerEvent);
+    }
+
+    private static void enqueueFollowUp(Queueable job, String what) {
+        if (Test.isRunningTest()) {
+            testFollowUps.add(job);
+            return;
+        }
+        try {
+            System.enqueueJob(job);
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'AA_MessageDispatcher: could not enqueue ' + what + ': ' + e.getMessage());
+            AA_HandoffService.emailOps('AA: a message follow-up job could not be queued',
+                'AA_MessageDispatcher could not enqueue ' + what + ' (' + e.getMessage() + '). '
+                + 'Messages for those applications were not sent. Fee instalments wait for the next daily run.');
+        }
+    }
+
+    /** Steps 2 to 9 for one chunk of applications. */
+    private void sendChunk(List<AA_Message_Template__c> templates, Set<Id> chunkIds) {
         // 2. Apps ────────────────────────────────────────────────────
         Map<Id, AA_Application__c> appMap = new Map<Id, AA_Application__c>([
             SELECT Id, Name, First_Name__c, Last_Name__c, Full_Name__c,
@@ -368,7 +487,7 @@ public with sharing class AA_MessageDispatcher implements Queueable, Database.Al
                    Helper_First_Name__c, Helper_Last_Name__c, Helper_Email__c, Helper_Phone__c,
                    Do_Not_Contact__c, SMS_Opt_Out__c, Client_Form_URL__c, Signature__c
               FROM AA_Application__c
-             WHERE Id IN :appIds
+             WHERE Id IN :chunkIds
         ]);
         if (appMap.isEmpty()) return;
 
@@ -383,6 +502,31 @@ public with sharing class AA_MessageDispatcher implements Queueable, Database.Al
         //     tokens ({{FeeNextInstallmentNumber/Amount/Date}}), which describe
         //     the charge that is ABOUT to happen rather than the last one taken.
         Map<Id, AA_Fee_Installment__c> nextInstByApp = loadNextPendingInstallment(appMap.keySet());
+        // 3d. A Bacs advance notice for named instalments describes exactly
+        //     those rows (audit 2026-11-11 AA-APEX-4). A named row that is gone
+        //     or no longer waiting to be collected (the plan was cancelled
+        //     between the request and this send) gets no notice at all.
+        Boolean namedNotice = isNamedBacsNotice();
+        Set<Id> namedRowMissing = new Set<Id>();
+        if (namedNotice) {
+            Set<Id> namedIds = new Set<Id>();
+            for (Id appId : appMap.keySet()) {
+                if (noticeInstallmentByApp.get(appId) != null) namedIds.add(noticeInstallmentByApp.get(appId));
+            }
+            Map<Id, AA_Fee_Installment__c> namedByApp = new Map<Id, AA_Fee_Installment__c>();
+            for (AA_Fee_Installment__c fi : [
+                    SELECT Application__c, Installment_Number__c, Amount__c, Scheduled_Date__c
+                      FROM AA_Fee_Installment__c
+                     WHERE Id IN :namedIds
+                       AND Payment_Status__c = 'pending'
+                       AND Charged_At__c = null]) {
+                namedByApp.put(fi.Application__c, fi);
+            }
+            for (Id appId : appMap.keySet()) {
+                if (namedByApp.containsKey(appId)) nextInstByApp.put(appId, namedByApp.get(appId));
+                else namedRowMissing.add(appId);
+            }
+        }
 
         // 4. Dedup pre-check — one SOQL for all combos ───────────────
         Set<Id> templateIds = new Set<Id>();
@@ -398,10 +542,13 @@ public with sharing class AA_MessageDispatcher implements Queueable, Database.Al
                 SELECT Template__c, Application__c
                   FROM AA_Message_Send_Log__c
                  WHERE Template__c IN :templateIds
-                   AND Application__c IN :appIds
+                   AND Application__c IN :chunkIds
                    AND Status__c = 'Sent'
                    AND Sent_At__c >= :cutoff
         ]) {
+            // A notice for a named instalment is not deduped here: the fee
+            // scheduler's per-row stamp is its dedup (see dispatchBacsAdvanceNotice).
+            if (namedNotice) continue;
             recentSent.add(prior.Template__c + '|' + prior.Application__c);
         }
 
@@ -487,6 +634,15 @@ public with sharing class AA_MessageDispatcher implements Queueable, Database.Al
                     log.Status__c        = optOutStatus;
                     log.Sent_At__c       = Datetime.now();
                     log.Error_Message__c = 'Suppressed: SMS_Opt_Out__c is true (the client replied STOP). No SMS was sent; email and calls are not affected.';
+                    pendingLogs.add(log);
+                    continue;
+                }
+
+                // Named Bacs notice whose instalment is no longer there ───
+                if (namedRowMissing.contains(appId)) {
+                    log.Status__c        = 'Failed';
+                    log.Sent_At__c       = Datetime.now();
+                    log.Error_Message__c = 'Not sent: the fee instalment this advance notice was for no longer exists or is no longer waiting to be collected.';
                     pendingLogs.add(log);
                     continue;
                 }
@@ -787,6 +943,39 @@ public with sharing class AA_MessageDispatcher implements Queueable, Database.Al
                 + 'by hand to the application\'s Files, titled {AppName}_{First}_{Last}_{Document} '
                 + '(for example AA00012_Mary_Smith_Mandate).\n\n'
                 + String.join(heldSummaries, '\n'));
+        }
+
+        // 10. Named Bacs advance notices: tell the fee scheduler which ones
+        //     did NOT go out (audit 2026-11-11 AA-APEX-1). It clears the row's
+        //     Bacs_Notice_Sent__c stamp, so nothing is collected on a notice
+        //     the client never got, and raises a Task. DML only.
+        if (namedNotice) {
+            Set<Id> sentApps = new Set<Id>();
+            Map<Id, String> whyNotByApp = new Map<Id, String>();
+            for (AA_Message_Send_Log__c l : pendingLogs) {
+                if (l.Status__c == 'Sent') {
+                    sentApps.add(l.Application__c);
+                } else if (!whyNotByApp.containsKey(l.Application__c)) {
+                    whyNotByApp.put(l.Application__c,
+                        l.Status__c + (String.isBlank(l.Error_Message__c) ? '' : ': ' + l.Error_Message__c));
+                }
+            }
+            Map<Id, String> notSent = new Map<Id, String>();
+            for (Id appId : appMap.keySet()) {
+                Id instId = noticeInstallmentByApp.get(appId);
+                if (instId == null || sentApps.contains(appId)) continue;
+                notSent.put(instId, whyNotByApp.containsKey(appId)
+                    ? whyNotByApp.get(appId) : 'the dispatcher produced no message for this application');
+            }
+            if (!notSent.isEmpty()) {
+                try {
+                    AA_FeeInstallmentScheduler.noticeNotSent(notSent);
+                } catch (Exception e) {
+                    // The daily sweep's own check of the send log catches these rows.
+                    System.debug(LoggingLevel.ERROR,
+                        'AA_MessageDispatcher: could not report unsent Bacs notices: ' + e.getMessage());
+                }
+            }
         }
     }
 

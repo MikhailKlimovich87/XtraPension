@@ -3,6 +3,15 @@ public with sharing class BP_ClientSummaryPdfController {
     public Basic__c client { get; private set; }
     public List<String> addressLines { get; private set; }
     public String ninoString {get; private set; }
+    // Client summary "UK NINO?" (12/11/2026): "Forgot" (had one, number not known) is a Yes, like BR1 Q5a and the
+    // IPC1394; only "Never Had" or no answer is a No. The number row then says "Not known".
+    public Boolean claimantHadNino { get; private set; }
+    public String claimantNinoText { get; private set; }
+    public Boolean partnerHadNino { get; private set; }
+    public String partnerNinoText { get; private set; }
+    // Section 3 "Other Names in Full" without the surname or the first name twice when the middle-name box holds the
+    // whole name ("Desmond Victor Waters", C05502), the same rule as BR1 Q22 (12/11/2026)
+    public String partnerOtherNames { get; private set; }
 
     public BP_ClientSummaryPdfController() {
 
@@ -18,33 +27,27 @@ public with sharing class BP_ClientSummaryPdfController {
         client = getApplication(recordId)[0];
         ninoString = '';
         if(String.isNotBlank(client.Has_Nino__c) &&  client.Has_Nino__c != 'Yes') {
-            ninoString = client.Has_Nino__c;
+            // DWP letter "Nat Ins No" (12/11/2026): words for the DWP, not the picklist values
+            ninoString = ninoWord(client.Has_Nino__c);
         } else {
             ninoString = client.Claimant_nino__c;
             if(String.isBlank(ninoString)) {
                 ninoString = 'N/A';
             }
         }
+        claimantHadNino = client.Claimant_hasNino__c == true || client.Has_Nino__c == 'Forgot';
+        claimantNinoText = client.Has_Nino__c == 'Forgot' && String.isBlank(client.Claimant_nino__c) ? 'Not known' : client.Claimant_nino__c;
+        partnerHadNino = client.Partner_Has_Nino__c == true || client.Partner_Has_Nino_values__c == 'Forgot';
+        partnerNinoText = client.Partner_Has_Nino_values__c == 'Forgot' && String.isBlank(client.Partner_Nino__c) ? 'Not known' : client.Partner_Nino__c;
+        partnerOtherNames = otherNamesInFull(client.Partner_First_Name__c, client.Partner_Other_Name__c, client.Partner_Surname__c);
               
         List<String> allAddress = new List<String>();
-        if(String.isNotBlank(client.Claimant_address1__c)) {
-            allAddress.add(client.Claimant_address1__c);
-        }
-        if(String.isNotBlank(client.Claimant_address2__c)) {
-            allAddress.add(client.Claimant_address2__c);
-        }
-        if(String.isNotBlank(client.Claimant_City__c)) {
-            allAddress.add(client.Claimant_City__c);
-        }
-        if(String.isNotBlank(client.Current_Address_Abroad_State_Name__c)) {
-            allAddress.add(client.Current_Address_Abroad_State_Name__c);
-        }
-        if(String.isNotBlank(client.Eircode__c)) {
-            allAddress.add(client.Eircode__c);
-        }
-        if(String.isNotBlank(client.Current_Address_Abroad_Country_Name__c)) {
-            allAddress.add(client.Current_Address_Abroad_Country_Name__c);
-        }
+        addPart(allAddress, client.Claimant_address1__c);
+        addPart(allAddress, client.Claimant_address2__c);
+        addPart(allAddress, client.Claimant_City__c);
+        addPart(allAddress, client.Current_Address_Abroad_State_Name__c);
+        addPart(allAddress, client.Eircode__c);
+        addPart(allAddress, client.Current_Address_Abroad_Country_Name__c);
         Integer counterStr = 0;
         String addressLine = '';
         addressLines = new List<String>();
@@ -65,6 +68,45 @@ public with sharing class BP_ClientSummaryPdfController {
             Integer lastIndex = addressLines.size() - 1;
             addressLines[lastIndex] = addressLines[lastIndex].replaceAll(',\\s*$', '');
         }
+    }
+
+    // First name + middle names, never the surname or the first name twice (the BR1 Q22 rule, BP_BR1_Wrapper)
+    @TestVisible
+    private static String otherNamesInFull(String first, String middle, String last) {
+        String f = first == null ? '' : first.normalizeSpace();
+        String m = middle == null ? '' : middle.normalizeSpace();
+        String l = last == null ? '' : last.normalizeSpace();
+        if (String.isNotBlank(m) && String.isNotBlank(l)) {
+            m = (' ' + m + ' ').replaceAll('(?i)\\s' + Pattern.quote(l) + '(?=\\s)', ' ').normalizeSpace();
+        }
+        if (String.isNotBlank(m) && String.isNotBlank(f) && (m.equalsIgnoreCase(f) || m.toLowerCase().startsWith(f.toLowerCase() + ' '))) {
+            m = m.substring(f.length()).normalizeSpace();
+        }
+        return String.isBlank(f) ? m : (String.isBlank(m) ? f : f + ' ' + m);
+    }
+
+    // Has_Nino__c as the DWP letter prints it: Forgot -> Not known, Never Had -> None (12/11/2026)
+    @TestVisible
+    private static String ninoWord(String value) {
+        if (value == 'Forgot') return 'Not known';
+        if (value == 'Never Had') return 'None';
+        return value;
+    }
+
+    // A part already printed is not printed again (case does not matter): in Ireland the county is often the town
+    // too, and the Yellow page, the DWP letter and the summary read "46 WILFIELD PARK, DUBLIN, DUBLIN" (C05500, 11/11/2026).
+    @TestVisible
+    private static void addPart(List<String> parts, String value) {
+        if (String.isBlank(value)) {
+            return;
+        }
+        String key = value.trim().toLowerCase();
+        for (String part : parts) {
+            if (part.trim().toLowerCase() == key) {
+                return;
+            }
+        }
+        parts.add(value);
     }
 
     public static List<Basic__c> getApplication(String basicId) {
@@ -93,6 +135,9 @@ public with sharing class BP_ClientSummaryPdfController {
                 Phone__c,
                 Email__c,
                 Claimant_marital_Status__c,
+                // Remarried and the marriage notes (12/11/2026, docs/claims-call-1111b/CONTRACT.md)
+                Previous_Marriage_Ended__c, Date_Of_Remarriage__c, Current_Spouse_First_Name__c, Current_Spouse_Last_Name__c,
+                Current_Spouse_DOB__c, Marriage_Notes__c, Partner_Has_Nino_values__c,
                 Claimant_nationality__c,
                 Claimant_date_Of_Marriage__c,
                 Claimant_date_Of_Bereavement__c,
@@ -161,6 +206,11 @@ public with sharing class BP_ClientSummaryPdfController {
                 Bank_IBAN__c,
                 Bank_Account__c,
                 Bank_BIC__c,
+                // Shown on the summary since 11/11/2026: HM Forces (BR1 Q17) and Other information
+                Claimant_HM_Forces__c, Claimant_HM_Forces_Service__c, Claimant_HM_Forces_Enlisted__c,
+                Claimant_HM_Forces_Discharged__c, Claimant_HM_Forces_Discharged_Where__c, Claimant_HM_Forces_Regiment__c,
+                Claimant_HM_Forces_Service_No__c, Claimant_HM_Forces_Rank__c,
+                Notes__c,
 
                 (
                     SELECT

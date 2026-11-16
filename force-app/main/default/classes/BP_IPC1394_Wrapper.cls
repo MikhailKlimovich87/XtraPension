@@ -94,6 +94,16 @@ public with sharing class BP_IPC1394_Wrapper {
             return result;
         }
 
+        // BSB as 3 + 3 digits for Q17a / Q17b. "062-000" splits on the dash; "062000" typed without it is split 3/3
+        // (it used to put all 6 digits in Q17a and leave Q17b empty).
+        private List<String> bsbParts(String bsb) {
+            String compact = bsb.deleteWhitespace();
+            if (!compact.contains('-') && compact.length() == 6 && compact.isNumeric()) {
+                return new List<String>{ compact.left(3), compact.right(3) };
+            }
+            return compact.split('-');
+        }
+
         public ApplicationDataWrapper(Basic__c app) {
             this.Q1 = app.Claimant_title__c;
             this.Q2 = app.First_Name__c;
@@ -172,7 +182,7 @@ public with sharing class BP_IPC1394_Wrapper {
             this.Q16 = combValue(app.Bank_Account__c, 34);
             if(String.isNotBlank(app.Bank_Country_Code__c) &&  app.Bank_Country_Code__c == 'AU') {
                 if(String.isNotBlank(app.Bank_Sort_Code__c)) {
-                    List<String> parts = app.Bank_Sort_Code__c.deleteWhitespace().split('-');
+                    List<String> parts = bsbParts(app.Bank_Sort_Code__c);
                     if(parts.size()>0) {
                         this.Q17a = parts[0];
                     }

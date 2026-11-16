@@ -1,0 +1,46 @@
+* {
+    margin: 0px;
+    padding: 0px;
+    box-sizing: border-box;
+    text-decoration: none;
+}
+
+.main-block{
+    font-family: Calibri;
+    color: #000000;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    font-variant: normal;
+    font-style: normal;
+    max-width: 80%;
+    overflow: hidden;
+    scroll-behavior: smooth;
+    height: auto;
+    width: 100%;
+    background-color: #fff;
+    display: grid;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.tab-section{
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-direction: row;
+}
+
+.item-block{
+    text-align:left;
+    width:49%;
+    color:black;
+    background-color: #ffffff;
+}
+
+.title{
+    font-size: 1.2rem;
+}
+
+.title-description{
+    color: grey;
+}

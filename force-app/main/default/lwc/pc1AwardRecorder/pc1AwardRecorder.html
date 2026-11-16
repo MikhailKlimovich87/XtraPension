@@ -103,7 +103,7 @@
                     class="pc1-award__firstdate-input"
                     type="date"
                     label="First charge date"
-                    field-level-help="When the first Direct Debit will be attempted. Defaults to today. Subsequent installments (if any) fire monthly from this date."
+                    field-level-help="When the first Direct Debit is collected. At least 6 days from today, so the client gets the 5-day advance notice first. Later installments (if any) follow monthly from this date."
                     value={draftFirstChargeDate}
                     min={firstChargeDateMin}
                     max={firstChargeDateMax}
@@ -113,14 +113,6 @@
                 <template if:true={firstChargeDateFlag}>
                     <div class="pc1-award__flag pc1-award__flag--warn">{firstChargeDateFlag}</div>
                 </template>
-
-                <lightning-input
-                    type="checkbox"
-                    label="Amount includes VAT (rare, uncheck if not sure)"
-                    checked={draftIncludesVat}
-                    onchange={handleVatChange}
-                    disabled={saving}>
-                </lightning-input>
 
                 <!-- Fee derived line — makes the comparator explicit -->
                 <template if:true={draftFeeDisplay}>

@@ -7,6 +7,11 @@
  * at GoCardless (PC1_GoCardlessController.retryInstallment) — no second
  * charge; the usual webhooks then move the row to paid / failed.
  *
+ * Audit 2026-11-11 (PC-APEX-3/4): the daily sweep can put an installment on
+ * hold before any GoCardless payment exists (status failed, no payment id).
+ * Retry on such a row schedules it again: Apex dates it 6 days out and emails
+ * the client a new advance notice (response { requeued: true }).
+ *
  * Embedded in pc1FeeChargeCard; renders nothing until a plan exists.
  */
 import { LightningElement, api } from 'lwc';
@@ -70,9 +75,11 @@ export default class Pc1FeeInstallments extends LightningElement {
             number: r.Installment_Number__c,
             date: r.Scheduled_Date__c,
             amount: r.Amount__c,
-            statusLabel: STATUS_LABEL[status] || status,
+            statusLabel: (status === 'failed' && !r.Payment_Id__c) ? 'On hold' : (STATUS_LABEL[status] || status),
             pillClass: `pc1-inst__pill pc1-inst__pill--${tone}`,
-            canRetry: status === 'failed' && !!r.Payment_Id__c,
+            canRetry: status === 'failed',
+            // failed with no GoCardless payment: put on hold by the sweep
+            held: status === 'failed' && !r.Payment_Id__c,
         };
     }
 
@@ -86,7 +93,9 @@ export default class Pc1FeeInstallments extends LightningElement {
         if (!row) return;
         const ok = await LightningConfirm.open({
             label: `Retry installment ${row.number}`,
-            message: 'GoCardless will try to collect this same payment again on the next possible date. '
+            message: (row.held
+                ? 'This installment is on hold and was never sent to the bank. It will be scheduled again: the client is emailed a new advance notice today and it is collected about 6 days from now. '
+                : 'GoCardless will try to collect this same payment again on the next possible date. ')
                 + 'Only do this after speaking to the client (for example, once they have funds in the account).',
             theme: 'warning',
         });
@@ -94,16 +103,27 @@ export default class Pc1FeeInstallments extends LightningElement {
         this.retryingId = id;
         try {
             const r = await retryInstallment({ installmentId: id });
-            this.dispatchEvent(new ShowToastEvent({
-                title: `Installment ${row.number} sent again`,
-                message: r && r.charge_date ? `GoCardless will collect it on ${r.charge_date}.` : 'GoCardless accepted the retry.',
-                variant: 'success',
-            }));
+            if (r && r.requeued) {
+                const when = r.charge_date ? `It will be collected on ${r.charge_date}.` : 'It is scheduled again.';
+                this.dispatchEvent(new ShowToastEvent({
+                    title: `Installment ${row.number} scheduled again`,
+                    message: r.notice_sent
+                        ? `Advance notice sent. ${when}`
+                        : `${when} The advance notice could not be sent yet (check that the Bacs advance notice template is active); nothing is collected until it is.`,
+                    variant: r.notice_sent ? 'success' : 'warning',
+                }));
+            } else {
+                this.dispatchEvent(new ShowToastEvent({
+                    title: `Installment ${row.number} sent again`,
+                    message: r && r.charge_date ? `GoCardless will collect it on ${r.charge_date}.` : 'GoCardless accepted the retry.',
+                    variant: 'success',
+                }));
+            }
             await this.load();
         } catch (e) {
             this.dispatchEvent(new ShowToastEvent({
                 title: 'Retry not possible',
-                message: (e && e.body && e.body.message) || 'GoCardless did not accept the retry.',
+                message: (e && e.body && e.body.message) || (row.held ? 'The installment could not be scheduled again.' : 'GoCardless did not accept the retry.'),
                 variant: 'error',
             }));
         } finally {

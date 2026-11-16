@@ -1,0 +1,75 @@
+<template>
+    <lightning-card title="Validation call" icon-name="standard:event">
+        <div slot="actions" class="xp-vc__actions">
+            <template lwc:if={ready}><span class={badge.cls}>{badge.label}</span></template>
+            <lightning-button-icon icon-name="utility:refresh" variant="bare" alternative-text="Refresh" title="Refresh" onclick={handleRefresh}></lightning-button-icon>
+        </div>
+
+        <div class="xp-vc">
+            <template lwc:if={loading}>
+                <div class="xp-vc__loading"><lightning-spinner alternative-text="Loading" size="small"></lightning-spinner></div>
+            </template>
+
+            <template lwc:if={error}>
+                <div class="slds-notify slds-notify_alert slds-theme_error" role="alert">{error}</div>
+            </template>
+
+            <template lwc:if={ready}>
+                <template lwc:if={isNoEmail}>
+                    <p>This claim has no client e-mail, so no call can be found or booked. Add the e-mail on the Client tab.</p>
+                </template>
+
+                <template lwc:if={isOffline}>
+                    <div class="xp-vc__alert">XP Booking could not be read just now. {fallbackLine}</div>
+                    <p class="xp-vc__muted">{agentLine}</p>
+                </template>
+
+                <template lwc:if={isNone}>
+                    <p>No call booked yet. {agentLine}</p>
+                </template>
+
+                <template lwc:if={isBooked}>
+                    <p class="xp-vc__when">{call.irish}</p>
+                    <div class="xp-vc__rows">
+                        <template lwc:if={call.clientTime}><span>{call.clientTime}</span></template>
+                        <span>{call.how}</span>
+                        <template lwc:if={call.helper}><span>{call.helper}</span></template>
+                    </div>
+                    <template lwc:if={hasMismatch}>
+                        <div class="xp-vc__alert">{call.mismatch}</div>
+                    </template>
+                </template>
+
+                <template lwc:if={isPast}>
+                    <p>Was {call.irish} with {call.hostName}.</p>
+                </template>
+
+                <div class="xp-vc__buttons">
+                    <template lwc:if={canBook}>
+                        <lightning-button label={bookLabel} variant={bookVariant} onclick={handleBook}></lightning-button>
+                        <lightning-button label="Copy client's link" onclick={handleCopy}></lightning-button>
+                    </template>
+                    <template lwc:if={isBooked}>
+                        <lightning-button label="Change time" variant={changeVariant} onclick={handleChange}></lightning-button>
+                        <lightning-button label="Cancel" onclick={handleCancel}></lightning-button>
+                        <lightning-button label="Open in XP Booking" variant="base" onclick={handleHub}></lightning-button>
+                    </template>
+                    <template lwc:if={isPast}>
+                        <lightning-button label="Open in XP Booking" variant="base" onclick={handleHub}></lightning-button>
+                    </template>
+                </div>
+
+                <template lwc:if={showLink}>
+                    <lightning-input type="text" label="Client's link (copy it from here)" value={clientUrl} readonly></lightning-input>
+                </template>
+
+                <template lwc:if={isBooked}>
+                    <p class="xp-vc__foot">{call.via}</p>
+                </template>
+                <template lwc:if={canBook}>
+                    <p class="xp-vc__foot">{bookHint}</p>
+                </template>
+            </template>
+        </div>
+    </lightning-card>
+</template>

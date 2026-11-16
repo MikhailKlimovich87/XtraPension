@@ -80,6 +80,25 @@ private class PC1_WhatsAppControllerTest {
         System.assert(t1 && t2 && t3, 'no WhatsApp to a client number from the sandbox');
     }
 
+    // Audit 2026-11-11 PC-APEX-6 / PC-SFUI-3: the flag stopped Mary's calls only.
+    private class ForbiddenMock implements HttpCalloutMock {
+        public HttpResponse respond(HttpRequest req) {
+            System.assert(false, 'Heroku must not be called for a Do Not Contact client');
+            return null;
+        }
+    }
+
+    @IsTest static void do_not_contact_blocks_every_send() {
+        PC1_Application__c a = setup('+441234567890');
+        update new PC1_Application__c(Id = a.Id, Do_Not_Contact__c = true);
+        Test.setMock(HttpCalloutMock.class, new ForbiddenMock());
+        Boolean t1 = false, t2 = false, t3 = false;
+        try { PC1_WhatsAppController.sendMessage(a.Id, 'x'); } catch (AuraHandledException e) { t1 = true; }
+        try { PC1_WhatsAppController.sendFileFromBrowser(a.Id, 'a', 'b', 'QQ==', null); } catch (AuraHandledException e) { t2 = true; }
+        try { PC1_WhatsAppController.sendFileMessage(a.Id, a.Id, null); } catch (AuraHandledException e) { t3 = true; }
+        System.assert(t1 && t2 && t3, 'no WhatsApp of any kind to a Do Not Contact client');
+    }
+
     @IsTest static void input_validation_and_optin_and_mirror() {
         PC1_Application__c a = setup('+441234567890');
         Boolean t1 = false, t2 = false, t3 = false;

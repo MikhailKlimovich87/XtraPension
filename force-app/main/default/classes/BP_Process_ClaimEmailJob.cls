@@ -88,6 +88,11 @@ public with sharing class BP_Process_ClaimEmailJob implements Queueable, Databas
         message.setTreatTargetObjectAsRecipient(false);
         message.setTemplateId(templateId);
         message.setToAddresses(new String[] { email });
+        // Helper sempre em cópia (Fernando, 04/11/2026), como já acontece nos e-mails do depósito e de boas-vindas.
+        String helperEmail = helperCc(recordId, email);
+        if (helperEmail != null) {
+            message.setCcAddresses(new String[] { helperEmail });
+        }
 
         message.setWhatId(recordId);
 
@@ -198,4 +203,16 @@ public with sharing class BP_Process_ClaimEmailJob implements Queueable, Databas
         return orgWideEmailAddress;
     }
     
+
+    // E-mail do helper para a cópia: vazio ou igual ao do cliente não entra.
+    @TestVisible
+    private static String helperCc(String claimId, String to) {
+        for (Basic__c b : [SELECT Friend_Email__c FROM Basic__c WHERE Id = :claimId]) {
+            String cc = b.Friend_Email__c == null ? '' : b.Friend_Email__c.trim();
+            if (cc != '' && !cc.equalsIgnoreCase(to == null ? '' : to.trim())) {
+                return cc;
+            }
+        }
+        return null;
+    }
 }

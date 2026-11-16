@@ -1,0 +1,59 @@
+.xp-vc {
+    padding: 0 var(--lwc-spacingMedium, 1rem);
+    display: grid;
+    gap: 0.6rem;
+}
+.xp-vc__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.xp-vc__loading {
+    position: relative;
+    min-height: 3rem;
+}
+.xp-vc__badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: #f3f2f2;
+    color: #706e6b;
+    white-space: nowrap;
+}
+.xp-vc__badge_ok {
+    background: #ebf7e6;
+    color: #2e844a;
+}
+.xp-vc__badge_warn {
+    background: #fef1d9;
+    color: #a96404;
+}
+.xp-vc__when {
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+.xp-vc__rows {
+    display: grid;
+    gap: 0.15rem;
+}
+.xp-vc__alert {
+    background: #fef1d9;
+    color: #5c3b00;
+    border-radius: 0.25rem;
+    padding: 0.5rem 0.65rem;
+}
+.xp-vc__muted {
+    color: #706e6b;
+}
+.xp-vc__buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+.xp-vc__foot {
+    color: #706e6b;
+    font-size: 0.75rem;
+    border-top: 1px solid #dddbda;
+    padding-top: 0.5rem;
+}

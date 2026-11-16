@@ -1,0 +1,49 @@
+<template>
+    <article class="slds-card card">
+        <header class="head">
+            <lightning-icon icon-name="custom:custom33" size="small" alternative-text={heading}></lightning-icon>
+            <h2 class="title">{title}</h2>
+            <a class="view-all" href={viewAllUrl}>View all</a>
+            <lightning-button-menu alternative-text="Check actions" icon-size="x-small" menu-alignment="right" onselect={handleMenu}>
+                <lightning-menu-item value="new" label="New"></lightning-menu-item>
+            </lightning-button-menu>
+        </header>
+        <template lwc:if={latest}>
+            <div class="latest" title={latest.title}>
+                <div class="row">
+                    <span class="d">{latest.date}</span>
+                    <a href={latest.url}>{latest.name}</a>
+                    <span class="who">{latest.who}</span>
+                    <template lwc:if={latest.result}>
+                        <span class={latest.chipClass}>{latest.result}</span>
+                    </template>
+                </div>
+                <template lwc:if={latest.note}>
+                    <div class="note">{latest.note}</div>
+                </template>
+            </div>
+        </template>
+        <template lwc:if={hasOlder}>
+            <div class="label">Earlier</div>
+            <template for:each={older} for:item="c">
+                <div key={c.id} class="row older" title={c.title}>
+                    <span class="d">{c.date}</span>
+                    <a href={c.url}>{c.name}</a>
+                    <span class="who">{c.who}</span>
+                    <template lwc:if={c.result}>
+                        <span class={c.chipClass}>{c.result}</span>
+                    </template>
+                </div>
+            </template>
+        </template>
+        <template lwc:if={isEmpty}>
+            <div class="msg">No checks yet.</div>
+        </template>
+        <template lwc:if={isLoading}>
+            <div class="msg">Loading checks…</div>
+        </template>
+        <template lwc:if={error}>
+            <div class="msg err">Couldn't load the checks: {error}</div>
+        </template>
+    </article>
+</template>

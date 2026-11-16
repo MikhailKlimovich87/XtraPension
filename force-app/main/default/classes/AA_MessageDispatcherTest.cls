@@ -1007,6 +1007,7 @@ private class AA_MessageDispatcherTest {
         AA_Application__c app = makeApp('recipient@example.com', null);
         app.Do_Not_Contact__c = true;
         app.Stage__c = 'Awarded';
+        app.Award_Amount__c = 3988.40;
         update app;
         makeTemplate('Email', 'Bacs_Advance_Notice', 's', 'b');
 
@@ -1027,6 +1028,7 @@ private class AA_MessageDispatcherTest {
     @IsTest static void money_messages_are_blocked_once_the_claim_is_refused() {
         AA_Application__c app = makeApp('recipient@example.com', null);
         app.Stage__c = 'Closed - Refused';
+        AA_StageTransitionHelper.noteByApp.put(app.Id, 'DWP refusal letter (test)');
         update app;
         makeTemplate('Email', 'Bacs_Advance_Notice', 's', 'b');
 
@@ -1132,7 +1134,7 @@ private class AA_MessageDispatcherTest {
         makeTemplate('Email', 'Application_Approved_by_DWP', 'Good news', 'b');
 
         Test.startTest();
-        update new AA_Application__c(Id = app.Id, Stage__c = 'Awarded');
+        update new AA_Application__c(Id = app.Id, Stage__c = 'Awarded', Award_Amount__c = 3988.40);
         Test.stopTest();
 
         AA_Message_Send_Log__c log = soleLog(app.Id);
@@ -1146,6 +1148,7 @@ private class AA_MessageDispatcherTest {
         makeTemplate('Email', 'Application_Approved_by_DWP', 'Good news', 'b');
 
         Test.startTest();
+        AA_StageTransitionHelper.noteByApp.put(app.Id, 'DWP refusal letter (test)');
         update new AA_Application__c(Id = app.Id, Stage__c = 'Closed - Refused');
         Test.stopTest();
 
@@ -1165,7 +1168,7 @@ private class AA_MessageDispatcherTest {
             Status__c = 'Sent', Sent_At__c = Datetime.now().addDays(-40));
 
         Test.startTest();
-        update new AA_Application__c(Id = app.Id, Stage__c = 'Awarded');
+        update new AA_Application__c(Id = app.Id, Stage__c = 'Awarded', Award_Amount__c = 3988.40);
         Test.stopTest();
 
         System.assertEquals(1, [SELECT COUNT() FROM AA_Message_Send_Log__c WHERE Application__c = :app.Id AND Status__c = 'Sent'],
@@ -1178,7 +1181,7 @@ private class AA_MessageDispatcherTest {
     @IsTest static void stage_outcome_without_a_template_enqueues_nothing() {
         AA_Application__c app = makeApp('recipient@example.com', null);
         Test.startTest();
-        update new AA_Application__c(Id = app.Id, Stage__c = 'Awarded');
+        update new AA_Application__c(Id = app.Id, Stage__c = 'Awarded', Award_Amount__c = 3988.40);
         System.assertEquals(0, Limits.getQueueableJobs(), 'no empty dispatcher job');
         Test.stopTest();
         System.assertEquals(0, [SELECT COUNT() FROM AA_Message_Send_Log__c WHERE Application__c = :app.Id]);
@@ -1330,5 +1333,161 @@ private class AA_MessageDispatcherTest {
         AA_Message_Send_Log__c log = soleLog(app.Id);
         System.assertEquals('Sent', log.Status__c, 'a dispatch from @future must run the send inline (an enqueue is illegal there)');
         System.assertEquals('Fee Alice', log.Rendered_Subject__c);
+    }
+
+    // ─── audit 2026-11-11 ───────────────────────────────────────────
+
+    private static AA_Fee_Installment__c noticedRow(Id appId, Integer n, Date d, Decimal amount) {
+        return new AA_Fee_Installment__c(Application__c = appId, Installment_Number__c = n,
+            Scheduled_Date__c = d, Amount__c = amount, Payment_Status__c = 'pending',
+            Bacs_Notice_Sent__c = true, Bacs_Notice_Sent_At__c = Datetime.now());
+    }
+
+    // AA-APEX-4 + AA-APEX-1: the notice for a retried instalment #1 used to be
+    // rendered from "the earliest pending row" (instalment #2, already created
+    // at GoCardless), and was suppressed altogether when #2 had been noticed
+    // less than 24 h before. The retried debit then went out unannounced.
+    @IsTest static void named_bacs_notice_describes_its_own_instalment_even_within_24h_of_another() {
+        AA_Application__c app = makeApp('recipient@example.com', null);
+        app.Award_Amount__c = 3988.40;
+        app.Fee_Plan_Installments__c = 3;
+        app.Stage__c = 'Fee Charged';
+        update app;
+        Date retryDate = Date.today().addDays(5);
+        AA_Fee_Installment__c retried = noticedRow(app.Id, 1, retryDate, 265.89);
+        AA_Fee_Installment__c created = new AA_Fee_Installment__c(Application__c = app.Id, Installment_Number__c = 2,
+            Scheduled_Date__c = Date.today().addDays(2), Amount__c = 265.89, Payment_Status__c = 'pending',
+            Charged_At__c = Datetime.now().addDays(-3), Payment_Id__c = 'PM2');
+        insert new List<AA_Fee_Installment__c>{ retried, created };
+        AA_Message_Template__c tpl = makeTemplate('Email', 'Bacs_Advance_Notice',
+            'Instalment {{FeeNextInstallmentNumber}} on {{FeeNextInstallmentDate}}', 'b');
+        // Instalment 2 was noticed an hour ago.
+        insert new AA_Message_Send_Log__c(Template__c = tpl.Id, Application__c = app.Id, Channel__c = 'Email',
+            Status__c = 'Sent', Sent_At__c = Datetime.now().addHours(-1));
+
+        Test.startTest();
+        AA_MessageDispatcher.dispatchBacsAdvanceNotice(new Map<Id, Id>{ app.Id => retried.Id });
+        Test.stopTest();
+
+        String expectedDate = Datetime.newInstanceGmt(retryDate, Time.newInstance(0, 0, 0, 0)).formatGmt('dd/MM/yyyy');
+        List<AA_Message_Send_Log__c> fresh = [
+            SELECT Status__c, Rendered_Subject__c, Error_Message__c FROM AA_Message_Send_Log__c
+             WHERE Application__c = :app.Id AND Rendered_Subject__c != null];
+        System.assertEquals(1, fresh.size(), 'the notice is not swallowed by the 24 h dedup');
+        System.assertEquals('Sent', fresh[0].Status__c, 'send log: ' + fresh[0].Error_Message__c);
+        System.assertEquals('Instalment 1 on ' + expectedDate, fresh[0].Rendered_Subject__c,
+            'the notice is about the instalment it was requested for');
+        System.assertEquals(true, [SELECT Bacs_Notice_Sent__c FROM AA_Fee_Installment__c WHERE Id = :retried.Id].Bacs_Notice_Sent__c,
+            'a sent notice keeps the stamp');
+        System.assertEquals(1, AA_MessageDispatcher.testFollowUps.size(), 'the charge step is handed over after the send');
+        System.assert(AA_MessageDispatcher.testFollowUps[0] instanceof AA_FeeInstallmentChargeQueueable);
+    }
+
+    // AA-APEX-1: the Bacs notice is email only. With no email on the record
+    // it was logged Failed and the instalment was collected anyway.
+    @IsTest static void named_bacs_notice_that_cannot_be_sent_clears_the_stamp_and_raises_a_task() {
+        AA_Application__c app = makeApp(null, null);
+        app.Award_Amount__c = 3988.40;
+        app.Stage__c = 'Awarded';
+        update app;
+        AA_Fee_Installment__c row = noticedRow(app.Id, 1, Date.today().addDays(5), 797.68);
+        insert row;
+        makeTemplate('Email', 'Bacs_Advance_Notice', 's', 'b');
+
+        Test.startTest();
+        AA_MessageDispatcher.dispatchBacsAdvanceNotice(new Map<Id, Id>{ app.Id => row.Id });
+        Test.stopTest();
+
+        AA_Message_Send_Log__c log = soleLog(app.Id);
+        System.assertEquals('Failed', log.Status__c);
+        System.assertEquals('App has no Email__c.', log.Error_Message__c);
+        AA_Fee_Installment__c after = [SELECT Bacs_Notice_Sent__c, Bacs_Notice_Sent_At__c, Payment_Status__c
+                                         FROM AA_Fee_Installment__c WHERE Id = :row.Id];
+        System.assertEquals(false, after.Bacs_Notice_Sent__c, 'no notice went out, so the row must not stay collectable');
+        System.assertEquals(null, after.Bacs_Notice_Sent_At__c);
+        System.assertEquals('pending', after.Payment_Status__c, 'still owed: the next run notices it again');
+        List<Task> tasks = [SELECT Subject, Priority, Description FROM Task WHERE WhatId = :app.Id];
+        System.assertEquals(1, tasks.size(), 'ops are told');
+        System.assertEquals('High', tasks[0].Priority);
+        System.assert(tasks[0].Subject.startsWith(AA_FeeInstallmentScheduler.NOTICE_NOT_SENT_SUBJECT), tasks[0].Subject);
+        System.assert(tasks[0].Description.contains('App has no Email__c'), tasks[0].Description);
+    }
+
+    // A named notice whose instalment was deleted in the meantime (the plan
+    // was cancelled) is not sent at all.
+    @IsTest static void named_bacs_notice_for_a_deleted_instalment_is_not_sent() {
+        AA_Application__c app = makeApp('recipient@example.com', null);
+        app.Award_Amount__c = 3988.40;
+        app.Stage__c = 'Awarded';
+        update app;
+        AA_Fee_Installment__c row = noticedRow(app.Id, 1, Date.today().addDays(5), 797.68);
+        insert row;
+        Id goneId = row.Id;
+        delete row;
+        makeTemplate('Email', 'Bacs_Advance_Notice', 's', 'b');
+
+        Test.startTest();
+        AA_MessageDispatcher.dispatchBacsAdvanceNotice(new Map<Id, Id>{ app.Id => goneId });
+        Test.stopTest();
+
+        System.assertEquals('Failed', soleLog(app.Id).Status__c);
+        System.assertEquals(0, mirrored(app.Id).size(), 'no notice for a collection that no longer exists');
+    }
+
+    // AA-APEX-2: one run handles a bounded number of applications and leaves
+    // the rest to a follow-up job (a template with a per-application PDF is
+    // capped at 8, which keeps this test small; SMS templates are capped by
+    // the Twilio callout budget the same way).
+    @IsTest static void a_bulk_dispatch_is_split_into_runs() {
+        insert new AA_Message_Template__c(Channel__c = 'Email', Trigger_Event__c = 'Application_Submitted_DWP',
+            Active__c = true, Subject_Template__c = 's', Body_Template__c = 'b', Attach_App_File_Titles__c = 'Mandate');
+        List<AA_Application__c> apps = new List<AA_Application__c>();
+        for (Integer i = 0; i < 9; i++) {
+            apps.add(new AA_Application__c(First_Name__c = 'Bulk', Last_Name__c = 'Test' + i, Stage__c = 'New',
+                Email__c = 'bulk' + i + '@example.com'));
+        }
+        insert apps;
+        Set<Id> ids = new Map<Id, AA_Application__c>(apps).keySet();
+
+        Test.startTest();
+        AA_MessageDispatcher.dispatch(ids, 'Application_Submitted_DWP');
+        Test.stopTest();
+
+        System.assertEquals(8, [SELECT COUNT() FROM AA_Message_Send_Log__c WHERE Application__c IN :ids],
+            'the first run takes 8 applications');
+        System.assertEquals(1, AA_MessageDispatcher.testFollowUps.size(), 'the ninth goes to a follow-up job');
+        System.assert(AA_MessageDispatcher.testFollowUps[0] instanceof AA_MessageDispatcher);
+
+        // A test cannot chain Queueables, so run the follow-up by hand.
+        AA_MessageDispatcher.testFollowUps[0].execute(null);
+        System.assertEquals(9, [SELECT COUNT() FROM AA_Message_Send_Log__c WHERE Application__c IN :ids],
+            'every application is handled, none twice');
+        System.assertEquals(1, AA_MessageDispatcher.testFollowUps.size(), 'nothing left to chain');
+        System.assert(AA_MessageDispatcher.MAX_APPS_PER_EXECUTE <= 25, 'at most 25 applications per run');
+    }
+
+    // AA-APEX-7: a replaced mandate sets DD_Mandate_Id__c again (blank -> set),
+    // which re-dispatched the whole welcome pack months after the first one.
+    @IsTest static void the_welcome_pack_goes_once_per_application() {
+        AA_Application__c app = makeApp('recipient@example.com', null);
+        AA_Message_Template__c tpl = makeTemplate('Email', 'Intake_Created', 'Welcome', 'b');
+        insert new AA_Message_Send_Log__c(Template__c = tpl.Id, Application__c = app.Id, Channel__c = 'Email',
+            Status__c = 'Sent', Sent_At__c = Datetime.now().addDays(-90));
+
+        Test.startTest();
+        update new AA_Application__c(Id = app.Id, DD_Mandate_Id__c = 'MD-REPLACEMENT', DD_Mandate_Status__c = 'pending_submission');
+        Test.stopTest();
+
+        System.assertEquals(1, [SELECT COUNT() FROM AA_Message_Send_Log__c WHERE Application__c = :app.Id AND Status__c = 'Sent'],
+            'the 90-day-old welcome must stop a second one');
+        System.assertEquals(1, [SELECT COUNT() FROM AA_Message_Send_Log__c WHERE Application__c = :app.Id AND Status__c = 'Skipped-Deduped'],
+            'the trigger did dispatch, and the dispatcher suppressed it');
+        System.assertEquals(0, mirrored(app.Id).size());
+    }
+
+    // AA-APEX-12: a stage-gated send has its own log status once the picklist
+    // value is deployed (it read as a delivery failure before).
+    @IsTest static void a_stage_gated_send_is_logged_as_skipped_not_failed() {
+        System.assertEquals('Skipped-Stage-Gate', AA_MessageDispatcher.skipStatus(AA_MessageDispatcher.STATUS_SKIP_STAGE_GATE));
     }
 }

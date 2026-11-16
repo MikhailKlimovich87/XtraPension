@@ -43,6 +43,10 @@ public with sharing class PC1_MorningReminderScheduler implements Schedulable {
     @TestVisible
     private static final Integer TARGET_UK_HOUR = 7;
 
+    /** Stages the Heroku dialler calls (src/webhooks/scheduler.js tick). */
+    @TestVisible
+    private static final Set<String> DIALABLE_STAGES = new Set<String>{ 'Awaiting First Call', 'Partial Data' };
+
     public void execute(SchedulableContext ctx) {
         run(Datetime.now());
     }
@@ -66,12 +70,18 @@ public with sharing class PC1_MorningReminderScheduler implements Schedulable {
         Datetime dayStart = bounds[0];
         Datetime dayEnd   = bounds[1];
 
+        // Only where Heroku will really dial (audit 2026-11-11 PC-APEX-6): the
+        // reminder ("Mary rings at 10:00 today") went for any Pending row,
+        // whatever the stage or the Do Not Contact flag, while the dialler
+        // refuses those applications.
         List<PC1_Call_Schedule__c> pending = [
             SELECT Id, Application__c
               FROM PC1_Call_Schedule__c
              WHERE Status__c = 'Pending'
                AND Scheduled_At__c >= :dayStart
                AND Scheduled_At__c <  :dayEnd
+               AND Application__r.Do_Not_Contact__c = false
+               AND Application__r.Stage__c IN :DIALABLE_STAGES
         ];
 
         // Dedup application ids in-Apex — an app could theoretically have

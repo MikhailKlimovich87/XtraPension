@@ -1,0 +1,26 @@
+<template>
+    <lightning-card class="slds-p-around_medium">
+        <div class="card-body">
+            <p>
+                <label class="custom-combobox-label">Check Agent<span class="request-sign"> *</span></label>
+                <lightning-combobox data-id="agent" label="Check Agent" variant="label-hidden" options={checkAgents}
+                    onchange={handleChangeAgent}></lightning-combobox>
+            </p>
+            <template for:each={replies} for:item="reply">
+                <c-claim-check-data-block key={reply.id} check-request={reply}
+                    search-apps={searchApps} onremoverequest={handleRemoveRequest}
+                    onupdatecheckreply={handleUpdateReply} is-added-check-agent={isDisabledCheckAgent}
+                    agent={checkAgent}></c-claim-check-data-block>
+            </template>
+            <div class="add-request-button">
+                <lightning-button variant="base" label="+ Add Check Request" onclick={handleAddRequest}
+                    class="slds-m-left_x-small">
+                </lightning-button>
+            </div>
+            <div class="button-area">
+                <lightning-button variant="brand" label="SAVE" class="slds-m-left_x-small" onclick={handleSave}
+                    disabled={isSaveDisabled}></lightning-button>
+            </div>
+        </div>
+    </lightning-card>
+</template>

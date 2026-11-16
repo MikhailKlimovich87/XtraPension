@@ -1,24 +1,33 @@
 /**
- * PC1_FeeInstallmentSchedulerTest — covers the scheduler's two responsibilities:
+ * PC1_FeeInstallmentSchedulerTest — the daily fee sweep.
  *
- *   1. Fires DUE installments via /internal/gocardless/charge-fee and advances
- *      Fee_Plan_Next_Charge_Date__c on the parent Application.
- *   2. Dispatches the Bacs_Advance_Notice template 5 CALENDAR days before each
- *      pending installment's Scheduled_Date__c (changed from 3 working days
- *      on 2026-08-25).
+ * Rewritten on 2026-11-11 with the create-ahead sweep (audit PC-APEX-3 / -4 /
+ * -12). What a regression here looks like in production:
+ *   - a client charged on a different day from the one in the advance notice,
+ *     or with no notice at all;
+ *   - a refused, disputed or Needs Human case, or a client reported deceased,
+ *     still being charged;
+ *   - two overdue installments collected on the same day after a mandate gap;
+ *   - a sweep that fails and tells nobody.
  *
- * Callouts are stubbed with an HttpCalloutMock so we can drive the endpoint
- * without hitting Heroku. The dispatcher is bypassed via the class-level
- * testBypass flag so we can assert the (appId, installmentNumber) pairs
- * without stubbing PC1_MessageDispatcher.
+ * Callouts are stubbed with an HttpCalloutMock that records the request. The
+ * dispatcher is bypassed with testBypass so the (appId) pairs can be asserted
+ * without sending email; "the notice was delivered" is a 'Sent'
+ * PC1_Message_Send_Log__c row, which these tests insert themselves.
  */
 @isTest
 private class PC1_FeeInstallmentSchedulerTest {
+
+    // Captured by the mock. Static so the test body can read them.
+    private static Integer calls = 0;
+    private static String lastBody;
 
     private class ChargeMock implements HttpCalloutMock {
         public Integer status = 200;
         public String body = '{"ok":true,"payment_id":"PM_INSTALL","status":"pending_submission"}';
         public HttpResponse respond(HttpRequest req) {
+            calls++;
+            lastBody = req.getBody();
             HttpResponse r = new HttpResponse();
             r.setStatusCode(status);
             r.setBody(body);
@@ -79,243 +88,469 @@ private class PC1_FeeInstallmentSchedulerTest {
         return rows;
     }
 
-    // -----------------------------------------------------------------
-    // Due installment path — one row is due today, others are future
-    // -----------------------------------------------------------------
-    @isTest static void run_firesDueInstallment_andAdvancesNextChargeDate() {
-        upsertConfig();
-        PC1_Application__c a = makeApp(3);
-        Date today = Date.today();
-        List<PC1_Fee_Installment__c> rows = makeInstallments(a.Id, 3, today);
+    private static PC1_Message_Template__c bacsTemplate() {
+        PC1_Message_Template__c t = new PC1_Message_Template__c(Channel__c = 'Email', Trigger_Event__c = 'Bacs_Advance_Notice',
+            Active__c = true, Subject_Template__c = 'Notice', Body_Template__c = 'Hi');
+        insert t;
+        return t;
+    }
 
-        Test.setMock(HttpCalloutMock.class, new ChargeMock());
-        PC1_FeeInstallmentScheduler.testBypass = true;   // don't fire Bacs notices to the real dispatcher
+    /** The row was handed to the dispatcher a day ago. */
+    private static void stampNoticed(Id rowId) {
+        update new PC1_Fee_Installment__c(Id = rowId, Bacs_Notice_Sent__c = true,
+            Bacs_Notice_Sent_At__c = Datetime.now().addDays(-1));
+    }
 
+    /** ...and the email really went out (after the stamp). */
+    private static void logDelivered(Id appId, Id templateId) {
+        insert new PC1_Message_Send_Log__c(Template__c = templateId, Application__c = appId, Channel__c = 'Email',
+            Status__c = 'Sent', Sent_At__c = Datetime.now().addHours(-23));
+    }
+
+    private static PC1_Fee_Installment__c reload(Id rowId) {
+        return [SELECT Installment_Number__c, Payment_Status__c, Payment_Id__c, Charged_At__c, Scheduled_Date__c,
+                       Bacs_Notice_Sent__c, Bacs_Notice_Sent_At__c
+                  FROM PC1_Fee_Installment__c WHERE Id = :rowId];
+    }
+
+    private static String runSweep(HttpCalloutMock mock) {
+        PC1_FeeInstallmentScheduler.testBypass = true;   // no real dispatcher job
+        PC1_FeeInstallmentScheduler.testDispatched.clear();
+        Test.setMock(HttpCalloutMock.class, mock);
         Test.startTest();
-        String summary = PC1_FeeInstallmentScheduler.run(today);
+        String summary = PC1_FeeInstallmentScheduler.run(Date.today());
         Test.stopTest();
+        return summary;
+    }
 
-        System.assert(summary.contains('fired=1'), 'installment #1 (today) should fire, got: ' + summary);
+    // -----------------------------------------------------------------
+    // Advance notices
+    // -----------------------------------------------------------------
+    @isTest static void run_noticesRowInsideHorizon_withoutCreatingThePayment() {
+        upsertConfig();
+        bacsTemplate();
+        PC1_Application__c a = makeApp(1);
+        Date due = Date.today().addDays(7);
+        PC1_Fee_Installment__c row = makeInstallments(a.Id, 1, due)[0];
 
-        PC1_Fee_Installment__c[] refreshed = [
-            SELECT Installment_Number__c, Payment_Status__c, Payment_Id__c, Charged_At__c
-              FROM PC1_Fee_Installment__c WHERE Application__c = :a.Id
-             ORDER BY Installment_Number__c
-        ];
-        System.assertEquals('submitted', refreshed[0].Payment_Status__c);
-        System.assertEquals('PM_INSTALL', refreshed[0].Payment_Id__c);
-        System.assertNotEquals(null, refreshed[0].Charged_At__c);
-        System.assertEquals('pending', refreshed[1].Payment_Status__c);
-        System.assertEquals('pending', refreshed[2].Payment_Status__c);
+        String summary = runSweep(new ChargeMock());
 
-        PC1_Application__c after = [SELECT Fee_Plan_Next_Charge_Date__c FROM PC1_Application__c WHERE Id = :a.Id];
-        System.assertEquals(today.addMonths(1), after.Fee_Plan_Next_Charge_Date__c,
-            'next charge date should be installment #2 (+1 month)');
+        System.assert(summary.contains('notices=1'), 'expected notices=1 in: ' + summary);
+        System.assert(summary.contains('fired=0'), 'a row is never created on the run that notices it: ' + summary);
+        System.assertEquals(0, calls, 'no GoCardless call before the notice is delivered');
+        System.assertEquals(1, PC1_FeeInstallmentScheduler.testDispatched.size());
+        System.assertEquals(a.Id + ':bulk', PC1_FeeInstallmentScheduler.testDispatched[0]);
+        PC1_Fee_Installment__c after = reload(row.Id);
+        System.assertEquals(true, after.Bacs_Notice_Sent__c);
+        System.assertEquals('pending', after.Payment_Status__c);
+        System.assertEquals(null, after.Payment_Id__c);
+        System.assertEquals(due, after.Scheduled_Date__c, 'a date with enough notice is not moved');
+    }
+
+    @isTest static void run_rowTooCloseIsMovedToTheNoticePeriod() {
+        upsertConfig();
+        bacsTemplate();
+        PC1_Application__c a = makeApp(1);
+        PC1_Fee_Installment__c row = makeInstallments(a.Id, 1, Date.today().addDays(2))[0];
+
+        String summary = runSweep(new ChargeMock());
+
+        Date moved = Date.today().addDays(PC1_FeeInstallmentScheduler.NOTICE_DAYS);
+        PC1_Fee_Installment__c after = reload(row.Id);
+        System.assertEquals(moved, after.Scheduled_Date__c, 'never noticed with fewer than NOTICE_DAYS');
+        System.assertEquals(true, after.Bacs_Notice_Sent__c);
+        System.assert(summary.contains('notices=1'), summary);
+        System.assertEquals(moved, [SELECT Fee_Plan_Next_Charge_Date__c FROM PC1_Application__c WHERE Id = :a.Id].Fee_Plan_Next_Charge_Date__c,
+            'the card shows the moved date');
+    }
+
+    @isTest static void run_rowBeyondHorizon_isLeftAlone() {
+        upsertConfig();
+        bacsTemplate();
+        PC1_Application__c a = makeApp(1);
+        PC1_Fee_Installment__c row = makeInstallments(a.Id, 1, Date.today().addDays(8))[0];
+
+        String summary = runSweep(new ChargeMock());
+
+        System.assert(summary.contains('notices=0'), summary);
+        System.assertEquals(false, reload(row.Id).Bacs_Notice_Sent__c);
+        System.assertEquals(0, PC1_FeeInstallmentScheduler.testDispatched.size());
+    }
+
+    @isTest static void run_noActiveTemplate_leavesRowsUnnoticed_andAlerts() {
+        upsertConfig();
+        PC1_Application__c a = makeApp(1);
+        PC1_Fee_Installment__c row = makeInstallments(a.Id, 1, Date.today().addDays(7))[0];
+
+        String summary = runSweep(new ChargeMock());
+
+        System.assert(summary.contains('errored=1'), summary);
+        System.assertEquals(false, reload(row.Id).Bacs_Notice_Sent__c, 'not stamped: a stamped row would be collected');
+        System.assertNotEquals(null, PC1_FeeInstallmentScheduler.lastAlert, 'a run with errors emails the admin');
+    }
+
+    // -----------------------------------------------------------------
+    // Collection: created ahead, dated as noticed
+    // -----------------------------------------------------------------
+    @isTest static void run_createsNoticedDeliveredRow_withTheNoticedChargeDate() {
+        upsertConfig();
+        PC1_Message_Template__c t = bacsTemplate();
+        PC1_Application__c a = makeApp(3);
+        Date due = Date.today().addDays(6);
+        List<PC1_Fee_Installment__c> rows = makeInstallments(a.Id, 3, due);
+        stampNoticed(rows[0].Id);
+        logDelivered(a.Id, t.Id);
+
+        ChargeMock mock = new ChargeMock();
+        mock.body = '{"ok":true,"payment_id":"PM_INSTALL","status":"pending_submission","charge_date":"' + String.valueOf(due) + '"}';
+        String summary = runSweep(mock);
+
+        System.assert(summary.contains('fired=1'), summary);
+        System.assertEquals(1, calls, 'one installment, one GoCardless call');
+        System.assert(lastBody.contains('"charge_date":"' + String.valueOf(due) + '"'),
+            'the payment must be dated as the notice said: ' + lastBody);
+        System.assert(lastBody.contains('"charge_stage":"installment_1"'), lastBody);
+        System.assert(lastBody.contains('"amount_pence":5333'), lastBody);
+
+        PC1_Fee_Installment__c first = reload(rows[0].Id);
+        System.assertEquals('submitted', first.Payment_Status__c);
+        System.assertEquals('PM_INSTALL', first.Payment_Id__c);
+        System.assertNotEquals(null, first.Charged_At__c);
+        System.assertEquals(due, first.Scheduled_Date__c);
+        System.assertEquals('pending', reload(rows[1].Id).Payment_Status__c);
+        System.assertEquals('pending', reload(rows[2].Id).Payment_Status__c);
+        System.assertEquals(due.addMonths(1), [SELECT Fee_Plan_Next_Charge_Date__c FROM PC1_Application__c WHERE Id = :a.Id].Fee_Plan_Next_Charge_Date__c,
+            'next charge date is installment #2');
     }
 
     @isTest static void run_finalInstallment_clearsNextChargeDate() {
         upsertConfig();
+        PC1_Message_Template__c t = bacsTemplate();
         PC1_Application__c a = makeApp(2);
-        Date today = Date.today();
-        // Insert: installment #1 already paid, installment #2 due today.
         insert new PC1_Fee_Installment__c(
             Application__c = a.Id, Installment_Number__c = 1,
-            Scheduled_Date__c = today.addMonths(-1), Amount__c = 80,
+            Scheduled_Date__c = Date.today().addMonths(-1), Amount__c = 80,
             Payment_Status__c = 'paid', Payment_Id__c = 'PM_1', Charged_At__c = Datetime.now().addDays(-30)
         );
-        insert new PC1_Fee_Installment__c(
+        PC1_Fee_Installment__c last = new PC1_Fee_Installment__c(
             Application__c = a.Id, Installment_Number__c = 2,
-            Scheduled_Date__c = today, Amount__c = 80,
+            Scheduled_Date__c = Date.today().addDays(6), Amount__c = 80,
             Payment_Status__c = 'pending'
         );
+        insert last;
+        stampNoticed(last.Id);
+        logDelivered(a.Id, t.Id);
 
-        Test.setMock(HttpCalloutMock.class, new ChargeMock());
-        PC1_FeeInstallmentScheduler.testBypass = true;
-        Test.startTest();
-        PC1_FeeInstallmentScheduler.run(today);
-        Test.stopTest();
+        runSweep(new ChargeMock());
 
-        PC1_Application__c after = [SELECT Fee_Plan_Next_Charge_Date__c FROM PC1_Application__c WHERE Id = :a.Id];
-        System.assertEquals(null, after.Fee_Plan_Next_Charge_Date__c,
-            'no pending installments left → Fee_Plan_Next_Charge_Date__c cleared');
+        System.assertEquals('submitted', reload(last.Id).Payment_Status__c);
+        System.assertEquals(null, [SELECT Fee_Plan_Next_Charge_Date__c FROM PC1_Application__c WHERE Id = :a.Id].Fee_Plan_Next_Charge_Date__c,
+            'no pending installments left: next charge date cleared');
     }
 
-    // -----------------------------------------------------------------
-    // Advance-notice path — exactly 5 calendar days out
-    // -----------------------------------------------------------------
-    @isTest static void run_dispatchesAdvanceNotice_atMinus5CalendarDays() {
+    @isTest static void run_weekendRoll_recordsTheRealDebitDate() {
         upsertConfig();
+        PC1_Message_Template__c t = bacsTemplate();
         PC1_Application__c a = makeApp(1);
-        Date today = Date.today();
-        Date target = today.addDays(5);   // matches scheduler's addDays(5)
-        insert new PC1_Fee_Installment__c(
-            Application__c = a.Id, Installment_Number__c = 1,
-            Scheduled_Date__c = target, Amount__c = 160,
-            Payment_Status__c = 'pending'
-        );
+        PC1_Fee_Installment__c row = makeInstallments(a.Id, 1, Date.today().addDays(6))[0];
+        stampNoticed(row.Id);
+        logDelivered(a.Id, t.Id);
+
+        ChargeMock mock = new ChargeMock();
+        Date rolled = Date.today().addDays(8);
+        mock.body = '{"ok":true,"payment_id":"PM_ROLL","status":"pending_submission","charge_date":"' + String.valueOf(rolled) + '"}';
+        runSweep(mock);
+
+        System.assertEquals(rolled, reload(row.Id).Scheduled_Date__c);
+        System.assertEquals(0, [SELECT COUNT() FROM PC1_Handoff__c WHERE Application__c = :a.Id], 'a later date is not an alarm');
+    }
+
+    @isTest static void run_earlierDateFromAnOldHerokuBuild_raisesUrgentHandoff() {
+        upsertConfig();
+        PC1_Message_Template__c t = bacsTemplate();
+        PC1_Application__c a = makeApp(1);
+        PC1_Fee_Installment__c row = makeInstallments(a.Id, 1, Date.today().addDays(6))[0];
+        stampNoticed(row.Id);
+        logDelivered(a.Id, t.Id);
+
+        ChargeMock mock = new ChargeMock();
+        Date early = Date.today().addDays(2);
+        mock.body = '{"ok":true,"payment_id":"PM_EARLY","status":"pending_submission","charge_date":"' + String.valueOf(early) + '"}';
+        runSweep(mock);
+
+        PC1_Fee_Installment__c after = reload(row.Id);
+        System.assertEquals('submitted', after.Payment_Status__c, 'the payment exists, so the ledger must show it');
+        System.assertEquals(early, after.Scheduled_Date__c);
+        System.assertEquals(1, [SELECT COUNT() FROM PC1_Handoff__c WHERE Application__c = :a.Id AND Reason__c LIKE 'URGENT%'],
+            'collected earlier than the client was told: a human must act');
+    }
+
+    @isTest static void run_noDeliveredNotice_noCollection() {
+        upsertConfig();
+        bacsTemplate();
+        PC1_Application__c a = makeApp(1);
+        PC1_Fee_Installment__c row = makeInstallments(a.Id, 1, Date.today().addDays(6))[0];
+        stampNoticed(row.Id);   // handed to the dispatcher, but no 'Sent' log exists
 
         PC1_FeeInstallmentScheduler.testBypass = true;
-        PC1_FeeInstallmentScheduler.testDispatched.clear();
         Test.setMock(HttpCalloutMock.class, new ChargeMock());
         Test.startTest();
-        String summary = PC1_FeeInstallmentScheduler.run(today);
+        String summary = PC1_FeeInstallmentScheduler.run(Date.today());
+        // The notice was sent again in that run; until its dispatch job has
+        // had time to log, the next run waits instead of alarming twice.
+        String second = PC1_FeeInstallmentScheduler.run(Date.today());
         Test.stopTest();
 
-        System.assert(summary.contains('notices=1'), 'expected notices=1 in: ' + summary);
-        System.assertEquals(1, PC1_FeeInstallmentScheduler.testDispatched.size());
-        // Post-audit-r3 bulk refactor: stub emits '<appId>:bulk' from
-        // dispatchBacsAdvanceNoticeBulk instead of '<appId>:1' per-row.
-        System.assertEquals(a.Id + ':bulk', PC1_FeeInstallmentScheduler.testDispatched[0]);
+        System.assertEquals(0, calls, 'nothing is collected without a delivered notice');
+        System.assert(summary.contains('undelivered=1'), summary);
+        System.assert(summary.contains('notices=1'), 'the notice is tried again: ' + summary);
+        System.assert(second.contains('undelivered=0'), second);
+        PC1_Fee_Installment__c after = reload(row.Id);
+        System.assertEquals('pending', after.Payment_Status__c);
+        System.assertEquals(null, after.Payment_Id__c);
+        System.assertEquals(1, [SELECT COUNT() FROM PC1_Handoff__c
+                                 WHERE Application__c = :a.Id AND Reason__c = :PC1_FeeInstallmentScheduler.UNDELIVERED_REASON],
+            'ops are told once why the fee is not being collected');
+    }
+
+    @isTest static void run_onlyOneInstallmentPerApplicationPerRun() {
+        upsertConfig();
+        PC1_Message_Template__c t = bacsTemplate();
+        PC1_Application__c a = makeApp(2);
+        // Two noticed rows on one application cannot happen through the sweep
+        // (it keeps a month between them); a data load can produce it.
+        PC1_Fee_Installment__c r1 = new PC1_Fee_Installment__c(Application__c = a.Id, Installment_Number__c = 1,
+            Scheduled_Date__c = Date.today().addDays(6), Amount__c = 80, Payment_Status__c = 'pending');
+        PC1_Fee_Installment__c r2 = new PC1_Fee_Installment__c(Application__c = a.Id, Installment_Number__c = 2,
+            Scheduled_Date__c = Date.today().addDays(40), Amount__c = 80, Payment_Status__c = 'pending');
+        insert new List<PC1_Fee_Installment__c>{ r1, r2 };
+        stampNoticed(r1.Id);
+        stampNoticed(r2.Id);
+        logDelivered(a.Id, t.Id);
+
+        String summary = runSweep(new ChargeMock());
+
+        System.assertEquals(1, calls, 'never two installments of one client on the same day');
+        System.assert(summary.contains('fired=1'), summary);
+        System.assertEquals('submitted', reload(r1.Id).Payment_Status__c);
+        System.assertEquals('pending', reload(r2.Id).Payment_Status__c);
     }
 
     // -----------------------------------------------------------------
-    // R11-arch — new T+3..T+7 window backed by per-installment
-    // Bacs_Notice_Sent__c stamp. Brackets: T+2 (below) and T+8 (above)
-    // should NOT fire; T+3/T+5/T+7 all inside. Also verifies idempotency
-    // (2nd run finds the stamps and skips).
+    // Hold rules: stage, Do Not Contact, mandate
     // -----------------------------------------------------------------
-    @isTest static void run_windowAndBacsNoticeStamp() {
+    @isTest static void run_holdRules_stageDoNotContactAndMandate() {
         upsertConfig();
-        PC1_Application__c a = makeApp(3);
-        Date today = Date.today();
-        // Out-of-window brackets
-        insert new PC1_Fee_Installment__c(
-            Application__c = a.Id, Installment_Number__c = 1,
-            Scheduled_Date__c = today.addDays(2), Amount__c = 80,
-            Payment_Status__c = 'pending'
-        );
-        insert new PC1_Fee_Installment__c(
-            Application__c = a.Id, Installment_Number__c = 5,
-            Scheduled_Date__c = today.addDays(8), Amount__c = 80,
-            Payment_Status__c = 'pending'
-        );
-        // In-window
-        PC1_Fee_Installment__c inWin1 = new PC1_Fee_Installment__c(
-            Application__c = a.Id, Installment_Number__c = 2,
-            Scheduled_Date__c = today.addDays(3), Amount__c = 80,
-            Payment_Status__c = 'pending'
-        );
-        PC1_Fee_Installment__c inWin2 = new PC1_Fee_Installment__c(
-            Application__c = a.Id, Installment_Number__c = 3,
-            Scheduled_Date__c = today.addDays(5), Amount__c = 80,
-            Payment_Status__c = 'pending'
-        );
-        PC1_Fee_Installment__c inWin3 = new PC1_Fee_Installment__c(
-            Application__c = a.Id, Installment_Number__c = 4,
-            Scheduled_Date__c = today.addDays(7), Amount__c = 80,
-            Payment_Status__c = 'pending'
-        );
-        insert new List<PC1_Fee_Installment__c>{ inWin1, inWin2, inWin3 };
+        PC1_Message_Template__c t = bacsTemplate();
+        // A human is dealing with a dispute.
+        PC1_Application__c needsHuman = makeApp(1);
+        PC1_Fee_Installment__c rowHuman = makeInstallments(needsHuman.Id, 1, Date.today().addDays(6))[0];
+        // Client reported deceased; installment 1 is already with GoCardless.
+        PC1_Application__c dnc = makeApp(2);
+        List<PC1_Fee_Installment__c> dncRows = makeInstallments(dnc.Id, 2, Date.today().addDays(6));
+        update new PC1_Fee_Installment__c(Id = dncRows[0].Id, Payment_Status__c = 'submitted', Payment_Id__c = 'PM_DNC',
+            Charged_At__c = Datetime.now().addDays(-40), Scheduled_Date__c = Date.today().addDays(-40));
+        update new PC1_Fee_Installment__c(Id = dncRows[1].Id, Scheduled_Date__c = Date.today().addDays(6));
+        // Bank details changed: the mandate is parked.
+        PC1_Application__c parked = makeApp(1);
+        PC1_Fee_Installment__c rowParked = makeInstallments(parked.Id, 1, Date.today().addDays(6))[0];
+        // Not noticed yet, mandate parked: nothing may be sent either.
+        PC1_Application__c parkedUnnoticed = makeApp(1);
+        PC1_Fee_Installment__c rowParkedUnnoticed = makeInstallments(parkedUnnoticed.Id, 1, Date.today().addDays(6))[0];
+
+        for (Id rowId : new List<Id>{ rowHuman.Id, dncRows[1].Id, rowParked.Id }) stampNoticed(rowId);
+        for (Id appId : new List<Id>{ needsHuman.Id, dnc.Id, parked.Id }) logDelivered(appId, t.Id);
+        update new List<PC1_Application__c>{
+            new PC1_Application__c(Id = needsHuman.Id, Stage__c = 'Needs Human'),
+            new PC1_Application__c(Id = dnc.Id, Do_Not_Contact__c = true),
+            new PC1_Application__c(Id = parked.Id, DD_Mandate_Status__c = 'cancelled'),
+            new PC1_Application__c(Id = parkedUnnoticed.Id, DD_Mandate_Status__c = 'cancelled')
+        };
 
         PC1_FeeInstallmentScheduler.testBypass = true;
-        PC1_FeeInstallmentScheduler.testDispatched.clear();
         Test.setMock(HttpCalloutMock.class, new ChargeMock());
         Test.startTest();
-        String summary = PC1_FeeInstallmentScheduler.run(today);
-        Test.stopTest();
+        String summary = PC1_FeeInstallmentScheduler.run(Date.today());
 
-        // One MSG-0008 dispatch (3 installments on the SAME app → 1 app-set entry).
-        System.assert(summary.contains('notices=1'), 'expected notices=1: ' + summary);
-        System.assertEquals(1, PC1_FeeInstallmentScheduler.testDispatched.size());
-        // All 3 in-window installments got Bacs_Notice_Sent__c stamped.
-        Integer stamped = [
-            SELECT COUNT() FROM PC1_Fee_Installment__c
-             WHERE Application__c = :a.Id AND Bacs_Notice_Sent__c = true
-        ];
-        System.assertEquals(3, stamped, 'expected 3 stamped installments');
-        // Out-of-window brackets NOT stamped.
-        Integer unstamped = [
-            SELECT COUNT() FROM PC1_Fee_Installment__c
-             WHERE Application__c = :a.Id AND Bacs_Notice_Sent__c = false
-        ];
-        System.assertEquals(2, unstamped, 'expected 2 out-of-window unstamped');
-
-        // Idempotency: second run in the same day finds no unstamped rows.
-        PC1_FeeInstallmentScheduler.testDispatched.clear();
-        String summary2 = PC1_FeeInstallmentScheduler.run(today);
-        System.assert(summary2.contains('notices=0'),
-            'idempotency: 2nd run should skip (Bacs_Notice_Sent__c=true): ' + summary2);
+        System.assertEquals(0, calls, 'none of the three may be collected');
+        System.assert(summary.contains('fired=0'), summary);
+        System.assert(summary.contains('notices=0'), 'and none may be told "we will collect": ' + summary);
         System.assertEquals(0, PC1_FeeInstallmentScheduler.testDispatched.size());
+        // The old notice no longer stands: each row is noticed afresh later.
+        System.assertEquals(false, reload(rowHuman.Id).Bacs_Notice_Sent__c);
+        System.assertEquals(false, reload(dncRows[1].Id).Bacs_Notice_Sent__c);
+        System.assertEquals(false, reload(rowParked.Id).Bacs_Notice_Sent__c);
+        System.assertEquals(false, reload(rowParkedUnnoticed.Id).Bacs_Notice_Sent__c);
+        System.assertEquals('pending', reload(dncRows[1].Id).Payment_Status__c);
+
+        List<PC1_Handoff__c> pause = [SELECT Reason__c, Next_Step_Suggestion__c, Last_Field_Id__c, Resolved__c
+                                        FROM PC1_Handoff__c WHERE Application__c = :dnc.Id];
+        System.assertEquals(1, pause.size(), 'one handoff per pause');
+        System.assertEquals(PC1_FeeInstallmentScheduler.DNC_PAUSE_REASON, pause[0].Reason__c);
+        System.assert(pause[0].Next_Step_Suggestion__c.contains('ACTION NEEDED'), 'the payment already at GoCardless is listed');
+        System.assert(pause[0].Next_Step_Suggestion__c.contains('PM_DNC'), pause[0].Next_Step_Suggestion__c);
+
+        // Second day: still paused, no second handoff.
+        PC1_FeeInstallmentScheduler.run(Date.today());
+        System.assertEquals(1, [SELECT COUNT() FROM PC1_Handoff__c WHERE Application__c = :dnc.Id]);
+
+        // The flag is cleared: the plan resumes with a fresh notice.
+        update new PC1_Application__c(Id = dnc.Id, Do_Not_Contact__c = false);
+        PC1_FeeInstallmentScheduler.testDispatched.clear();
+        String resumed = PC1_FeeInstallmentScheduler.run(Date.today());
+        Test.stopTest();
+
+        System.assert(resumed.contains('dncResumed=1'), resumed);
+        PC1_Handoff__c closed = [SELECT Resolved__c, Last_Field_Id__c, Next_Step_Suggestion__c
+                                   FROM PC1_Handoff__c WHERE Application__c = :dnc.Id];
+        System.assertEquals(true, closed.Resolved__c);
+        System.assertEquals(PC1_FeeInstallmentScheduler.DNC_PAUSE_ENDED, closed.Last_Field_Id__c);
+        System.assert(closed.Next_Step_Suggestion__c.startsWith(PC1_FeeInstallmentScheduler.DNC_RESUMED_MARK));
+        System.assert(new Set<String>(PC1_FeeInstallmentScheduler.testDispatched).contains(dnc.Id + ':bulk'),
+            'a fresh notice goes out before anything is collected');
+        System.assertEquals(true, reload(dncRows[1].Id).Bacs_Notice_Sent__c);
+        System.assertEquals(0, calls);
+    }
+
+    @isTest static void run_afterMandateGap_oneInstallmentAtATime_aMonthApart() {
+        upsertConfig();
+        bacsTemplate();
+        PC1_Application__c a = makeApp(3);
+        List<PC1_Fee_Installment__c> rows = makeInstallments(a.Id, 3, Date.today().addDays(-70));
+        update new PC1_Fee_Installment__c(Id = rows[0].Id, Payment_Status__c = 'paid', Payment_Id__c = 'PM1',
+            Charged_At__c = Datetime.now().addDays(-70));
+        // #2 and #3 both fell due while the mandate was being replaced.
+        update new PC1_Fee_Installment__c(Id = rows[1].Id, Scheduled_Date__c = Date.today().addDays(-40));
+        update new PC1_Fee_Installment__c(Id = rows[2].Id, Scheduled_Date__c = Date.today().addDays(-10));
+
+        String summary = runSweep(new ChargeMock());
+
+        Date second = Date.today().addDays(PC1_FeeInstallmentScheduler.NOTICE_DAYS);
+        System.assertEquals(0, calls, 'overdue rows are noticed first, never fired on sight');
+        System.assert(summary.contains('notices=1'), summary);
+        PC1_Fee_Installment__c r2 = reload(rows[1].Id);
+        PC1_Fee_Installment__c r3 = reload(rows[2].Id);
+        System.assertEquals(second, r2.Scheduled_Date__c);
+        System.assertEquals(true, r2.Bacs_Notice_Sent__c);
+        System.assertEquals(second.addMonths(1), r3.Scheduled_Date__c, 'a month between installments, never two together');
+        System.assertEquals(false, r3.Bacs_Notice_Sent__c);
     }
 
     // -----------------------------------------------------------------
-    // Failure path — callout returns ok=false → row stays pending for retry
+    // Refusals and failures
     // -----------------------------------------------------------------
-    @isTest static void run_calloutFail_leavesRowPending() {
+    @isTest static void run_chargeDateTooSoon_movesTheRow_noticedByTheNextRun() {
         upsertConfig();
+        PC1_Message_Template__c t = bacsTemplate();
         PC1_Application__c a = makeApp(1);
-        Date today = Date.today();
-        insert new PC1_Fee_Installment__c(
-            Application__c = a.Id, Installment_Number__c = 1,
-            Scheduled_Date__c = today, Amount__c = 160,
-            Payment_Status__c = 'pending'
-        );
+        PC1_Fee_Installment__c row = makeInstallments(a.Id, 1, Date.today().addDays(6))[0];
+        stampNoticed(row.Id);
+        logDelivered(a.Id, t.Id);
 
-        ChargeMock fail = new ChargeMock();
-        fail.body = '{"ok":false,"error":"insufficient_permissions"}';
-        Test.setMock(HttpCalloutMock.class, fail);
-        PC1_FeeInstallmentScheduler.testBypass = true;
+        ChargeMock mock = new ChargeMock();
+        mock.status = 409;
+        // Inside the notice horizon on purpose: without skipNotice the same
+        // run would notice it again.
+        Date npcd = Date.today().addDays(7);
+        mock.body = '{"ok":false,"error":"charge_date_too_soon","next_possible_charge_date":"' + String.valueOf(npcd) + '"}';
+        String summary = runSweep(mock);
 
-        Test.startTest();
-        String summary = PC1_FeeInstallmentScheduler.run(today);
-        Test.stopTest();
+        System.assert(summary.contains('redated=1'), summary);
+        PC1_Fee_Installment__c after = reload(row.Id);
+        System.assertEquals(npcd, after.Scheduled_Date__c, 'moved past the mandate\'s next possible charge date');
+        System.assertEquals(false, after.Bacs_Notice_Sent__c, 'the client must be told the new date first');
+        System.assertEquals('pending', after.Payment_Status__c);
+        System.assertEquals(0, PC1_FeeInstallmentScheduler.testDispatched.size(),
+            'noticed tomorrow, so the dispatcher\'s 24h dedup cannot swallow the new notice');
+    }
+
+    @isTest static void run_terminalRefusal_putsTheRowOnHold() {
+        upsertConfig();
+        PC1_Message_Template__c t = bacsTemplate();
+        PC1_Application__c a = makeApp(1);
+        PC1_Fee_Installment__c row = makeInstallments(a.Id, 1, Date.today().addDays(6))[0];
+        stampNoticed(row.Id);
+        logDelivered(a.Id, t.Id);
+
+        ChargeMock mock = new ChargeMock();
+        mock.status = 409;
+        mock.body = '{"ok":false,"error":"no_mandate_on_application"}';
+        String summary = runSweep(mock);
+
+        System.assert(summary.contains('held=1'), summary);
+        System.assertEquals('failed', reload(row.Id).Payment_Status__c, 'on hold: shows Retry on the Fee card');
+        System.assertEquals(1, [SELECT COUNT() FROM PC1_Handoff__c
+                                 WHERE Application__c = :a.Id AND Reason__c LIKE 'Fee installment 1 NOT collected%']);
+        System.assertEquals(0, PC1_FeeInstallmentScheduler.testDispatched.size(), 'a held row is not noticed again');
+    }
+
+    @isTest static void run_transientFailure_leavesRowForTomorrow_andAlerts() {
+        upsertConfig();
+        PC1_Message_Template__c t = bacsTemplate();
+        PC1_Application__c a = makeApp(1);
+        PC1_Fee_Installment__c row = makeInstallments(a.Id, 1, Date.today().addDays(6))[0];
+        stampNoticed(row.Id);
+        logDelivered(a.Id, t.Id);
+
+        ChargeMock mock = new ChargeMock();
+        mock.status = 502;
+        mock.body = '{"ok":false,"error":"gocardless_call_failed"}';
+        String summary = runSweep(mock);
 
         System.assert(summary.contains('errored=1'), 'expected errored=1: ' + summary);
-        PC1_Fee_Installment__c row = [SELECT Payment_Status__c FROM PC1_Fee_Installment__c WHERE Application__c = :a.Id];
-        System.assertEquals('pending', row.Payment_Status__c,
-            'failed callout must leave the row pending for tomorrow\'s retry');
+        PC1_Fee_Installment__c after = reload(row.Id);
+        System.assertEquals('pending', after.Payment_Status__c, 'a transient failure is retried by the next run');
+        System.assertEquals(true, after.Bacs_Notice_Sent__c, 'and the notice still stands');
+        System.assertNotEquals(null, PC1_FeeInstallmentScheduler.lastAlert, 'somebody is told (was: debug log only)');
+    }
+
+    @isTest static void terminalRefusal_classification() {
+        System.assert(!PC1_FeeInstallmentScheduler.isTerminalRefusal(new Map<String, Object>{ 'ok' => false, 'error' => 'Endpoint unreachable' }),
+            'no HTTP status = transient');
+        System.assert(!PC1_FeeInstallmentScheduler.isTerminalRefusal(new Map<String, Object>{ 'http_status' => 401, 'error' => 'unauthorized' }),
+            'a bad token is fixed in config, not per installment');
+        System.assert(!PC1_FeeInstallmentScheduler.isTerminalRefusal(new Map<String, Object>{ 'http_status' => 502, 'error' => 'gocardless_call_failed' }));
+        System.assert(!PC1_FeeInstallmentScheduler.isTerminalRefusal(new Map<String, Object>{ 'http_status' => 409, 'error' => 'mandate_not_charge_ready' }));
+        System.assert(PC1_FeeInstallmentScheduler.isTerminalRefusal(new Map<String, Object>{ 'http_status' => 404, 'error' => 'application_not_found' }));
+        System.assert(PC1_FeeInstallmentScheduler.isCollectableStage('Fee Charged'));
+        System.assert(!PC1_FeeInstallmentScheduler.isCollectableStage('Closed - Refused'));
+        System.assert(!PC1_FeeInstallmentScheduler.isCollectableStage(null));
+    }
+
+    @isTest static void run_noticedRowWhoseDatePassedUncreated_isHeldNotRenoticed() {
+        upsertConfig();
+        bacsTemplate();
+        PC1_Application__c a = makeApp(1);
+        PC1_Fee_Installment__c row = makeInstallments(a.Id, 1, Date.today())[0];
+        stampNoticed(row.Id);
+
+        String summary = runSweep(new ChargeMock());
+
+        System.assertEquals(0, calls, 'a payment dated today cannot be created any more');
+        System.assertEquals('failed', reload(row.Id).Payment_Status__c);
+        System.assert(summary.contains('notices=0'), 'no second "we will collect" email: ' + summary);
+        System.assertEquals(1, [SELECT COUNT() FROM PC1_Handoff__c WHERE Application__c = :a.Id]);
     }
 
     // -----------------------------------------------------------------
-    // 2026-10-02 — one Queueable per run (the sweep runs in @future)
+    // One Queueable per run (the sweep runs in @future) + reconciliation
     // -----------------------------------------------------------------
-    private static void bacsTemplate() {
-        insert new PC1_Message_Template__c(Channel__c = 'Email', Trigger_Event__c = 'Bacs_Advance_Notice',
-            Active__c = true, Subject_Template__c = 'Notice', Body_Template__c = 'Hi');
-    }
-
-    @isTest static void run_urgentAndRegularNotices_shareOneDispatch() {
+    @isTest static void run_noQueueSlot_noticeRetriedNextRun_andReconciliationDeferred() {
         upsertConfig();
         bacsTemplate();
-        Date today = Date.today();
-        PC1_Application__c urgent = makeApp(3);
-        PC1_Fee_Installment__c u = makeInstallments(urgent.Id, 3, today.addDays(2))[0];
-        // Stamped 3 days ago but no Sent log → the notice never went out.
-        update new PC1_Fee_Installment__c(Id = u.Id, Bacs_Notice_Sent__c = true, Bacs_Notice_Sent_At__c = Datetime.now().addHours(-72));
-        PC1_Application__c regular = makeApp(3);
-        makeInstallments(regular.Id, 3, today.addDays(5));
-
-        PC1_FeeInstallmentScheduler.testBypass = true;
-        Test.setMock(HttpCalloutMock.class, new ChargeMock());
-        Test.startTest();
-        PC1_FeeInstallmentScheduler.run(today);
-        Test.stopTest();
-
-        Set<String> dispatched = new Set<String>(PC1_FeeInstallmentScheduler.testDispatched);
-        System.assert(dispatched.contains(urgent.Id + ':bulk'), 'urgent re-send included');
-        System.assert(dispatched.contains(regular.Id + ':bulk'), 'regular notice included');
-        System.assertEquals(2, PC1_FeeInstallmentScheduler.testDispatched.size(), 'one dispatch for both');
-    }
-
-    @isTest static void run_noQueueSlot_handoffForUrgent_andReconciliationDeferred() {
-        upsertConfig();
-        bacsTemplate();
-        Date today = Date.today();
-        PC1_Application__c urgent = makeApp(3);
-        PC1_Fee_Installment__c u = makeInstallments(urgent.Id, 3, today.addDays(2))[0];
-        update new PC1_Fee_Installment__c(Id = u.Id, Bacs_Notice_Sent__c = true, Bacs_Notice_Sent_At__c = Datetime.now().addHours(-72));
+        PC1_Application__c a = makeApp(1);
+        PC1_Fee_Installment__c row = makeInstallments(a.Id, 1, Date.today().addDays(7))[0];
         PC1_Application__c paid = makeApp(1);
-        List<PC1_Fee_Installment__c> rows = makeInstallments(paid.Id, 1, today.addDays(-10));
+        List<PC1_Fee_Installment__c> rows = makeInstallments(paid.Id, 1, Date.today().addDays(-10));
         update new PC1_Fee_Installment__c(Id = rows[0].Id, Payment_Status__c = 'paid', Payment_Id__c = 'PM1');
 
         PC1_FeeInstallmentScheduler.queueSlotsUsedOverride = 1000;   // no slot left
         Test.setMock(HttpCalloutMock.class, new ChargeMock());
         Test.startTest();
-        PC1_FeeInstallmentScheduler.run(today);
+        PC1_FeeInstallmentScheduler.run(Date.today());
         Test.stopTest();
 
-        System.assertEquals(1, [SELECT COUNT() FROM PC1_Handoff__c WHERE Application__c = :urgent.Id],
-            'charge within 3 days without a notice → a human must act');
+        System.assertEquals(false, reload(row.Id).Bacs_Notice_Sent__c, 'not stamped without a dispatch: next run notices it');
         System.assertEquals('Awarded', [SELECT Stage__c FROM PC1_Application__c WHERE Id = :paid.Id].Stage__c,
             'not closed without its receipt — next run');
     }
@@ -345,12 +580,5 @@ private class PC1_FeeInstallmentSchedulerTest {
         Test.startTest();
         new PC1_FeeInstallmentScheduler().execute(null);
         Test.stopTest();
-    }
-
-    @isTest static void single_notice_helper() {
-        PC1_Application__c a = makeApp(1);
-        PC1_FeeInstallmentScheduler.testBypass = true;
-        PC1_FeeInstallmentScheduler.dispatchBacsAdvanceNotice(a.Id, 1);
-        System.assertEquals(1, PC1_FeeInstallmentScheduler.testDispatched.size());
     }
 }

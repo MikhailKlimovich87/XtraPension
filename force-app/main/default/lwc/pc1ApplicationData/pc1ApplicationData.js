@@ -15,6 +15,7 @@ import getAnswers      from '@salesforce/apex/PC1_RecordPageService.getAnswers';
 import getFlowConfig   from '@salesforce/apex/PC1_RecordPageService.getFlowConfig';
 import saveField       from '@salesforce/apex/PC1_RecordPageService.saveField';
 import getPathForRecord from '@salesforce/apex/PC1_FlowEngine.getPathForRecord';
+import { checkDateParts, checkTextValue, checkTicks } from './pc1DataRules';
 
 // ── module-level singleton cache ────────────────────────────────────────────
 // Salesforce mounts the record-page LWC twice (edit-mode preview + view-mode,
@@ -92,6 +93,8 @@ const DECLARATION_IDS = new Set(['decl', 'declname', 'decldate']);
  *   • radio/yesno/select show friendly labels
  *   • Empty answers show italic "Not collected"
  *   • Inline editor → Enter/Save persists via PC1_RecordPageService.saveField
+ *   • Text, date and tick-box edits are checked with the flow's own rules
+ *     before saving (pc1DataRules)
  */
 export default class Pc1ApplicationData extends LightningElement {
     @api recordId;
@@ -103,6 +106,7 @@ export default class Pc1ApplicationData extends LightningElement {
 
     flow;              // parsed pc1-flow.json  { PAGES: [...] }
     flowLoaded = false;
+    _fieldById = {};   // flow field by id, for the save-time checks
 
     @track editingKey = null;   // fieldId currently being edited
     @track collapsed = new Set();
@@ -251,6 +255,7 @@ export default class Pc1ApplicationData extends LightningElement {
         const map = this.answerMap;
         const groups = new Map(); // part -> fields[]
         const order = [];
+        const fieldById = {};
 
         for (const bucket of ['PAGES', 'CHILD_PAGES', 'PENSION_PAGES', 'MONEY_PAGES']) {
             for (const page of (this.flow[bucket] || [])) {
@@ -262,9 +267,12 @@ export default class Pc1ApplicationData extends LightningElement {
                 }
                 for (const f of page.fields) {
                     groups.get(part).push(f);
+                    fieldById[f.id] = f;
                 }
             }
         }
+
+        this._fieldById = fieldById;
 
         const requiredSet = this.requiredSet;
         const optionalSet = this.pathOptionalSet;
@@ -479,27 +487,33 @@ export default class Pc1ApplicationData extends LightningElement {
         const wrap = this.template.querySelector(`[data-editor-key="${key}"]`);
         if (!wrap) return;
         const kind = wrap.dataset.kind;
+        const field = this._fieldById[key] || { id: key };
         const saves = []; // [fieldId, value]
 
         if (kind === 'date') {
             const d = wrap.querySelector('[data-p="day"]').value.trim();
             const m = wrap.querySelector('[data-p="month"]').value.trim();
             const y = wrap.querySelector('[data-p="year"]').value.trim();
-            if (d || m || y) {
-                if (!d || !m || !y) return this.toast('Enter a full date', 'error');
-                if (Number(d) < 1 || Number(d) > 31) return this.toast('Day 1–31', 'error');
-                if (Number(m) < 1 || Number(m) > 12) return this.toast('Month 1–12', 'error');
-                if (!/^\d{4}$/.test(y))              return this.toast('Year 4-digit', 'error');
-            }
+            // Everything is checked before the first of the three saves: a
+            // refusal half way left the new day with the old month and year.
+            const dateError = checkDateParts(field, d, m, y);
+            if (dateError) return this.toast(dateError, 'error');
             saves.push([key + '_day', d]);
             saves.push([key + '_month', m]);
             saves.push([key + '_year', y]);
         } else if (kind === 'checkboxes') {
             const checked = [...wrap.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
+            const tickError = checkTicks(checked);
+            if (tickError) return this.toast(tickError, 'error');
             saves.push([key, JSON.stringify(checked)]);
-        } else {
+        } else if (kind === 'select') {
             const el = wrap.querySelector('[data-input]');
             saves.push([key, el ? el.value : '']);
+        } else {
+            const el = wrap.querySelector('[data-input]');
+            const checkedText = checkTextValue(field, el ? el.value : '');
+            if (!checkedText.ok) return this.toast(checkedText.error, 'error');
+            saves.push([key, checkedText.value]);
         }
 
         try {

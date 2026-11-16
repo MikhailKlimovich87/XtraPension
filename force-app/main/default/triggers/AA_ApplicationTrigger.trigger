@@ -30,6 +30,10 @@
  *                     10:00, async) when a bank-deferred app moves from
  *                     Awaiting Bank Details to a first-call stage
  *                     (AA_StageTransitionHelper.bookFirstCallAfterBankDetails).
+ *                     And carries an edit made on the record to what DWP
+ *                     receives: address change clears a signed declaration,
+ *                     name / date of birth / email go to the answer rows
+ *                     (AA_ApplicationFieldSync.afterRecordEdit).
  *
  * Real logic lives in helpers (StageTransitionHelper + DefaultAnswersHelper)
  * so both are unit-testable without DML noise here.
@@ -96,5 +100,12 @@ trigger AA_ApplicationTrigger on AA_Application__c (before insert, before update
         if (!ready.isEmpty()) {
             AA_MessageDispatcher.dispatch(ready, 'Intake_Created');
         }
+
+        // An edit made on the record itself (Address card, Details tab, API)
+        // must reach what DWP receives (audit 2026-11-11 AA-SFUI-2 / AA-SFUI-3):
+        // a changed home address clears a signed declaration, and a changed
+        // name, date of birth or email is written to the answers the fill
+        // reads. Skipped when the change is the mirror of an answer.
+        AA_ApplicationFieldSync.afterRecordEdit(Trigger.new, Trigger.oldMap);
     }
 }

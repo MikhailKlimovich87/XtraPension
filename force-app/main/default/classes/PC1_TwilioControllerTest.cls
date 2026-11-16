@@ -101,6 +101,19 @@ private class PC1_TwilioControllerTest {
         System.assert(threw, 'STOP must be honoured');
     }
 
+    // Audit 2026-11-11 PC-APEX-6 / PC-SFUI-3: the flag stopped Mary's calls only.
+    @IsTest static void sendSMS_do_not_contact_throws_before_twilio() {
+        seedTwilioCreds();
+        PC1_Application__c app = makeApp('+441234567890');
+        update new PC1_Application__c(Id = app.Id, Do_Not_Contact__c = true);
+        // No mock set: a callout would fail the test.
+        Boolean threw = false;
+        try { PC1_TwilioController.sendSMS(app.Id, 'hi'); }
+        catch (AuraHandledException e) { threw = true; }
+        System.assert(threw, 'Do Not Contact must be honoured on the SMS panel');
+        System.assertEquals(0, [SELECT COUNT() FROM TwilioSF__Message__c], 'nothing sent, nothing logged');
+    }
+
     @IsTest static void sendSMS_missing_creds_throws() {
         PC1_Application__c app = makeApp('+441234567890');
         Boolean threw = false;

@@ -305,6 +305,44 @@ public with sharing class AA_FlowEngine {
         return PAGES_CACHE;
     }
 
+    private static Map<String, String> CONDITION_BY_NORM_CACHE;
+
+    /**
+     * The list of health conditions DWP accepts (top-level CONDITIONS of
+     * aaFlowConfig, audit 2026-11-11 AA-ENGINE-1): normalised name -> the
+     * name in the list wording. Empty when the resource carries no list.
+     * Twin of CONDITION_BY_NORM in src/flow.js.
+     */
+    public static Map<String, String> conditionsByNorm() {
+        loadFlow();
+        if (CONDITION_BY_NORM_CACHE == null) {
+            CONDITION_BY_NORM_CACHE = new Map<String, String>();
+            Object c = FLOW_CACHE.get('CONDITIONS');
+            if (c instanceof List<Object>) {
+                for (Object o : (List<Object>) c) {
+                    if (o == null) continue;
+                    String name = String.valueOf(o);
+                    CONDITION_BY_NORM_CACHE.put(normCondition(name), name);
+                }
+            }
+        }
+        return CONDITION_BY_NORM_CACHE;
+    }
+
+    /**
+     * Twin of src/flow.js normCondition: lower case, curly apostrophes as
+     * straight ones, runs of white space as one space, trimmed.
+     */
+    public static String normCondition(String s) {
+        if (s == null) return '';
+        String straight = String.fromCharArray(new List<Integer>{ 39 });
+        return s.toLowerCase()
+            .replace(String.fromCharArray(new List<Integer>{ 8216 }), straight)
+            .replace(String.fromCharArray(new List<Integer>{ 8217 }), straight)
+            .replaceAll('[\\s\\p{Z}\\uFEFF]+', ' ')
+            .trim();
+    }
+
     private static void loadFlow() {
         if (FLOW_CACHE != null) return;
         flowLoads++;

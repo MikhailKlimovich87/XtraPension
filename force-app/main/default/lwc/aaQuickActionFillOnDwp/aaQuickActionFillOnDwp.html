@@ -55,7 +55,16 @@
                  and a second fill can follow. -->
             <p class="slds-text-body_regular slds-m-bottom_medium">
                 After you press Submit, put the DWP reference (the client's NI number) in
-                DWP Reference and set the Stage to Submitted.
+                DWP Reference and set the Stage to Submitted on the Stage card.
+            </p>
+            <!-- audit 2026-11-11 AA-ENGINE-5: the worker refuses the SR1 upload
+                 route before any DWP page (needs_human_upload on the Fill Run).
+                 Say so before the click. -->
+            <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">
+                Special rules claims: when "Do you want to upload your SR1 form?" is answered
+                Yes, the form is not filled automatically. The fill stops before any DWP page
+                and the Fill Run says why. Change that answer to No (the SR1 is then posted)
+                or complete the claim on DWP by hand.
             </p>
             <div class="slds-text-align_right">
                 <lightning-button label="Not yet" onclick={handleClose} class="slds-m-right_x-small"></lightning-button>

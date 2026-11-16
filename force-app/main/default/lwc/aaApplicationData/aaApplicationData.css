@@ -181,6 +181,18 @@
     font-size: 0.6875rem;
     color: var(--slds-g-color-neutral-base-30, #706e6b);
 }
+/* health-conditions editor after a refused Save: the closest entries of
+   DWP's list, one button each, and the "typed by hand" way out. */
+.cond-help {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+    font-size: 0.75rem;
+}
+.cond-help-text { color: var(--slds-g-color-error-base-40, #ba0517); }
+.cond-choice {
+    font-size: 0.75rem; line-height: 1.4;
+    padding: 2px 0.5rem; text-align: left; white-space: normal;
+}
+.cond-manual { font-size: 0.6875rem; line-height: 1.4; text-align: left; white-space: normal; }
 /* Display-mode warning on a row (home-address-postcode differing from the
    record postcode, audit F35): must be visible without opening the editor. */
 .row-warn {

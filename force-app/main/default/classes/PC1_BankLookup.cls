@@ -172,6 +172,23 @@ public with sharing class PC1_BankLookup {
         'Name Verified', 'Name Close Match', 'Name Mismatch'
     };
 
+    /** Statuses that unlock a Direct Debit mandate, plus the legacy 'Verified'. */
+    private static final Set<String> GREEN_STATUSES = new Set<String>{
+        'Modulus Passed', 'Bank Confirmed', 'Name Verified', 'Name Close Match', 'Verified'
+    };
+    /** Verdicts about the account HOLDER: they do not survive a change of holder. */
+    private static final Set<String> NAME_STATUSES = new Set<String>{ 'Name Verified', 'Name Close Match' };
+
+    /**
+     * Audit 2026-11-11 PC-APEX-8 / PC-SFUI-12 (port of AA F61). The status
+     * comes from the browser, and the allow-list alone did not stop a caller
+     * storing 'Bank Confirmed' for digits nobody checked (a green status then
+     * unlocks a GoCardless mandate). A green status is now only stored as
+     * sent when it claims nothing new: same digits, same holder for a name
+     * verdict, same status as already on the record. Otherwise the check is
+     * run again HERE (callout before any DML) and what the server says is
+     * stored; if the check cannot run, 'Unverified'.
+     */
     @AuraEnabled
     public static void saveVerification(
         Id applicationId, String sortCode, String accountNumber,
@@ -186,21 +203,59 @@ public with sharing class PC1_BankLookup {
                    Bank_Roll_Number__c, Bank_Name__c, Bank_Verification_Status__c, Bank_Verified_At__c
             FROM PC1_Application__c WHERE Id = :applicationId LIMIT 1
         ];
+        String newSort   = keepIfBlank(sortCode,      existing.Bank_Sort_Code__c);
+        String newAcct   = keepIfBlank(accountNumber, existing.Bank_Account_Number__c);
+        String newHolder = keepIfBlank(accountHolder, existing.Bank_Account_Holder__c);
+        Boolean digitsChanged = digits(newSort) != digits(existing.Bank_Sort_Code__c)
+            || digits(newAcct) != digits(existing.Bank_Account_Number__c);
+        Boolean holderChanged = squash(newHolder) != squash(existing.Bank_Account_Holder__c);
+
+        // Another account: the old bank's name must not stay under the new
+        // digits, so it is written as sent, blank included. A roll number is
+        // typed by the agent, so an empty one always clears it (null = the
+        // caller did not send it).
+        String newBankName = digitsChanged ? blankToNull(bankName) : keepIfBlank(bankName, existing.Bank_Name__c);
+        String newRoll     = rollNumber == null ? existing.Bank_Roll_Number__c : blankToNull(rollNumber);
+
+        Boolean claimsSomethingNew = digitsChanged
+            || (holderChanged && NAME_STATUSES.contains(cleanStatus))
+            || cleanStatus != existing.Bank_Verification_Status__c;
+        if (GREEN_STATUSES.contains(cleanStatus) && claimsSomethingNew) {
+            try {
+                Result r = verifyAccountViaEndpoint(newSort, newAcct, newHolder);
+                cleanStatus = ALLOWED_STATUSES.contains(r.status) ? r.status : 'Unverified';
+                if (String.isNotBlank(r.bankName)) newBankName = r.bankName;
+                if (String.isNotBlank(r.canonicalSortCode)) newSort = r.canonicalSortCode;
+            } catch (Exception e) {
+                cleanStatus = 'Unverified';
+            }
+        }
+
         PC1_Application__c patch = new PC1_Application__c(
             Id = applicationId,
-            Bank_Sort_Code__c        = keepIfBlank(sortCode,      existing.Bank_Sort_Code__c),
-            Bank_Account_Number__c   = keepIfBlank(accountNumber, existing.Bank_Account_Number__c),
-            Bank_Account_Holder__c   = keepIfBlank(accountHolder, existing.Bank_Account_Holder__c),
-            Bank_Roll_Number__c      = keepIfBlank(rollNumber,    existing.Bank_Roll_Number__c),
-            Bank_Name__c             = keepIfBlank(bankName,      existing.Bank_Name__c),
+            Bank_Sort_Code__c        = newSort,
+            Bank_Account_Number__c   = newAcct,
+            Bank_Account_Holder__c   = newHolder,
+            Bank_Roll_Number__c      = newRoll,
+            Bank_Name__c             = newBankName,
             Bank_Verification_Status__c = cleanStatus
         );
-        if (cleanStatus != 'Unverified' && cleanStatus != existing.Bank_Verification_Status__c) {
+        if (cleanStatus != 'Unverified' && (digitsChanged || cleanStatus != existing.Bank_Verification_Status__c)) {
             patch.Bank_Verified_At__c = Datetime.now();
         }
         update patch;
     }
 
+    private static String digits(String s) {
+        return s == null ? '' : s.replaceAll('[^0-9]', '');
+    }
+    /** Case- and spacing-insensitive form of a holder name, for "did it change". */
+    private static String squash(String s) {
+        return s == null ? '' : s.trim().toLowerCase().replaceAll('\\s+', ' ');
+    }
+    private static String blankToNull(String s) {
+        return String.isBlank(s) ? null : s.trim();
+    }
     private static String keepIfBlank(String incoming, String prior) {
         return String.isBlank(incoming) ? prior : incoming.trim();
     }

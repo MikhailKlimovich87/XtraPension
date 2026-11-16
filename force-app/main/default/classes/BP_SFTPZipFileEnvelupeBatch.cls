@@ -101,11 +101,9 @@ public class BP_SFTPZipFileEnvelupeBatch implements Database.Batchable<SObject>,
 
     public void finish(Database.BatchableContext BC) {
         alert.send();
-        // Stage 2 only picks claims the printer's "BIG ENVELOPE" e-mail has flagged
-        // (Claim_Full_Form_ZIP_for_UPLOAD__c = true), so chaining it hourly does not change when it is sent.
-        if(!Test.isRunningTest()) {
-            //Id batchJobId = Database.executeBatch(new BP_SFTPZipFileFullFormBatch(), 1);
-        }
+        // if(!Test.isRunningTest()) {
+        //      Id batchJobId = Database.executeBatch(new BP_SFTPZipFileFullFormBatch(), 1);
+        // }
     }
 
 

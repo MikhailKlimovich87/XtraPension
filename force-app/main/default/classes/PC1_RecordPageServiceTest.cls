@@ -47,6 +47,73 @@ private class PC1_RecordPageServiceTest {
         System.assert(threw);
     }
 
+    // ── Audit 2026-11-11 PC-APEX-8 / PC-SFUI-11 ──────────────────────
+
+    private static String refusal(Id appId, String fieldId, String value) {
+        try {
+            PC1_RecordPageService.saveField(appId, fieldId, value, 'human');
+        } catch (AuraHandledException e) {
+            return e.getMessage();
+        }
+        return null;
+    }
+
+    @IsTest static void save_field_refuses_what_only_the_server_may_set() {
+        PC1_Application__c a = makeApp('New', null);
+        String bank = refusal(a.Id, 'q_bank_verification_status', 'Bank Confirmed');
+        System.assert(bank != null && bank.contains('bank check'),
+            'a green bank status typed in the editor unlocked a Direct Debit: ' + bank);
+        System.assertNotEquals(null, refusal(a.Id, 'q221', 'claimant'), '"who is applying" is locked to charity');
+        System.assertEquals(null, refusal(a.Id, 'q221', 'charity'));
+        System.assertEquals(0, [SELECT COUNT() FROM PC1_Answer__c
+                                 WHERE Application__c = :a.Id AND Field_Id__c = 'q_bank_verification_status']);
+        System.assertNotEquals('Bank Confirmed',
+            [SELECT Bank_Verification_Status__c FROM PC1_Application__c WHERE Id = :a.Id].Bank_Verification_Status__c);
+    }
+
+    @IsTest static void save_field_checks_date_parts() {
+        PC1_Application__c a = makeApp('New', null);
+        System.assertNotEquals(null, refusal(a.Id, 'q5_day', '32'));
+        System.assertNotEquals(null, refusal(a.Id, 'q5_month', '13'));
+        System.assertNotEquals(null, refusal(a.Id, 'q5_year', '1850'), 'used to fail the save on a validation rule with a raw error');
+        System.assertNotEquals(null, refusal(a.Id, 'q5_day', 'x'));
+        System.assertEquals(null, refusal(a.Id, 'q5_day', ' 9 '));
+        System.assertEquals(null, refusal(a.Id, 'q5_day', ''), 'blank clears the answer');
+        System.assertNotEquals(null, refusal(a.Id, 'q7_town', 'x'.repeat(4001)));
+        System.assertEquals(null, [SELECT Value__c FROM PC1_Answer__c WHERE Application__c = :a.Id AND Field_Id__c = 'q5_day'].Value__c,
+            'the row is kept with no value');
+    }
+
+    @IsTest static void save_fields_writes_a_date_in_one_transaction() {
+        PC1_Application__c a = makeApp('New', null);
+        PC1_RecordPageService.saveFields(a.Id, new Map<String, String>{
+            'q5_day' => '3', 'q5_month' => '4', 'q5_year' => '1950', 'q7_town' => 'Leeds' });
+        System.assertEquals(Date.newInstance(1950, 4, 3), [SELECT DOB__c FROM PC1_Application__c WHERE Id = :a.Id].DOB__c);
+        System.assertEquals(4, [SELECT COUNT() FROM PC1_Answer__c WHERE Application__c = :a.Id
+                                 AND Field_Id__c IN ('q5_day', 'q5_month', 'q5_year', 'q7_town') AND Source__c = 'human']);
+
+        // 31 February: nothing at all is written (it used to become 3 March).
+        Boolean threw = false;
+        try {
+            PC1_RecordPageService.saveFields(a.Id, new Map<String, String>{
+                'q5_day' => '31', 'q5_month' => '2', 'q5_year' => '1950', 'q7_town' => 'York' });
+        } catch (AuraHandledException e) { threw = e.getMessage().contains('not a real date'); }
+        System.assert(threw, '31/02 is refused with a sentence');
+        System.assertEquals('3', [SELECT Value__c FROM PC1_Answer__c WHERE Application__c = :a.Id AND Field_Id__c = 'q5_day'].Value__c,
+            'the day is not left changed with the old month');
+        System.assertEquals('Leeds', [SELECT Value__c FROM PC1_Answer__c WHERE Application__c = :a.Id AND Field_Id__c = 'q7_town'].Value__c);
+
+        // A half-typed date is refused; three blanks clear it.
+        threw = false;
+        try {
+            PC1_RecordPageService.saveFields(a.Id, new Map<String, String>{ 'q5_day' => '3', 'q5_month' => '', 'q5_year' => '1950' });
+        } catch (AuraHandledException e) { threw = true; }
+        System.assert(threw);
+        PC1_RecordPageService.saveFields(a.Id, new Map<String, String>{ 'q5_day' => '', 'q5_month' => '', 'q5_year' => '' });
+        System.assertEquals(null, [SELECT DOB__c FROM PC1_Application__c WHERE Id = :a.Id].DOB__c);
+        PC1_RecordPageService.saveFields(a.Id, null);
+    }
+
     @IsTest static void notes_and_stage_change() {
         PC1_Application__c a = makeApp('New', null);
         PC1_RecordPageService.saveNotes(a.Id, 'Prefers mornings');

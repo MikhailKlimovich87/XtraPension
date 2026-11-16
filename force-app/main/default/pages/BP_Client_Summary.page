@@ -69,7 +69,7 @@
             <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Email</td><td style="padding:4px; border:1px solid #CCC;">{!client.Email__c}</td></tr>
             <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Marital Status</td><td style="padding:4px; border:1px solid #CCC;">{!client.Claimant_marital_Status__c}</td></tr>
             <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Nationality</td><td style="padding:4px; border:1px solid #CCC;">{!client.Claimant_nationality__c}</td></tr>
-            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Date of Marriage</td><td style="padding:4px; border:1px solid #CCC;">
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">{!IF(client.Claimant_marital_Status__c == 'Remarried', 'Date of First Marriage', 'Date of Marriage')}</td><td style="padding:4px; border:1px solid #CCC;">
                  <apex:outputText value="{0,date,dd/MM/yyyy}">
                         <apex:param value="{!client.Claimant_date_Of_Marriage__c}"/>
                 </apex:outputText>
@@ -84,8 +84,26 @@
                         <apex:param value="{!client.Claimant_date_Of_Divorce__c}"/>
                 </apex:outputText>
             </td></tr>
+            <!-- Remarried (12/11/2026, docs/claims-call-1111b/CONTRACT.md): the current marriage; section 3 is the first one -->
+            <apex:outputPanel layout="none" rendered="{!client.Claimant_marital_Status__c == 'Remarried'}">
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">First Marriage Ended By</td><td style="padding:4px; border:1px solid #CCC;">{!IF(client.Previous_Marriage_Ended__c == 'Widowed', 'Death', IF(client.Previous_Marriage_Ended__c == 'Divorced', 'Divorce', ''))}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Date of Current Marriage</td><td style="padding:4px; border:1px solid #CCC;">
+                <apex:outputText value="{0,date,dd/MM/yyyy}">
+                        <apex:param value="{!client.Date_Of_Remarriage__c}"/>
+                </apex:outputText>
+            </td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Current Husband / Wife</td><td style="padding:4px; border:1px solid #CCC;">{!client.Current_Spouse_First_Name__c} {!client.Current_Spouse_Last_Name__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Their Date of Birth</td><td style="padding:4px; border:1px solid #CCC;">
+                <apex:outputText value="{0,date,dd/MM/yyyy}">
+                        <apex:param value="{!client.Current_Spouse_DOB__c}"/>
+                </apex:outputText>
+            </td></tr>
+            </apex:outputPanel>
+            <apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(client.Marriage_Notes__c))}">
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">Notes on Marriages</td><td style="padding:4px; border:1px solid #CCC;"><apex:outputField value="{!client.Marriage_Notes__c}"/></td></tr>
+            </apex:outputPanel>
             <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">UK NINO?</td><td style="padding:4px; border:1px solid #CCC;">
-                <apex:outputPanel rendered="{!client.Claimant_hasNino__c}">
+                <apex:outputPanel rendered="{!claimantHadNino}">
                     <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
                     <span style="vertical-align:middle;">Yes</span>
                     &nbsp;&nbsp;&nbsp;
@@ -93,7 +111,7 @@
                     <span style="vertical-align:middle;">No</span>
                 </apex:outputPanel>
                  
-                <apex:outputPanel rendered="{!!client.Claimant_hasNino__c}">
+                <apex:outputPanel rendered="{!!claimantHadNino}">
                     <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
                     <span style="vertical-align:middle;">Yes</span>
                     &nbsp;&nbsp;&nbsp;
@@ -101,7 +119,7 @@
                     <span style="vertical-align:middle;">No</span>
                 </apex:outputPanel>
             </td></tr>
-            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">National Insurance Number</td><td style="padding:4px; border:1px solid #CCC;">{!client.Claimant_nino__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px; border:1px solid #CCC;">National Insurance Number</td><td style="padding:4px; border:1px solid #CCC;">{!claimantNinoText}</td></tr>
         </table>
     </div>
     <br/>
@@ -246,6 +264,40 @@
         </apex:repeat>
     </div>
 
+    <!-- HM FORCES (BR1 Q17), added 11/11/2026 -->
+    <div style="padding-top:10px;">
+        <div style="background:#D0EFEC;;color: #000000;border:none;padding:5px;font-weight:bold;font-size:18px;">
+            HM Forces
+        </div>
+        <br/>
+        <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Ever been in HM Forces?</td><td style="padding:4px;border:1px solid #CCC;">
+                <apex:outputPanel rendered="{!client.Claimant_HM_Forces__c}">
+                    <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                    <span style="vertical-align:middle;">Yes</span>
+                    &nbsp;&nbsp;&nbsp;
+                    <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                    <span style="vertical-align:middle;">No</span>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!!client.Claimant_HM_Forces__c}">
+                    <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;vertical-align:middle;"></span>
+                    <span style="vertical-align:middle;">Yes</span>
+                    &nbsp;&nbsp;&nbsp;
+                    <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
+                    <span style="vertical-align:middle;">No</span>
+                </apex:outputPanel></td></tr>
+            <apex:outputPanel layout="none" rendered="{!client.Claimant_HM_Forces__c}">
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Service</td><td style="padding:4px;border:1px solid #CCC;">{!client.Claimant_HM_Forces_Service__c}</td></tr>
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Date Enlisted</td><td style="padding:4px;border:1px solid #CCC;"><apex:outputText value="{0,date,dd/MM/yyyy}"><apex:param value="{!client.Claimant_HM_Forces_Enlisted__c}"/></apex:outputText></td></tr>
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Date Discharged</td><td style="padding:4px;border:1px solid #CCC;"><apex:outputText value="{0,date,dd/MM/yyyy}"><apex:param value="{!client.Claimant_HM_Forces_Discharged__c}"/></apex:outputText></td></tr>
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Where Discharged</td><td style="padding:4px;border:1px solid #CCC;">{!client.Claimant_HM_Forces_Discharged_Where__c}</td></tr>
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Regiment or Corps</td><td style="padding:4px;border:1px solid #CCC;">{!client.Claimant_HM_Forces_Regiment__c}</td></tr>
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Service Number</td><td style="padding:4px;border:1px solid #CCC;">{!client.Claimant_HM_Forces_Service_No__c}</td></tr>
+            <tr><td style="width:35%;font-weight:bold;background:#F0F0F0;padding:4px;border:1px solid #CCC;">Rank</td><td style="padding:4px;border:1px solid #CCC;">{!client.Claimant_HM_Forces_Rank__c}</td></tr>
+            </apex:outputPanel>
+        </table>
+    </div>
+
     <!-- ================= IF MARRIED / WIDOWED ================= -->
     <div style="padding-top:10px;">
         <div style="background:#D0EFEC;;color: #000000;border:none;padding:5px;font-weight:bold;font-size:18px;">
@@ -357,16 +409,24 @@
     </div>
     </apex:outputPanel>
 
+    <!-- Single (12/11/2026 audit): what the record still holds about a spouse is not shown (sections 3 and 5) -->
+    <apex:outputPanel layout="none" rendered="{!client.Claimant_marital_Status__c == 'Single'}">
+    <div style="padding-top:10px;">
+        <div style="background:#0A8A7C; color: white; border:1px solid #999; padding:5px; font-weight:bold; font-size:18px;">Section 3 — About Your Husband, Wife or Civil Partner</div>
+        <p style="padding:4px;">Not applicable: single.</p>
+    </div>
+    </apex:outputPanel>
+    <apex:outputPanel layout="none" rendered="{!client.Claimant_marital_Status__c != 'Single'}">
     <!-- SECTION 3 -->
     <div style="padding-top:10px;">
         <div style="background:#0A8A7C; color: white; border:1px solid #999; padding:5px; font-weight:bold; font-size:18px;">
-            Section 3 — About Your Husband, Wife or Civil Partner
+            Section 3 — About Your Husband, Wife or Civil Partner{!IF(client.Claimant_marital_Status__c == 'Remarried', ' (first marriage)', '')}
         </div>
         <br/>
         <table style="width:100%; border:1px solid #CCC; border-collapse:collapse;">
             <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Title</td><td style="padding:4px;border:1px solid #CCC;">{!client.Partner_Title__c}</td></tr>
             <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Surname / Family Name</td><td style="padding:4px;border:1px solid #CCC;">{!client.Partner_Surname__c}</td></tr>
-            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Other Names in Full</td><td style="padding:4px;border:1px solid #CCC;">{!client.Partner_First_Name__c} {!client.Partner_Other_Name__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Other Names in Full</td><td style="padding:4px;border:1px solid #CCC;">{!partnerOtherNames}</td></tr>
             <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Date of Birth</td><td style="padding:4px;border:1px solid #CCC;">
                 <apex:outputText value="{0,date,dd/MM/yyyy}">
                     <apex:param value="{!client.Partner_DOB__c}"/>
@@ -374,7 +434,7 @@
                     </td></tr>
             <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Maiden Name</td><td style="padding:4px;border:1px solid #CCC;">{!client.Partner_Maiden_Name__c}</td></tr>
             <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">UK NINO?</td><td style="padding:4px;border:1px solid #CCC;">
-                <apex:outputPanel rendered="{!client.Partner_Has_Nino__c}">
+                <apex:outputPanel rendered="{!partnerHadNino}">
                         <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
                         <span style="vertical-align:middle;">Yes</span>
                         &nbsp;&nbsp;&nbsp;
@@ -382,14 +442,14 @@
                         <span style="vertical-align:middle;">No</span>
                     </apex:outputPanel>
                     
-                    <apex:outputPanel rendered="{!!client.Partner_Has_Nino__c}">
+                    <apex:outputPanel rendered="{!!partnerHadNino}">
                         <span style="display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;"></span>
                         <span style="vertical-align:middle;">Yes</span>
                         &nbsp;&nbsp;&nbsp;
                         <span style="font-family: Arial Unicode MS;display:inline-block;width:16px;height:16px;border:1px solid #000;text-align:center;line-height:12px;font-size:16px;vertical-align:middle;">&#10003;</span>
                         <span style="vertical-align:middle;">No</span>
                     </apex:outputPanel></td></tr>
-            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">National Insurance Number</td><td style="padding:4px;border:1px solid #CCC;">{!client.Partner_Nino__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">National Insurance Number</td><td style="padding:4px;border:1px solid #CCC;">{!partnerNinoText}</td></tr>
         </table>
     </div>
     
@@ -480,6 +540,7 @@
 
     </table>
     </div>
+    </apex:outputPanel>
     <br/>
     <!-- SECTION 4 -->
     <div style="padding-top:10px;">
@@ -553,6 +614,7 @@
         </table>
     </div>
     <br/>
+    <apex:outputPanel layout="none" rendered="{!client.Claimant_marital_Status__c != 'Single'}">
     <!-- SECTION 5 -->
     <div style="padding-top:10px;">
         <div style="background:#0A8A7C; color: white; border:1px solid #999; padding:5px; font-weight:bold; font-size:18px;">Section 5 — Has Partner Ever Claimed?</div>
@@ -625,6 +687,7 @@
         </table>
     </div>
     <br/>
+    </apex:outputPanel>
     <!-- SECTION 6 -->
     <div style="padding-top:10px;">
         <div style="background:#0A8A7C; color: white; border:1px solid #999; padding:5px; font-weight:bold; font-size:18px;">Section 6 — Claiming Pension</div>
@@ -716,6 +779,16 @@
         </table>
     </div>
     <br/>
+    <br/>
+
+<!-- OTHER INFORMATION (Notes__c), added 11/11/2026: only when there is a note -->
+    <apex:outputPanel layout="block" rendered="{!NOT(ISBLANK(client.Notes__c))}" style="padding-top:10px;">
+        <div style="background:#0A8A7C; color: white; border:1px solid #CCC; padding:5px; font-weight:bold; font-size:18px;">Other Information</div>
+        <br/>
+        <table style="width:100%; border-collapse:collapse;border:1px solid #CCC;">
+            <tr><td style="padding:4px;border:1px solid #CCC;"><apex:outputField value="{!client.Notes__c}"/></td></tr>
+        </table>
+    </apex:outputPanel>
     <br/>
 
 <!-- SIGNATURE -->
