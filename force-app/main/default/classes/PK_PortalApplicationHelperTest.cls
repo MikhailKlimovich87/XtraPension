@@ -24,6 +24,12 @@ private class PK_PortalApplicationHelperTest {
         Id personContactId = currentContact[0].Id;
         Application__c testApplication = TestDataFactory.createApplication(personContactId, true);
         TestDataFactory.createOrder(testApplication.Id, acct.Id, true);
+        insert new PK_Rate_Price__c(
+            Year__c = '2020 to 2021',
+            Class_2__c = '101.25',
+            Class_3__c = '101.25',
+            Deadline__c = '05-Apr-33'
+        );
     }
 
     static PK_RequestWrappers.AddressDataWrapper makeAddress() {
@@ -727,4 +733,14 @@ private class PK_PortalApplicationHelperTest {
         System.assertEquals('error', result.get('status'));
     }
 
+
+    @isTest
+    static void testGetHmrcTable() {
+        Test.startTest();
+        Map<String, Object> result = PK_PortalApplicationHelper.getHmrcTable();
+        Test.stopTest();
+        System.debug(result);
+
+        System.assertEquals('success', result.get('status'));
+    }
 }
