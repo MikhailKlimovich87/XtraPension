@@ -9,6 +9,8 @@ public with sharing class XpWelcomePackEmail {
     public static final String TEMPLATE = 'BP_Welcome_Pack_Posted';
     // Australian claims get the Sydney office in the footer, like the devs' BP_AU_Claim (CurrencyIsoCode AUD).
     public static final String TEMPLATE_AU = 'BP_Welcome_Pack_Posted_AU';
+    // Canadian claims (CurrencyIsoCode CAD): the toll-free number, and no Garda in the list of who can stamp a copy.
+    public static final String TEMPLATE_CA = 'BP_Welcome_Pack_Posted_CA';
     private static final String ORG_WIDE_EMAIL = 'clients@xtrapension.com';
 
     // E-mails built in this transaction (tests cannot see sendEmail, which they skip).
@@ -67,10 +69,13 @@ public with sharing class XpWelcomePackEmail {
         }
     }
 
-    /** The Australian template for AUD claims, the Irish one for every other. */
+    /** The Australian template for AUD claims, the Canadian one for CAD, the Irish one for every other. */
     @TestVisible
     private static String templateFor(String currencyCode) {
-        return currencyCode == 'AUD' ? TEMPLATE_AU : TEMPLATE;
+        if (currencyCode == 'AUD') {
+            return TEMPLATE_AU;
+        }
+        return currencyCode == 'CAD' ? TEMPLATE_CA : TEMPLATE;
     }
 
     /** The helper's e-mail for the CC: empty, or the same as the client's, stays out. */

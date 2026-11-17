@@ -466,6 +466,16 @@ public with sharing class BP_MissingInfo {
                 add(items, G_BANK, 'Bank: ' + joinParts(parts), 'Your ' + joinParts(parts) + '. You\'ll find ' + (parts.size() > 1 ? 'both' : 'it') + ' on your bank statement or in your online banking',
                     new List<String>{ 'Bank_Sort_Code__c', 'Bank_Account__c' });
             }
+        } else if (isCanadianBank(b)) {
+            // Canada: institution (3 digits) + transit (5 digits) in Bank_Sort_Code__c, and the account number. No IBAN.
+            List<String> parts = new List<String>();
+            if (XpCanadaBank.parts(b.Bank_Sort_Code__c) == null) parts.add('institution and transit numbers');
+            if (isBlank(b.Bank_Account__c)) parts.add('account number');
+            if (!parts.isEmpty()) {
+                add(items, G_BANK, 'Bank: ' + joinParts(parts), 'Your ' + joinParts(parts)
+                    + '. They are on a cheque (the 5-digit transit number, the 3-digit institution number, then the account number) and in your online banking',
+                    new List<String>{ 'Bank_Sort_Code__c', 'Bank_Account__c' });
+            }
         } else {
             List<String> parts = new List<String>();
             if (isBlank(b.Bank_IBAN__c)) parts.add('IBAN');
@@ -891,6 +901,11 @@ public with sharing class BP_MissingInfo {
     private static Boolean isAustralianBank(Basic__c b) {
         return (b.Bank_Country_Code__c != null && b.Bank_Country_Code__c.trim().toUpperCase() == 'AU')
             || (b.Bank_Country__c != null && b.Bank_Country__c.trim().toLowerCase() == 'australia');
+    }
+
+    private static Boolean isCanadianBank(Basic__c b) {
+        return (b.Bank_Country_Code__c != null && b.Bank_Country_Code__c.trim().toUpperCase() == 'CA')
+            || (b.Bank_Country__c != null && b.Bank_Country__c.trim().toLowerCase() == 'canada');
     }
 
     private static String fromTo(Boolean noFrom, Boolean noTo) {

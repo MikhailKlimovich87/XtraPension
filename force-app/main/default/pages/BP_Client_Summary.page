@@ -772,7 +772,7 @@
             <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Account Type</td><td style="padding:4px;border:1px solid #CCC;">{!client.Bank_Account_Type__c}</td></tr>
             <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Account Owner Name</td><td style="padding:4px;border:1px solid #CCC;">{!client.Bank_Account_Owner_Name__c}</td></tr>
             <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Bank Name</td><td style="padding:4px;border:1px solid #CCC;">{!client.Bank_Name__c}</td></tr>
-            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Sort Code</td><td style="padding:4px;border:1px solid #CCC;">{!client.Bank_Sort_Code__c}</td></tr>
+            <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">{!IF(client.Bank_Country_Code__c == 'CA', 'Institution No. + Transit No.', 'Sort Code')}</td><td style="padding:4px;border:1px solid #CCC;">{!client.Bank_Sort_Code__c}</td></tr>
             <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">IBAN</td><td style="padding:4px;border:1px solid #CCC;">{!client.Bank_IBAN__c}</td></tr>
             <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">BIC</td><td style="padding:4px;border:1px solid #CCC;">{!client.Bank_BIC__c}</td></tr>
             <tr><td style="width:35%; font-weight:bold; background:#F0F0F0; padding:4px;border:1px solid #CCC;">Account Number</td><td style="padding:4px;border:1px solid #CCC;">{!client.Bank_Account__c}</td></tr>

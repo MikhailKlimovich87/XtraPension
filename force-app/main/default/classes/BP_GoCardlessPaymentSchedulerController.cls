@@ -33,7 +33,7 @@ public class BP_GoCardlessPaymentSchedulerController {
 
             // Get the most recent daily rate record
             List<Daily_Exchange_Rate__c> latest = [
-                SELECT Rate_Date__c, GBP_to_EUR__c, GBP_to_AUD__c, Fetched_At__c
+                SELECT Rate_Date__c, GBP_to_EUR__c, GBP_to_AUD__c, GBP_to_CAD__c, Fetched_At__c
                 FROM Daily_Exchange_Rate__c
                 ORDER BY Rate_Date__c DESC
                 LIMIT 1
@@ -55,6 +55,8 @@ public class BP_GoCardlessPaymentSchedulerController {
                 rate = rec.GBP_to_EUR__c;
             } else if (ccy == 'AUD') {
                 rate = rec.GBP_to_AUD__c;
+            } else if (ccy == 'CAD') {
+                rate = rec.GBP_to_CAD__c;
             }
 
             result.put('rate', rate);
@@ -148,7 +150,7 @@ public class BP_GoCardlessPaymentSchedulerController {
 
             if (recordCcy != 'GBP') {
                 List<Daily_Exchange_Rate__c> latest = [
-                    SELECT GBP_to_EUR__c, GBP_to_AUD__c
+                    SELECT GBP_to_EUR__c, GBP_to_AUD__c, GBP_to_CAD__c
                     FROM Daily_Exchange_Rate__c
                     ORDER BY Rate_Date__c DESC
                     LIMIT 1
@@ -164,6 +166,8 @@ public class BP_GoCardlessPaymentSchedulerController {
                     gbpToRecordRate = latest[0].GBP_to_EUR__c;
                 } else if (recordCcy == 'AUD') {
                     gbpToRecordRate = latest[0].GBP_to_AUD__c;
+                } else if (recordCcy == 'CAD') {
+                    gbpToRecordRate = latest[0].GBP_to_CAD__c;
                 }
 
                 if (gbpToRecordRate == null || gbpToRecordRate == 0) {
@@ -452,7 +456,7 @@ public class BP_GoCardlessPaymentSchedulerController {
         if (recordCcy == 'GBP') return 1.0;
 
         List<Daily_Exchange_Rate__c> latest = [
-            SELECT GBP_to_EUR__c, GBP_to_AUD__c
+            SELECT GBP_to_EUR__c, GBP_to_AUD__c, GBP_to_CAD__c
             FROM Daily_Exchange_Rate__c
             ORDER BY Rate_Date__c DESC
             LIMIT 1
@@ -468,7 +472,9 @@ public class BP_GoCardlessPaymentSchedulerController {
                         latest[0].GBP_to_EUR__c
                         : recordCcy == 'AUD' ? 
                             latest[0].GBP_to_AUD__c
-                            : null;
+                            : recordCcy == 'CAD' ?
+                                latest[0].GBP_to_CAD__c
+                                : null;
                             
         if (rate == null || rate == 0) {
             AuraHandledException ex = new AuraHandledException('No GBP → ' + recordCcy + ' rate available.');

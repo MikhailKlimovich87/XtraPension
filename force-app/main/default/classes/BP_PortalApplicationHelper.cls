@@ -915,6 +915,28 @@ public with sharing class BP_PortalApplicationHelper {
                 return result;
             }
 
+            // Canada: GoCardless says whether the institution and transit numbers exist and names the bank. A Canadian
+            // account used to go to the Irish lookup, which answered with an error or with junk.
+            if (wrapper?.application?.bank?.country == 'CA') {
+                XpCanadaBank.Lookup ca = XpCanadaBank.lookup(wrapper.application?.bank?.sortCode, wrapper.application?.bank?.account);
+                if (!ca.found) {
+                    result.put('status', 'error');
+                    result.put('message', ca.message);
+                    return result;
+                }
+                XpCanadaBank.Parts numbers = XpCanadaBank.parts(wrapper.application?.bank?.sortCode);
+                BP_CheckBank.BankAccountValidationResponseWrapper caResponse = new BP_CheckBank.BankAccountValidationResponseWrapper();
+                caResponse.Valid = 'GoCardless';
+                caResponse.SortCode = numbers.institution + '-' + numbers.transit;
+                caResponse.AccountNumber = XpCanadaBank.accountNumber(wrapper.application?.bank?.account);
+                caResponse.ShortBankName = ca.bankName;
+                caResponse.BICCode = String.isNotBlank(ca.bic) ? ca.bic : wrapper.application?.bank?.bic;
+                result.put('status', 'success');
+                result.put('response', caResponse);
+                if (!ca.canDebit) result.put('message', 'Bank found. GoCardless cannot take a pre-authorized debit from this account.');
+                return result;
+            }
+
             Map<String, String> inputs = new Map<String, String>{
                 'accountNumber' => wrapper.application?.bank?.account,
                 'BIC'  => wrapper.application?.bank?.bic,

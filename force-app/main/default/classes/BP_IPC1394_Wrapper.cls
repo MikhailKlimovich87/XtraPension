@@ -180,7 +180,17 @@ public with sharing class BP_IPC1394_Wrapper {
             this.Q14_check_13weeks = String.isNotBlank(app.Paid_Interval__c) && app.Paid_Interval__c != '4 weeks';
             this.Q15 = textValue(app.Bank_Account_Owner_Name__c, 35);
             this.Q16 = combValue(app.Bank_Account__c, 34);
-            if(String.isNotBlank(app.Bank_Country_Code__c) &&  app.Bank_Country_Code__c == 'AU') {
+            if (app.Bank_Country_Code__c == 'CA') {
+                // "Direct Payment request to Canada" (IPC1394 Canada): account number of up to 12 characters,
+                // bank number = 4 digits starting with zero (0 + the 3-digit institution number) and a 5-digit transit
+                // number. The portal's Canada template calls those two boxes Q17a and Q17b.
+                this.Q16 = combValue(XpCanadaBank.accountNumber(app.Bank_Account__c), 12);
+                XpCanadaBank.Parts ca = XpCanadaBank.parts(app.Bank_Sort_Code__c);
+                if (ca != null) {
+                    this.Q17a = '0' + ca.institution;
+                    this.Q17b = ca.transit;
+                }
+            } else if(String.isNotBlank(app.Bank_Country_Code__c) &&  app.Bank_Country_Code__c == 'AU') {
                 if(String.isNotBlank(app.Bank_Sort_Code__c)) {
                     List<String> parts = bsbParts(app.Bank_Sort_Code__c);
                     if(parts.size()>0) {

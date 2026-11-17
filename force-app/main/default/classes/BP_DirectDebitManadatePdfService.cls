@@ -31,7 +31,10 @@ public class BP_DirectDebitManadatePdfService {
             endpoint = DD_MANDATE_PDF_URL;
         } else if (currBasic.CurrencyIsoCode == 'AUD') {
             endpoint = DD_MANDATE_AUSTRALIA_PDF_URL;
+        } else if (currBasic.CurrencyIsoCode == 'CAD') {
+            endpoint = canadaUrl();
         } else return;
+        if (String.isBlank(endpoint)) return;
 
         BP_PdfServiceClient.Result response = BP_PdfServiceClient.post('ddMandate', endpoint, result);
         
@@ -59,6 +62,15 @@ public class BP_DirectDebitManadatePdfService {
                 );
             }
         }
+    }
+
+    // Canada's pre-authorized debit (PAD) agreement lives next to the Australian mandate on the portal
+    // (.../pdf/fill-dd-mandate-canada). The address is read off the Australian setting, so no new setting is needed.
+    @TestVisible
+    private static String canadaUrl() {
+        String au = DD_MANDATE_AUSTRALIA_PDF_URL;
+        if (Test.isRunningTest() && String.isBlank(au)) au = 'https://example.invalid/api/v1/pdf/fill-dd-mandate-australia';
+        return String.isBlank(au) || !au.contains('fill-dd-mandate-australia') ? null : au.replace('fill-dd-mandate-australia', 'fill-dd-mandate-canada');
     }
 
     public static void updateDocumentVersion(

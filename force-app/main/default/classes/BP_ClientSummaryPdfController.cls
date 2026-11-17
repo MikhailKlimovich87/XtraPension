@@ -203,6 +203,7 @@ public with sharing class BP_ClientSummaryPdfController {
                 Bank_Account_Owner_Name__c,
                 Bank_Name__c,
                 Bank_Sort_Code__c,
+                Bank_Country_Code__c,
                 Bank_IBAN__c,
                 Bank_Account__c,
                 Bank_BIC__c,

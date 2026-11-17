@@ -441,6 +441,23 @@ public class GocardlessApiService {
                         'BSB=[' + bsb + '] AccountNumber=[' + accountNumber + ']'
                     );
                 }
+            } else if ('CA'.equals(countryCode)) {
+
+                // Canada (pre-authorized debit) — institution number (3 digits), transit number (5 digits), account number
+                XpCanadaBank.Parts ca = XpCanadaBank.parts(bsb);
+                String caAccount = XpCanadaBank.accountNumber(accountNumber);
+                if (ca != null && String.isNotBlank(caAccount)) {
+                    bankAccount.put('bank_code',      ca.institution);
+                    bankAccount.put('branch_code',    ca.transit);
+                    bankAccount.put('account_number', caAccount);
+                    bankAccount.put('country_code',   'CA');
+                    bankAccount.put('currency',       'CAD');
+                } else {
+                    throw new IllegalArgumentException(
+                        'Institution number, transit number and account number required for Canada. ' +
+                        'InstitutionTransit=[' + bsb + '] AccountNumber=[' + accountNumber + ']'
+                    );
+                }
             } else {
                 // Fallback — SEPA with IBAN
                 if (String.isNotBlank(iban)) {
@@ -537,6 +554,12 @@ public class GocardlessApiService {
                         && targetBsb != null && targetBsb.equals(branch)) {
                         return asString(ba.get('id'));
                     }
+                } else if ('CA'.equalsIgnoreCase(countryCode)) {
+                    XpCanadaBank.Parts ca = XpCanadaBank.parts(claim.Bank_Sort_Code__c);
+                    if (ca != null && targetAcct != null && XpCanadaBank.accountNumber(targetAcct).equals(acct)
+                        && ca.transit.equals(branch)) {
+                        return asString(ba.get('id'));
+                    }
                 } else {
                     if (targetIban != null && targetIban.equalsIgnoreCase(iban)) {
                         return asString(ba.get('id'));
@@ -566,6 +589,8 @@ public class GocardlessApiService {
                 scheme = 'sepa_core';
             } else if ('AU'.equals(countryCode)) {
                 scheme = 'becs';
+            } else if ('CA'.equals(countryCode)) {
+                scheme = 'pad';
             } else {
                 return null;
             }

@@ -45,7 +45,7 @@ public with sharing class ClaimsPriorityQueueController {
         'esignFollowUps' => 3,    // a count, not days: answered calls since the DocuSign went out before "decide what to do"
         'esignDecide' => 7,       // decide what to do, after the last contact
         'signedPack' => 14,       // signed pack back at the printer, after the printer posted the big envelope
-        'signedPackFar' => 21,    // the same for Australia and New Zealand (FAR_COUNTRIES)
+        'signedPackFar' => 21,    // the same for Australia, New Zealand and Canada (FAR_COUNTRIES)
         'signedPackEvery' => 7,   // call again, after the last contact
         'stage2Post' => 3,        // the printer posts the claim to the DWP, after we upload the Stage 2 pack
         'agentCall' => 1,         // call the client about the DWP decision, after the claim goes Agent Call
@@ -85,7 +85,7 @@ public with sharing class ClaimsPriorityQueueController {
     @TestVisible static final Map<String, String> IGNORED_STAGES = new Map<String, String>{
         'Closed Won' => 'finished', 'Closed' => 'finished', 'Deposit Refund' => 'the deposit is being refunded'
     };
-    static final Set<String> FAR_COUNTRIES = new Set<String>{ 'AU', 'NZ' };
+    static final Set<String> FAR_COUNTRIES = new Set<String>{ 'AU', 'NZ', 'CA' };
 
     static final String COMPLETE = 'Form Fully Completed'; // BP_MissingInfo.COMPLETE
     static final String OUR_DOMAIN = '@xtrapension.com';

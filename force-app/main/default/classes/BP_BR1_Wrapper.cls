@@ -1048,6 +1048,8 @@ public with sharing class BP_BR1_Wrapper {
                         this.q59 = 'Services Australia\n' + 'Seniors Services\n' + 'PO Box 7808\n' + 'Canberra BC ACT 2610\n' + 'Australia\n';
                     } else if (livedIn[0].Name == 'Ireland') {
                         this.q59 = 'Dept of Social Protection\n' + 'College Road\n' + 'Sligo, F91 T384\n' + 'Ireland\n';
+                    } else if (livedIn[0].Name == 'Canada') {
+                        this.q59 = 'Service Canada\n' + 'International Operations\n' + 'PO Box 250\n' + 'Fredericton NB E3B 4Z6\n' + 'Canada\n';
                     }
                     
                 }
@@ -1078,6 +1080,8 @@ public with sharing class BP_BR1_Wrapper {
                         this.q63 = 'Services Australia\n' + 'Seniors Services\n' + 'PO Box 7808\n' + 'Canberra BC ACT 2610\n' + 'Australia\n';
                     } else if (livedIn[1].Name == 'Ireland') {
                         this.q63 = 'Dept of Social Protection\n' + 'College Road\n' + 'Sligo, F91 T384\n' + 'Ireland\n';
+                    } else if (livedIn[1].Name == 'Canada') {
+                        this.q63 = 'Service Canada\n' + 'International Operations\n' + 'PO Box 250\n' + 'Fredericton NB E3B 4Z6\n' + 'Canada\n';
                     }
                 }
 

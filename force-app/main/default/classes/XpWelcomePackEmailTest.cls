@@ -26,6 +26,7 @@ private class XpWelcomePackEmailTest {
     @IsTest
     static void australianClaimsGetTheSydneyTemplate() {
         System.assertEquals(XpWelcomePackEmail.TEMPLATE_AU, XpWelcomePackEmail.templateFor('AUD'));
+        System.assertEquals(XpWelcomePackEmail.TEMPLATE_CA, XpWelcomePackEmail.templateFor('CAD'));
         System.assertEquals(XpWelcomePackEmail.TEMPLATE, XpWelcomePackEmail.templateFor('EUR'));
         System.assertEquals(XpWelcomePackEmail.TEMPLATE, XpWelcomePackEmail.templateFor(null));
     }

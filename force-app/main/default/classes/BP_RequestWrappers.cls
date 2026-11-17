@@ -1361,6 +1361,10 @@ public with sharing class BP_RequestWrappers {
         public String reference;
         public String bsb1;
         public String bsb2;
+        // Canada (pre-authorized debit agreement): bank name, 3-digit institution number, 5-digit transit number
+        public String bankName;
+        public String institution;
+        public String transit;
 
         public DDMandateDataWrapper(Basic__c currBasic) {
             this.customer = currBasic.First_Name__c + ' ' + currBasic.Last_Name__c;
@@ -1381,6 +1385,17 @@ public with sharing class BP_RequestWrappers {
                 this.bsb2 = bsb.substring(3, 6);
             }          
             this.reference = currBasic.Name;
+            if (currBasic.CurrencyIsoCode == 'CAD') {
+                this.bankName = currBasic.Bank_Name__c;
+                XpCanadaBank.Parts ca = XpCanadaBank.parts(currBasic.Bank_Sort_Code__c);
+                if (ca != null) {
+                    this.institution = ca.institution;
+                    this.transit = ca.transit;
+                }
+                // the 3 + 3 boxes are Australia's BSB
+                this.bsb1 = null;
+                this.bsb2 = null;
+            }
         }
 
         public DDMandateDataWrapper() {

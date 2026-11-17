@@ -151,6 +151,13 @@
                                 <u>  signed &amp; dated</u> 
                             </span>
                             by you
+                            <!-- Canada (16/11/2026): on DWP's Canada form the transit number is on the declaration page, and this pack
+                                 is printed before the bank details are known, so the client writes it in -->
+                            <apex:outputPanel layout="none" rendered="{!client.Current_Address_Abroad_Country_Name__c == 'Canada'}">
+                                <br/>On the one with box 21,
+                                <span style="font-weight:bold;">write your bank's 5-digit TRANSIT NUMBER</span>
+                                (it is on your cheques)
+                            </apex:outputPanel>
                         </td>
                     </tr>
 
