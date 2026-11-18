@@ -43,7 +43,38 @@ private class BP_MissingInfoTest {
         System.assert(client.contains('late husband'), client);
         System.assert(client.contains('The date your husband passed away'), client);
         System.assert(!client.toLowerCase().contains('partner'), client);
-        System.assert(client.contains('The last home address of your late husband'), client);
+        System.assert(client.contains('The last home address of your late husband, if it was different from yours'), client);
+    }
+
+    // John, 16/11/2026: "Same address as me" ticked = BR1 Q26 left blank, nothing to ask about his address
+    @IsTest
+    static void spouseAtTheSameAddressIsNotAskedForIt() {
+        Basic__c b = claim(new Map<String, Object>{
+            'Claimant_title__c' => 'Mrs', 'Claimant_marital_Status__c' => 'Widowed', 'Partner_same_as_claimant__c' => true,
+            'Partner_Address1__c' => null, 'Partner_City__c' => null, 'Partner_Postcode__c' => null, 'Partner_Country__c' => null
+        });
+        String client = clientLines(b.Id);
+        System.assert(client.contains('late husband'), client);
+        System.assert(!client.contains('home address of your late husband'), client);
+    }
+
+    // John, 16/11/2026: no "Thank you for filling in your claim form", the bank name can be a new account, new closing line
+    @IsTest
+    static void emailHasJohnsWording() {
+        Basic__c b = claim(new Map<String, Object>{ 'Bank_Account_Owner_Name__c' => null, 'First_Name__c' => 'Mary' });
+        Basic__c loaded = BP_MissingInfo.load(b.Id);
+        List<BP_MissingInfo.Item> items = BP_MissingInfo.clientItems(BP_MissingInfo.check(loaded));
+        String html = BP_MissingInfo.html(loaded, items, null, 'Ciara');
+        String text = BP_MissingInfo.text(loaded, items, null, 'Ciara');
+        for (String body : new List<String>{ html, text }) {
+            System.assert(!body.contains('Thank you for filling in'), body);
+            System.assert(body.contains('Before we can send your claim to the UK Department for Work and Pensions (DWP)'), body);
+            System.assert(body.contains('The name on a bank account, exactly as it is on your bank statement (it can be a new / empty account).'), body);
+            System.assert(body.contains(BP_MissingInfo.CLOSING), body);
+            System.assert(!body.contains('help you find it'), body);
+        }
+        System.assert(html.contains('Kind regards,<br/><br/>Ciara'), html);
+        System.assert(text.contains('Kind regards,\n\nCiara'), text);
     }
 
     @IsTest
@@ -250,7 +281,8 @@ private class BP_MissingInfoTest {
         Basic__c b = claim(new Map<String, Object>{ 'Bank_BIC__c' => null, 'First_Name__c' => 'John Paul' });
         String name = [SELECT Name FROM Basic__c WHERE Id = :b.Id].Name;
         String wa = (String) BP_MissingInfo.preview(b.Id, 'Following our call today,').get('whatsapp');
-        System.assert(wa.startsWith('Hi John, Following our call today, Thank you for filling in your claim form.'), wa);
+        System.assert(wa.startsWith('Hi John, Following our call today, Before we can send your claim to the DWP'), wa);
+        System.assert(wa.contains(BP_MissingInfo.CLOSING), wa);
         System.assert(wa.contains('*Your bank account*'), wa);
         System.assert(wa.contains('BIC (SWIFT) code'), wa);
         System.assert(!wa.contains('Pension start date') && !wa.contains(BP_MissingInfo.CLIENTS_EMAIL), 'no agent items, no footer: ' + wa);

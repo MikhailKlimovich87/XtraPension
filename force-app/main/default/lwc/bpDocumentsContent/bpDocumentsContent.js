@@ -2,6 +2,8 @@ import { LightningElement, api, track, wire } from 'lwc';
 import { NavigationMixin } from "lightning/navigation";
 import { getRecord } from 'lightning/uiRecordApi';
 import STATUS from '@salesforce/schema/Basic__c.Status__c';
+import BR1_SHEETS from '@salesforce/schema/Basic__c.BR1_Other_Info_Sheets__c';
+import BR1_CUT from '@salesforce/schema/Basic__c.BR1_Other_Info_Cut__c';
 import getContentDocuments from '@salesforce/apex/BP_DocumentsContentController.getContentDocuments';
 // import changeCustomLetter from '@salesforce/apex/DocumentsContentController.changeCustomLetter';
 // import { ShowToastEvent } from 'lightning/platformShowToastEvent';
@@ -66,20 +68,40 @@ export default class DocumentsContent extends NavigationMixin(LightningElement) 
     // Só depois da resposta do Apex aparece o "No documents yet." (sem arquivo o Apex devolve null).
     loaded = false;
     status;
+    br1Sheets = 0;
+    br1Cut = false;
     picked; // aba que o usuário clicou
 
     connectedCallback(){
         this.handleDocuments();
     }
 
-    @wire(getRecord, { recordId: '$recordId', fields: [STATUS] })
+    // optionalFields: someone without access to the two BR1 fields still gets the status (and no note)
+    @wire(getRecord, { recordId: '$recordId', fields: [STATUS], optionalFields: [BR1_SHEETS, BR1_CUT] })
     wiredStatus({ data }) {
-        if (data) this.status = data.fields.Status__c.value;
+        if (!data) return;
+        this.status = data.fields.Status__c.value;
+        this.br1Sheets = Number(data.fields.BR1_Other_Info_Sheets__c?.value) || 0;
+        this.br1Cut = data.fields.BR1_Other_Info_Cut__c?.value === true;
+    }
+
+    // "Other information" (page 13 of the IPCBR1) too long for its box: the PDF service continues it on sheets at the
+    // end of the form and XpBr1OtherInformation keeps the count on the claim (16/11/2026).
+    br1Note(title) {
+        if (title !== 'IPCBR1 Full Form') return {};
+        if (this.br1Cut) {
+            return { note: 'Other information did not fit: the end of the text is NOT on the form. Shorten it or tell tech.', noteClass: 'note bad' };
+        }
+        if (this.br1Sheets > 0) {
+            const sheets = this.br1Sheets === 1 ? '1 extra sheet' : `${this.br1Sheets} extra sheets`;
+            return { note: `Other information (page 13) continues on ${sheets} at the end of the form.`, noteClass: 'note' };
+        }
+        return {};
     }
 
     get tabs() {
         return TABS.map(t => {
-            const docs = docsOf(this.latestDocs, t);
+            const docs = docsOf(this.latestDocs, t).map(d => ({ ...d, ...this.br1Note(d.title) }));
             return { ...t, docs, isEmpty: this.loaded && !this.error && docs.length === 0 };
         });
     }

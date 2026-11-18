@@ -47,6 +47,8 @@ public with sharing class BP_GenerateApplication_BR1 {
             BP_PdfServiceClient.logFailures(recordId, new List<BP_PdfServiceClient.Result>{ response });
             return;
         }
+        // "Other information" too long for page 13 continues on sheets at the end of the form: kept for the Docs card
+        XpBr1OtherInformation.save(recordId, response.body);
         if(!Test.isRunningTest()) {
             updateCodesBR(wrap, recordId);
             if (IPCBR1.size() != 0) {

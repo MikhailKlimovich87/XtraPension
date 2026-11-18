@@ -494,6 +494,8 @@ public with sharing class BP_PortalUtils {
         BP_RequestWrappers.ClaimantWrapper claimant = wrapper.application.claimant;
         if (!childRows(claimId, claimant?.children).isEmpty()) {
             delete [SELECT Id FROM Claimant_Child__c WHERE Basic__c = :claimId];
+        } else {
+            deleteFormChildrenWhenNotMinded(claimId, claimant);
         }
         if (!countryRows(claimId, claimant?.countriesLived).isEmpty()) {
             delete [SELECT Id FROM Claimant_Country_lived__c WHERE Basic__c = :claimId AND Is_Partner__c = false];
@@ -511,6 +513,25 @@ public with sharing class BP_PortalUtils {
             delete [SELECT Id FROM Claimant_Company__c WHERE Basic__c = :claimId AND isFullForm__c = true AND Is_Partner__c = true
                     AND Is_Addresses__c = false];
         }
+    }
+
+    /**
+     * "Minded Kids in UK 1978-2010?" answered No with no child sent (18/11/2026): the children the long form saved
+     * before go. The form empties its own list on a No (and since PR #40 sets the No itself when the claimant never
+     * lived and never worked in the UK), but "a list sent empty keeps what Salesforce has" left the old rows on the
+     * claim, and the BR1 notes (Q53) and the Client Summary print every child row whatever the answer.
+     * Only the form's own rows (Saved_By_Form__c): the form sends No as the default for everyone it never asks (a man,
+     * a single woman), so a child added on the Claim page stays. No answer sent (null) changes nothing.
+     */
+    @TestVisible
+    private static void deleteFormChildrenWhenNotMinded(Id claimId, BP_RequestWrappers.ClaimantWrapper claimant) {
+        if (claimId == null || claimant == null || claimant.mindedKids != false) {
+            return;
+        }
+        if (!childRows(claimId, claimant.children).isEmpty()) {
+            return;
+        }
+        delete [SELECT Id FROM Claimant_Child__c WHERE Basic__c = :claimId AND Saved_By_Form__c = true];
     }
 
     public static void deleteOldEnvelopeClaimantRelation(String basicId) {
@@ -593,6 +614,9 @@ public with sharing class BP_PortalUtils {
                 for (Claimant_Child__c row : children) names.add(row.Name);
                 delete [SELECT Id FROM Claimant_Child__c WHERE Basic__c = :claimId AND (Saved_By_Form__c = true OR Name IN :names)];
                 insert children;
+            } else {
+                // Minded Kids = No and no child sent: the form's own children go (18/11/2026)
+                deleteFormChildrenWhenNotMinded(claimId, claimant);
             }
             List<Claimant_Company__c> employers = claimant.everWorkedUK == true ? employerRows(claimId, claimant.ukCompanies) : new List<Claimant_Company__c>();
             if (!employers.isEmpty()) {
@@ -1476,9 +1500,16 @@ public with sharing class BP_PortalUtils {
         if(String.isNotBlank(wrapper?.application?.track) && wrapper?.application?.track == 'B') {
             updatedApp.Partner_State_Name__c = wrapper?.application?.trackB?.stateName;
             updatedApp.Partner_State_Code__c = wrapper?.application?.trackB?.state;
-            updatedApp.Is_Partner_alive__c = String.isNotBlank(wrapper?.application?.trackB?.husbandAlive) && wrapper?.application?.trackB?.husbandAlive == 'Yes' ? true : false; 
-            updatedApp.Claimant_State_Pension__c = wrapper?.application?.trackB?.youGettinStatePensionNow;
-            updatedApp.Partner_State_Pension__c = wrapper?.application?.trackB?.husbandGettinStatePensionNow;
+            updatedApp.Is_Partner_alive__c = String.isNotBlank(wrapper?.application?.trackB?.husbandAlive) && wrapper?.application?.trackB?.husbandAlive == 'Yes' ? true : false;
+            // A checkbox cannot take null: only an answer (Yes / No) is written. The form asks "Are you getting a UK State
+            // Pension now from your husband?" only for a widow, so with the husband alive it sends null and the Save failed
+            // with INVALID_TYPE_ON_FIELD_IN_RECORD (C00000, 17/11/2026)
+            if (wrapper?.application?.trackB?.youGettinStatePensionNow != null) {
+                updatedApp.Claimant_State_Pension__c = wrapper.application.trackB.youGettinStatePensionNow;
+            }
+            if (wrapper?.application?.trackB?.husbandGettinStatePensionNow != null) {
+                updatedApp.Partner_State_Pension__c = wrapper.application.trackB.husbandGettinStatePensionNow;
+            }
             // The Short Form sends the middle name(s) as husbandOtherName, as Finish reads it (12/11/2026 audit: husbandFullName
             // is a read-only formula the form never sends, so every Save / autosave blanked them)
             updatedApp.Partner_Other_Name__c = wrapper?.application?.trackB?.husbandOtherName;
@@ -1487,7 +1518,9 @@ public with sharing class BP_PortalUtils {
             updatedApp.Partner_DOB__c = wrapper?.application?.trackB?.husbandDob != null ? BP_PortalUtils.dateFromString( wrapper?.application?.trackB?.husbandDob) : null;
             updatedApp.Claimant_date_Of_Marriage__c = wrapper?.application?.trackB?.marriageDate != null ? BP_PortalUtils.dateFromString( wrapper?.application?.trackB?.marriageDate) : null;
             updatedApp.Partner_Left_UK__c = wrapper?.application?.trackB?.husbandLeftUk != null ? BP_PortalUtils.dateFromString( wrapper?.application?.trackB?.husbandLeftUk) : null;
-            updatedApp.Partner_same_as_claimant__c = wrapper?.application?.trackB?.sameAddress;
+            if (wrapper?.application?.trackB?.sameAddress != null) {
+                updatedApp.Partner_same_as_claimant__c = wrapper.application.trackB.sameAddress;
+            }
             updatedApp.Partner_Country__c = String.isNotBlank(wrapper?.application?.trackB?.country) ? CountryCodeHelper.getCountryNameByIsoCode(wrapper?.application?.trackB?.country) : '';
             updatedApp.Partner_Country_Code__c = wrapper?.application?.trackB?.country;
             updatedApp.Partner_Postcode__c = wrapper?.application?.trackB?.postcode;
@@ -1512,7 +1545,9 @@ public with sharing class BP_PortalUtils {
             updatedApp.Partner_DOB__c = wrapper?.application?.trackC?.wifeDob != null ? BP_PortalUtils.dateFromString( wrapper?.application?.trackC?.wifeDob) : null;
             updatedApp.Claimant_date_Of_Marriage__c = wrapper?.application?.trackC?.marriageDate != null ? BP_PortalUtils.dateFromString( wrapper?.application?.trackC?.marriageDate) : null;
             updatedApp.Partner_Left_UK__c = wrapper?.application?.trackC?.wifeLeftUK != null ? BP_PortalUtils.dateFromString( wrapper?.application?.trackC?.wifeLeftUK) : null;
-            updatedApp.Partner_same_as_claimant__c = wrapper?.application?.trackC?.sameAddress;
+            if (wrapper?.application?.trackC?.sameAddress != null) {
+                updatedApp.Partner_same_as_claimant__c = wrapper.application.trackC.sameAddress;
+            }
             updatedApp.Partner_Country__c = String.isNotBlank(wrapper?.application?.trackC?.country) ? CountryCodeHelper.getCountryNameByIsoCode(wrapper?.application?.trackC?.country) : '';
             updatedApp.Partner_Country_Code__c = wrapper?.application?.trackC?.country;
             updatedApp.Partner_Postcode__c = wrapper?.application?.trackC?.postcode;

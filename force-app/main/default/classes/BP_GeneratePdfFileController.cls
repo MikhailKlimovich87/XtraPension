@@ -81,6 +81,10 @@ public with sharing class BP_GeneratePdfFileController {
 				generateDocument(responseIPC.body,recordId, fileNameIPC);
 			}
 		}
+		// "Other information" too long for page 13 continues on sheets at the end of the form: kept for the Docs card
+		if (response.success) {
+			XpBr1OtherInformation.save(recordId, response.body);
+		}
 		reportFailures(recordId, new List<BP_PdfServiceClient.Result>{ response, responseIPC });
 		return result;
 	}

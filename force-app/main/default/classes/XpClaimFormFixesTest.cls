@@ -404,9 +404,18 @@ private class XpClaimFormFixesTest {
         // His NINO and no UK pension: not asked (John, 11/11/2026)
         Basic__c known = claim(married);
         System.assert(!texts(known.Id).contains('UK employers: none listed'), texts(known.Id));
-        // Already on a UK State Pension: asked, under the husband
+        // Already on a UK State Pension with his NINO on the claim: not asked either (John and Fernando, 17/11/2026)
+        Map<String, Object> onPensionWithNino = married.clone();
+        onPensionWithNino.put('Partner_State_Pension__c', true);
+        Basic__c paidKnown = claim(onPensionWithNino);
+        System.assert(!texts(paidKnown.Id).contains('UK employers: none listed'), texts(paidKnown.Id));
+        Map<String, Object> longFormPension = married.clone();
+        longFormPension.put('Partner_Claiming_UK_Pension__c', true);
+        System.assert(!texts(claim(longFormPension).Id).contains('UK employers: none listed'));
+        // On a UK State Pension and no NINO on the claim: asked, under the husband
         Map<String, Object> onPension = married.clone();
-        onPension.put('Partner_State_Pension__c', true);
+        // he has one, but it is not on the claim yet
+        onPension.putAll(new Map<String, Object>{ 'Partner_State_Pension__c' => true, 'Partner_Nino__c' => null });
         Basic__c paid = claim(onPension);
         System.assert(texts(paid.Id).contains('Husband, UK employers: none listed'), texts(paid.Id));
         // One of his employers listed: no longer asked (a UK home address row does not count)

@@ -38,8 +38,8 @@
                 <div style="text-align:center;
                             font-size:24px;
                             
-                            margin-top:20px;
-                            margin-bottom:20px;">
+                            margin-top:12px;
+                            margin-bottom:12px;">
 
                     Client:   <span style="font-weight:bold;text-transform: uppercase; color: #EF0000;">{!client.Claimant_title__c} {!client.First_Name__c} {!client.Last_Name__c} </span>
 
@@ -48,8 +48,8 @@
                 <div style="text-align:center;
                             font-size:24px;
                             
-                            margin-top:20px;
-                            margin-bottom:20px;">
+                            margin-top:12px;
+                            margin-bottom:12px;">
 
                     XtraPension Claim Number:   <span style="font-weight:bold;color: #EF0000;">{!client.Name}</span>
 
@@ -58,8 +58,8 @@
                 <div style="text-align:center;
                             font-size:24px;
                             
-                            margin-top:20px;
-                            margin-bottom:20px;">
+                            margin-top:12px;
+                            margin-bottom:12px;">
 
                     Deposit Paid:   <b><apex:outputText value="{0,number,0}" style="color: #EF0000;">
                                         <apex:param value="{!DAY(client.Deposit_Payment_Date__c)}" />
@@ -81,8 +81,8 @@
 
                 <div style="text-align:center;
                             font-size:24px;
-                            margin-top:20px;
-                            margin-bottom:20px;">
+                            margin-top:12px;
+                            margin-bottom:12px;">
 
                     Address:  
                     <apex:repeat value="{!addressLines}" var="line">
@@ -93,8 +93,8 @@
 
                 <div style="text-align:center;
                             font-size:24px;
-                            margin-top:20px;
-                            margin-bottom:50px;">
+                            margin-top:12px;
+                            margin-bottom:28px;">
 
                     ==============
 
@@ -104,14 +104,14 @@
 
                 <div style="font-size:18px;
                             font-weight:bold;
-                            margin-bottom:45px; margin-left: 40px;">
+                            margin-bottom:24px; margin-left: 40px;">
 
                     Dear {!client.First_Name__c} {!client.Last_Name__c}
 
                 </div>
 
                 <div style="font-size:18px;
-                            margin-bottom:45px; margin-left: 40px;">
+                            margin-bottom:24px; margin-left: 40px;">
 
                     Please post us back in the Stamp Addressed Envelope enclosed here…
 
@@ -123,7 +123,7 @@
                             line-height:1.8; margin-left: 40px;">
 
                     <tr>
-                        <td style="padding-bottom:16px;">
+                        <td style="padding-bottom:10px;">
                             1. This
                             <span style="font-weight:bold;">YELLOW</span>
                             page
@@ -131,7 +131,7 @@
                     </tr>
 
                     <tr>
-                        <td style="padding-bottom:16px;">
+                        <td style="padding-bottom:10px;">
                             2.
                             <span style="font-weight:bold;">
                                  DWP Letter of Authority - <u>  signed &amp; dated</u> 
@@ -141,7 +141,7 @@
                     </tr>
 
                     <tr>
-                        <td style="padding-bottom:16px;">
+                        <td style="padding-bottom:10px;">
                             3. Two Pages stating
                             <span style="font-weight:bold;">
                                 'DECLARATION'
@@ -162,7 +162,7 @@
                     </tr>
 
                     <tr>
-                        <td style="padding-bottom:16px;">
+                        <td style="padding-bottom:10px;">
                             4. Certified Colour
                             <span style="font-weight:bold;">
                                 Photocopy of
@@ -171,9 +171,9 @@
                         </td>
                     </tr>
 
-                    <!-- Item 5 by marital status (11/11/2026, docs/claims-call-1111b/CONTRACT.md): Single has none -->
+                    <!-- Item 5 (John, 17/11/2026): one line, "as appropriate", instead of the list by marital status of 11/11.
+                         Single still has no item 5. 18/11 (John): "Marriage (for each marriage)" -->
                     <apex:variable var="ms" value="{!client.Claimant_marital_Status__c}"/>
-                    <apex:variable var="sp" value="{!IF(client.Partner_Title__c == 'Mr', 'husband', IF(OR(client.Partner_Title__c == 'Mrs', client.Partner_Title__c == 'Ms', client.Partner_Title__c == 'Miss'), 'wife', 'husband / wife'))}"/>
                     <apex:outputPanel layout="none" rendered="{!ms != 'Single'}">
                     <tr>
                         <td>
@@ -181,24 +181,24 @@
                             <span style="font-weight:bold;">
                                 Photocopy of
                             </span>
-                            <apex:outputPanel layout="none" rendered="{!OR(ms == 'Married', ms == 'Civil Partner', ms == 'Separated')}">Marriage Cert</apex:outputPanel>
-                            <apex:outputPanel layout="none" rendered="{!ms == 'Divorced'}">Marriage Cert + Divorce Cert (Decree Absolute)<br/>+ your former {!sp}'s Death Cert <i>if they have died</i></apex:outputPanel>
-                            <apex:outputPanel layout="none" rendered="{!ms == 'Widowed'}">Marriage Cert + your late {!sp}'s Death Cert</apex:outputPanel>
-                            <apex:outputPanel layout="none" rendered="{!ms == 'Remarried'}">both Marriage Certs<br/>+ the Divorce Cert (Decree Absolute) or Death Cert from your first marriage</apex:outputPanel>
-                            <apex:outputPanel layout="none" rendered="{!ISBLANK(ms)}">Marriage / Divorce / Death Cert(s) <i> if applicable</i></apex:outputPanel>
+                            Marriage (for each marriage) / Death / Divorce <i>(Decree Absolute)</i> Cert as appropriate
                         </td>
                     </tr>
                     </apex:outputPanel>
+                    <!-- Who certifies the copies (John, 16/11/2026); the "NO Garda / Police" line came out on 17/11 (John) -->
                     <tr>
-                        <td>
-                            <br/>
+                        <td style="padding-top:16px;">
+                            To be certified by:
+                            <span style="font-weight:bold;">Doctor / Solicitor / Bank Officer / Notary Public</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-top:16px;">
                             Thanks!
                         </td>
                     </tr>
 
                 </table>
-
-                <div style="height:20px;"></div>
 
                 <!-- SECTION B -->
                 <br/>
@@ -230,6 +230,15 @@
                             <span style="font-weight:bold;">Aus/NZ:</span> +61 1300 339 559
                         </td>
                     </tr>
+
+                    <!-- Canada (16/11/2026): the New York toll-free number, only on a Canadian client's page -->
+                    <apex:outputPanel layout="none" rendered="{!client.Current_Address_Abroad_Country_Name__c == 'Canada'}">
+                    <tr>
+                        <td>
+                            <span style="font-weight:bold;">USA/Canada:</span> +1 (888) 228 5916 (toll-free)
+                        </td>
+                    </tr>
+                    </apex:outputPanel>
 
                     <tr>
                         <td>

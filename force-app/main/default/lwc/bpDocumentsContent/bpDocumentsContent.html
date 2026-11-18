@@ -12,6 +12,9 @@
                                     </a>
                                 </div>
                                 <div>{doc.createdDate}</div>
+                                <template if:true={doc.note}>
+                                    <div class={doc.noteClass}>{doc.note}</div>
+                                </template>
                             </div>
                         </template>
                         <template if:true={tab.isEmpty}>

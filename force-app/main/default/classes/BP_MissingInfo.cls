@@ -20,6 +20,10 @@
  *  - The agent ticks what the email asks (call of 11/11/2026). No helper given starts unticked (ticked only when the
  *    long form says "Wants a helper"); everything else starts ticked. previewLeavingOut / sendLeavingOut take the
  *    agent lines left unticked.
+ *  - John's edits to the email (16/11/2026): no "Thank you for filling in your claim form" (the agent often filled it
+ *    in on the call), the bank name can be a new or empty account, and "we'll figure out the best way to proceed"
+ *    instead of "we'll help you find it". The spouse's address is asked only when it is not the client's own
+ *    (Partner_same_as_claimant__c ticked = nothing to ask; BR1 Q26 is the spouse's address if different).
  */
 public with sharing class BP_MissingInfo {
 
@@ -33,6 +37,9 @@ public with sharing class BP_MissingInfo {
     };
     // Vai no assunto de todo email do painel; é também como o painel acha o último.
     public static final String SUBJECT_MARK = 'a few details we still need for your UK State Pension claim';
+    // John's wording, 16/11/2026 (was "If you don't have something, just tell us and we'll help you find it.")
+    @TestVisible
+    private static final String CLOSING = 'If you don\'t have something we\'ve asked for, just tell us and we\'ll figure out the best way to proceed with your claim.';
 
     private static final String G_YOU = 'About you';
     private static final String G_SPOUSE = 'spouse';
@@ -90,7 +97,7 @@ public with sharing class BP_MissingInfo {
                    Claimant_hasNino__c, Claimant_nino__c, Has_Nino__c,
                    // Call of 11/11/2026 17h13: Remarried, spouse address not known
                    Previous_Marriage_Ended__c, Date_Of_Remarriage__c, Current_Spouse_First_Name__c, Current_Spouse_Last_Name__c,
-                   Current_Spouse_DOB__c, Partner_Address_Unknown__c,
+                   Current_Spouse_DOB__c, Partner_Address_Unknown__c, Partner_same_as_claimant__c,
                    Claimant_ever_Lived_UK__c, Claimant_lived_UK_From__c, Claimant_lived_UK_to__c,
                    Claimant_Ever_Worked_UK__c, Claimant_worked_UK_From__c, Claimant_worked_UK_To__c,
                    Claimant_Minded_Kids__c,
@@ -260,11 +267,12 @@ public with sharing class BP_MissingInfo {
         if (isBlank(b.Partner_Postcode__c)) addressParts.add('postcode');
         if (isBlank(b.Partner_Country__c)) addressParts.add('country');
         // "Not known" on the long form (11/11/2026 17h13): the BR1 says so, nothing to ask
-        if (!addressParts.isEmpty() && b.Partner_Address_Unknown__c != true) {
+        // "Same address as me" ticked: the BR1 leaves Q26 blank (= the client's address), nothing to ask (John, 16/11/2026)
+        if (!addressParts.isEmpty() && b.Partner_Address_Unknown__c != true && b.Partner_same_as_claimant__c != true) {
             String status = b.Claimant_marital_Status__c;
             Boolean late = status == 'Widowed' || (status == 'Remarried' && b.Previous_Marriage_Ended__c == 'Widowed');
             String client = late
-                ? 'The last home address of your ' + noun
+                ? 'The last home address of your ' + noun + ', if it was different from yours'
                 : (status == 'Divorced' || status == 'Separated' || status == 'Remarried')
                     ? 'The last address you know for your ' + noun + ', if you know it'
                     : 'The home address of your ' + noun + ', if it is different from yours';
@@ -436,7 +444,7 @@ public with sharing class BP_MissingInfo {
 
     private static void bank(Basic__c b, List<Item> items) {
         if (isBlank(b.Bank_Account_Owner_Name__c)) {
-            add(items, G_BANK, 'Bank: account holder name', 'The name on the bank account, exactly as it is on your bank statement',
+            add(items, G_BANK, 'Bank: account holder name', 'The name on a bank account, exactly as it is on your bank statement (it can be a new / empty account)',
                 new List<String>{ 'Bank_Account_Owner_Name__c' });
         }
         if (isBlank(b.Owns_This_Account__c)) {
@@ -745,13 +753,13 @@ public with sharing class BP_MissingInfo {
         h += p + (isBlank(b.First_Name__c) ? 'Hello,' : 'Hi ' + b.First_Name__c.trim().escapeHtml4() + ',') + '</p>';
         if (!isBlank(note)) h += p + note.trim().escapeHtml4().replace('\n', '<br/>') + '</p>';
         if (asking) {
-            h += p + 'Thank you for filling in your claim form. Before we can send your claim to the UK Department for Work and Pensions (DWP), I have to clarify some information on your application. I have some questions:</p>';
+            h += p + 'Before we can send your claim to the UK Department for Work and Pensions (DWP), I have to clarify some information on your application. I have some questions:</p>';
             h += '<ul style="margin:0 0 6px 0;padding-left:22px;">';
             for (String q : questions) h += '<li style="margin:0 0 6px 0;">' + q.escapeHtml4() + '</li>';
             h += '</ul>';
             if (!forClient.isEmpty()) h += '<p style="margin:18px 0 6px 0;">We also need a few more details from you:</p>';
         } else {
-            h += p + 'Thank you for filling in your claim form. Before we can send your claim to the UK Department for Work and Pensions (DWP), we need a few more details from you:</p>';
+            h += p + 'Before we can send your claim to the UK Department for Work and Pensions (DWP), we need a few more details from you:</p>';
         }
         for (GroupView g : grouped(b, forClient)) {
             h += '<p style="margin:18px 0 6px 0;font-weight:bold;">' + g.label.escapeHtml4() + '</p>';
@@ -759,8 +767,8 @@ public with sharing class BP_MissingInfo {
             for (Item i : g.items) h += '<li style="margin:0 0 6px 0;">' + i.clientText.escapeHtml4() + '.</li>';
             h += '</ul>';
         }
-        h += '<p style="margin:18px 0 14px 0;">You can simply reply to this email with the details, or send them by WhatsApp to ' + WHATSAPP + '. If you don\'t have something, just tell us and we\'ll help you find it.</p>';
-        h += p + 'Kind regards,<br/>' + sender.escapeHtml4() + '<br/>XtraPension Client Support</p>';
+        h += '<p style="margin:18px 0 14px 0;">You can simply reply to this email with the details, or send them by WhatsApp to ' + WHATSAPP + '.<br/>' + CLOSING + '</p>';
+        h += p + 'Kind regards,<br/><br/>' + sender.escapeHtml4() + '<br/>XtraPension Client Support</p>';
         h += '<p style="margin:22px 0 0 0;font-size:13px;color:#666666;">XtraPension Ltd, Galway, Ireland<br/>'
             + 'Ireland: +353 (0)91 335 583 &nbsp;|&nbsp; Australia: +61 1300 339 559<br/>'
             + 'WhatsApp: ' + WHATSAPP + ' (messages only)<br/>' + CLIENTS_EMAIL + '</p>';
@@ -776,18 +784,18 @@ public with sharing class BP_MissingInfo {
         String t = (isBlank(b.First_Name__c) ? 'Hello,' : 'Hi ' + b.First_Name__c.trim() + ',') + '\n\n';
         if (!isBlank(note)) t += note.trim() + '\n\n';
         if (asking) {
-            t += 'Thank you for filling in your claim form. Before we can send your claim to the UK Department for Work and Pensions (DWP), I have to clarify some information on your application. I have some questions:\n';
+            t += 'Before we can send your claim to the UK Department for Work and Pensions (DWP), I have to clarify some information on your application. I have some questions:\n';
             for (String q : questions) t += '- ' + q + '\n';
             if (!forClient.isEmpty()) t += '\nWe also need a few more details from you:\n';
         } else {
-            t += 'Thank you for filling in your claim form. Before we can send your claim to the UK Department for Work and Pensions (DWP), we need a few more details from you:\n';
+            t += 'Before we can send your claim to the UK Department for Work and Pensions (DWP), we need a few more details from you:\n';
         }
         for (GroupView g : grouped(b, forClient)) {
             t += '\n' + g.label + '\n';
             for (Item i : g.items) t += '- ' + i.clientText + '.\n';
         }
-        t += '\nYou can simply reply to this email with the details, or send them by WhatsApp to ' + WHATSAPP + '. If you don\'t have something, just tell us and we\'ll help you find it.\n\n';
-        t += 'Kind regards,\n' + sender + '\nXtraPension Client Support\n\n';
+        t += '\nYou can simply reply to this email with the details, or send them by WhatsApp to ' + WHATSAPP + '.\n' + CLOSING + '\n\n';
+        t += 'Kind regards,\n\n' + sender + '\nXtraPension Client Support\n\n';
         t += 'XtraPension Ltd, Galway, Ireland\nIreland: +353 (0)91 335 583 | Australia: +61 1300 339 559\nWhatsApp: ' + WHATSAPP + ' (messages only)\n' + CLIENTS_EMAIL + '\n';
         return t;
     }
@@ -802,17 +810,17 @@ public with sharing class BP_MissingInfo {
         String given = isBlank(b.First_Name__c) ? null : b.First_Name__c.trim().split('\\s+')[0];
         String t = (given == null ? 'Hello,' : 'Hi ' + given + ',') + ' ' + (isBlank(note) ? '' : note.trim() + ' ');
         if (asking) {
-            t += 'Thank you for filling in your claim form. Before we can send your claim to the DWP, I have to clarify some information on your application. I have some questions:\n';
+            t += 'Before we can send your claim to the DWP, I have to clarify some information on your application. I have some questions:\n';
             for (String q : questions) t += '- ' + q + '\n';
             if (!forClient.isEmpty()) t += '\nWe also need a few more details from you:\n';
         } else {
-            t += 'Thank you for filling in your claim form. Before we can send your claim to the DWP, we need a few more details from you:\n';
+            t += 'Before we can send your claim to the DWP, we need a few more details from you:\n';
         }
         for (GroupView g : grouped(b, forClient)) {
             t += '\n*' + g.label + '*\n';
             for (Item i : g.items) t += '- ' + i.clientText + '.\n';
         }
-        return t + '\nYou can reply here with the details. If you don\'t have something, just tell us and we\'ll help you find it.\n\n'
+        return t + '\nYou can reply here with the details. ' + CLOSING + '\n\n'
             + sender + ', XtraPension (' + b.Name + ')';
     }
 
@@ -837,7 +845,9 @@ public with sharing class BP_MissingInfo {
         // "Forgot" from the Short Form stays set after the NINO is found: a NINO on the claim ends the trace
         if ((b.Partner_Has_Nino_values__c == 'Forgot' && isBlank(b.Partner_Nino__c)) || b.Claimant_marital_Status__c == 'Widowed') return true;
         if (b.Claimant_marital_Status__c == 'Remarried' && b.Previous_Marriage_Ended__c == 'Widowed') return true;
-        return b.Partner_State_Pension__c == true || b.Partner_Claiming_UK_Pension__c == true;
+        // On a UK pension the DWP already holds the record: with the NINO on the claim the employers add nothing
+        // (John and Fernando, 17/11/2026). Without the NINO they are still what finds it.
+        return (b.Partner_State_Pension__c == true || b.Partner_Claiming_UK_Pension__c == true) && isBlank(b.Partner_Nino__c);
     }
 
     // The spouse's sex from their own title, else the opposite of the claimant's, else neutral.

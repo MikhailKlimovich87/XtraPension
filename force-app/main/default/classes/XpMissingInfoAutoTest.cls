@@ -3,10 +3,15 @@ private class XpMissingInfoAutoTest {
 
     private static final Datetime NOW = System.now();
     private static Integer keys = 0;
+    // John, 16/11/2026: "KILLED OFF" (salesforce/missing-info-wording). Wrong after a first call, too.
+    private static final String OLD_OPENING = 'Thank you for filling in your claim form';
     private static Integer contacts = 0;
 
     /** A paid claim made 2 hours ago with the bank BIC missing (one item the email asks). */
     private static Basic__c claim(Map<String, Object> fields) {
+        // Records made in the test are saved a few seconds after NOW: they count as quiet unless a test turns the wait
+        // back on (-60: anything saved up to an hour after NOW is quiet).
+        XpMissingInfoAuto.quietMinutes = -60;
         // A second contact in one test gets its own name and email (the org's duplicate rule refuses the same one).
         contacts++;
         String n = contacts == 1 ? '' : String.valueOf(contacts);
@@ -59,8 +64,9 @@ private class XpMissingInfoAutoTest {
         System.assert(m.Subject.contains(BP_MissingInfo.SUBJECT_MARK), m.Subject);
         System.assertEquals(BP_MissingInfo.CLIENTS_EMAIL, m.FromAddress);
         System.assert(m.HtmlBody.contains('BIC (SWIFT) code'), 'the missing item is asked');
+        System.assert(!m.HtmlBody.contains(OLD_OPENING), 'John killed the old opening (missing-info-wording goes first)');
         String agent = [SELECT Validation_Agent_Name__c FROM Basic__c WHERE Id = :b.Id].Validation_Agent_Name__c;
-        if (agent == 'Sean') System.assert(m.HtmlBody.contains('Kind regards,<br/>Sean<br/>'), 'signed by the validation agent');
+        if (agent == 'Sean') System.assert(m.HtmlBody.contains('Kind regards,<br/><br/>Sean<br/>'), 'signed by the validation agent');
     }
 
     @IsTest
@@ -105,12 +111,44 @@ private class XpMissingInfoAutoTest {
     @IsTest
     static void waitsTwentyMinutesAndIgnoresShortUnansweredAndOldCalls() {
         Basic__c b = claim(new Map<String, Object>{});
+        Test.setCreatedDate(b.Id, NOW.addHours(-10));
         call(b.Id, 10, 900, 'Answered');     // ended 10 min ago: too soon
         call(b.Id, 30, 120, 'Answered');     // 2 minutes: too short
         call(b.Id, 30, 900, 'No answer');    // not answered
-        call(b.Id, 200, 900, 'Answered');    // ended over 3 hours ago (and before the claim existed)
+        call(b.Id, 400, 900, 'Answered');    // ended over 6 hours ago
         System.assertEquals(0, XpMissingInfoAuto.run(NOW, true).size());
         System.assertEquals(0, asked(b.Id));
+    }
+
+    @IsTest
+    static void waitsUntilNobodyHasTouchedTheClaimForThirtyMinutes() {
+        Basic__c b = claim(new Map<String, Object>{ 'Contact__c' => null });
+        call(b.Id, 25, 900, 'Answered');
+        // The claim was saved a moment ago (the agent typing what the client said on the call).
+        XpMissingInfoAuto.quietMinutes = XpMissingInfoAuto.QUIET_MINUTES;
+        XpMissingInfoAuto.Outcome waiting = only(XpMissingInfoAuto.run(NOW, true));
+        System.assert(waiting.result.startsWith('waiting: claim edited'), waiting.result);
+        System.assertEquals(0, asked(b.Id));
+        // 40 minutes later nobody has touched it: it goes (the call is now 65 minutes old, still in the window).
+        Test.startTest();
+        XpMissingInfoAuto.Outcome later = only(XpMissingInfoAuto.run(NOW.addMinutes(40), true));
+        Test.stopTest();
+        System.assert(later.result.startsWith('sent to'), later.result);
+        System.assertEquals(1, asked(b.Id));
+    }
+
+    @IsTest
+    static void withoutTheOldOpeningAndAsksForProofOfUkWork() {
+        Basic__c worked = claim(new Map<String, Object>{ 'Claimant_Ever_Worked_UK__c' => true });
+        Basic__c b = BP_MissingInfo.load(worked.Id);
+        List<BP_MissingInfo.Item> items = BP_MissingInfo.clientItems(BP_MissingInfo.check(b));
+        List<String> body = XpMissingInfoAuto.bodies(b, items, 'Ciara');
+        for (String part : body) System.assert(!part.contains(OLD_OPENING), part);
+        System.assert(body[0].contains('<p style="margin:18px 0 14px 0;">' + XpMissingInfoAuto.PROOF + '</p>'), body[0]);
+        System.assert(body[1].contains(XpMissingInfoAuto.PROOF + '\n\nYou can simply reply'), body[1]);
+
+        b.Claimant_Ever_Worked_UK__c = false;
+        for (String part : XpMissingInfoAuto.bodies(b, items, 'Ciara')) System.assert(!part.contains(XpMissingInfoAuto.PROOF), part);
     }
 
     @IsTest
@@ -178,20 +216,27 @@ private class XpMissingInfoAutoTest {
 
     @IsTest
     static void fourJobsEveryFifteenMinutes() {
+        // Its own job names: in production the real 4 jobs exist and a test sees them.
+        XpMissingInfoAuto.jobPrefix = 'Test of ' + XpMissingInfoAuto.JOB_PREFIX;
+        String name = XpMissingInfoAuto.jobPrefix + '%';
+        String real = XpMissingInfoAuto.JOB_PREFIX + '%';
+        Integer realBefore = [SELECT COUNT() FROM CronTrigger WHERE CronJobDetail.Name LIKE :real];
         Test.startTest();
         List<Id> ids = XpMissingInfoAuto.schedule();
         Test.stopTest();
         System.assertEquals(4, ids.size());
-        String name = XpMissingInfoAuto.JOB_PREFIX + '%';
         System.assertEquals(4, [SELECT COUNT() FROM CronTrigger WHERE CronJobDetail.Name LIKE :name]);
         System.assertEquals(4, XpMissingInfoAuto.unschedule());
+        System.assertEquals(0, [SELECT COUNT() FROM CronTrigger WHERE CronJobDetail.Name LIKE :name]);
+        System.assertEquals(realBefore, [SELECT COUNT() FROM CronTrigger WHERE CronJobDetail.Name LIKE :real], 'the real jobs are not touched');
     }
 
     @IsTest
     static void theJobRuns() {
+        String name = 'Test of ' + XpMissingInfoAuto.JOB_PREFIX + ' run';
         Test.startTest();
-        System.schedule(XpMissingInfoAuto.JOB_PREFIX + ' test', '0 0 * * * ?', new XpMissingInfoAuto());
+        System.schedule(name, '0 0 * * * ?', new XpMissingInfoAuto());
         Test.stopTest();
-        System.assertEquals(1, [SELECT COUNT() FROM CronTrigger WHERE CronJobDetail.Name = :(XpMissingInfoAuto.JOB_PREFIX + ' test')]);
+        System.assertEquals(1, [SELECT COUNT() FROM CronTrigger WHERE CronJobDetail.Name = :name]);
     }
 }

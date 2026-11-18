@@ -121,8 +121,8 @@
                             font-weight:bold;
                             margin-bottom:40px;">
 
-                    B – Instructions for Certifying {!IF($CurrentPage.parameters.country == 'IE', 'Garda / Police Officer', 'Police Officer')} /
-                    Post Office / Doctor / Solicitor / Notary
+                    <!-- Who certifies (John, 16/11/2026): no Garda / police officer and no post office any more -->
+                    B – Instructions for Certifying Doctor / Solicitor / Bank Officer / Notary Public
 
                 </div>
 
